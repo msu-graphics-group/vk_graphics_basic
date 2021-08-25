@@ -56,11 +56,9 @@ git clone https://gitlab.com/vsan/vkutils.git
 ```
 
 ### Single header libraries
-This project also uses  (LiteMath, tinyobj, stb_image) which are included in this repo.
+This project also uses LiteMath and stb_image which are included in this repo.
 
 https://github.com/msu-graphics-group/LiteMath
-
-https://github.com/tinyobjloader/tinyobjloader
 
 https://github.com/nothings/stb
 
