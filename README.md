@@ -2,7 +2,7 @@
 This project implements basic forward rendering on a 3d scene in Hydra Renderer XML format (https://github.com/Ray-Tracing-Systems/HydraAPI, http://www.raytracing.ru/)
 
 This project is a simplified part of https://gitlab.com/vsan/chimera which implements other example rendering types 
-(including various approaches to use hardware accelerated ray tracing).
+(including various approaches to using hardware accelerated ray tracing).
 
 ## Build
 
