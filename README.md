@@ -17,7 +17,7 @@ make -j8
 
 On Windows you can directly open CMakeLists.txt as a project in recent versions of Visual Studio. Mingw-w64 building is also supported.
 
-Executable will be build in *bin* subdirectory - *vk_graphics_basic/bin/renderer*
+Executable will be built in *bin* subdirectory - *vk_graphics_basic/bin/renderer*
 
 ## Dependencies
 ### Vulkan 
