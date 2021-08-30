@@ -182,6 +182,7 @@ void MainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window)
   constexpr int NAverage = 60;
   double avgTime = 0.0;
   int avgCounter = 0;
+  int currCam    = 0;
 
   double lastTime = glfwGetTime();
   while (!glfwWindowShouldClose(window))
@@ -192,10 +193,14 @@ void MainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window)
     
     g_appInput.clearKeys();
     glfwPollEvents();
+    
+    if(g_appInput.keyReleased[GLFW_KEY_L])
+      currCam = 1 - currCam;
 
-    UpdateCamera(window, g_appInput.cam, static_cast<float>(diffTime));
+    UpdateCamera(window, g_appInput.cams[currCam], static_cast<float>(diffTime));
+    
     app->ProcessInput(g_appInput);
-    app->UpdateCamera(g_appInput.cam);
+    app->UpdateCamera(g_appInput.cams[currCam]);
     app->DrawFrame(static_cast<float>(thisTime));
 
     // count and print FPS

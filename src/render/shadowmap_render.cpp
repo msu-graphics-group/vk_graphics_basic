@@ -428,11 +428,17 @@ void SimpleShadowmapRender::ProcessInput(const AppInput &input)
 
   if(input.keyReleased[GLFW_KEY_Q])
     m_input.drawFSQuad = !m_input.drawFSQuad;
+
+  if(input.keyReleased[GLFW_KEY_L])
+    m_input.conrolLight = !m_input.conrolLight;
 }
 
 void SimpleShadowmapRender::UpdateCamera(const Camera &cam)
 {
-  m_cam = cam;
+  if(m_input.conrolLight)
+    m_light.cam = cam;
+  else
+    m_cam = cam;
   UpdateView(); 
 }
 
