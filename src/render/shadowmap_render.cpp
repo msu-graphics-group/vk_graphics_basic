@@ -156,6 +156,7 @@ void SimpleShadowmapRender::SetupSimplePipeline()
 
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
   m_pBindings->BindBuffer(0, m_ubo, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  m_pBindings->BindImage (1, m_pShadowMap->View(), m_pShadowMap->Sampler(), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   m_pBindings->BindEnd(&m_dSet, &m_dSetLayout);
 
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -216,8 +217,9 @@ void SimpleShadowmapRender::CreateUniformBuffer()
 
 void SimpleShadowmapRender::UpdateUniformBuffer(float a_time)
 {
-  m_uniforms.lightPos = LiteMath::float3(sinf(a_time), 1.0f, cosf(a_time));
-  m_uniforms.time = a_time;
+  m_uniforms.lightMatrix = m_lightMatrix;
+  m_uniforms.lightPos    = m_light.cam.pos; //LiteMath::float3(sinf(a_time), 1.0f, cosf(a_time));
+  m_uniforms.time        = a_time;
 
   m_uniforms.baseColor = LiteMath::float3(0.9f, 0.92f, 1.0f);
   memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));
@@ -278,25 +280,12 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
 
   //// draw scene to shadowmap
   //
-  float4x4 lightMatrix;
+  m_pShadowMap->BeginRenderingToThisTexture(a_cmdBuff);
   {
-    m_pShadowMap->BeginRenderingToThisTexture(a_cmdBuff);
     vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_shadowPipeline.pipeline);
-
-    LiteMath::float4x4 mProj;
-    if(m_light.usePerspectiveM)
-      mProj = perspectiveMatrix(m_light.cam.fov, 1.0f, 1.0f, m_light.lightTargetDist*2.0f);
-    else
-      mProj = ortoMatrix(-m_light.radius, +m_light.radius, -m_light.radius, +m_light.radius, 0.0f, m_light.lightTargetDist);
-      
-    auto mProjFix       = m_light.usePerspectiveM ? LiteMath::float4x4() : OpenglToVulkanProjectionMatrixFix(); // don't understang why fix is not needed for perspective case for shadowmap ... it works for common rendering
-    auto mLookAt        = LiteMath::lookAt(m_light.cam.pos, m_light.cam.pos + m_light.cam.forward()*10.0f, m_light.cam.up);
-    auto mWorldViewProj = mProjFix*mProj*mLookAt;
-
-    DrawSceneCmd(a_cmdBuff, mWorldViewProj);
-    m_pShadowMap->EndRenderingToThisTexture(a_cmdBuff);
-    lightMatrix = mWorldViewProj;
+    DrawSceneCmd(a_cmdBuff, m_lightMatrix);
   }
+  m_pShadowMap->EndRenderingToThisTexture(a_cmdBuff);
 
   //// draw final scene to screen
   //
@@ -444,18 +433,35 @@ void SimpleShadowmapRender::ProcessInput(const AppInput &input)
 void SimpleShadowmapRender::UpdateCamera(const Camera &cam)
 {
   m_cam = cam;
-  UpdateView();
+  UpdateView(); 
 }
 
 void SimpleShadowmapRender::UpdateView()
 {
+  ///// calc camera matrix
+  //
   const float aspect = float(m_width) / float(m_height);
   auto mProjFix = OpenglToVulkanProjectionMatrixFix();
   auto mProj = projectionMatrix(m_cam.fov, aspect, 0.1f, 1000.0f);
   auto mLookAt = LiteMath::lookAt(m_cam.pos, m_cam.lookAt, m_cam.up);
   auto mWorldViewProj = mProjFix * mProj * mLookAt;
-
+  
   m_worldViewProj = mWorldViewProj;
+  
+  ///// calc light matrix
+  //
+  if(m_light.usePerspectiveM)
+    mProj = perspectiveMatrix(m_light.cam.fov, 1.0f, 1.0f, m_light.lightTargetDist*2.0f);
+  else
+    mProj = ortoMatrix(-m_light.radius, +m_light.radius, -m_light.radius, +m_light.radius, 0.0f, m_light.lightTargetDist);
+
+  if(m_light.usePerspectiveM)  // don't understang why fix is not needed for perspective case for shadowmap ... it works for common rendering  
+    mProjFix = LiteMath::float4x4();
+  else
+    mProjFix = OpenglToVulkanProjectionMatrixFix(); 
+  
+  mLookAt       = LiteMath::lookAt(m_light.cam.pos, m_light.cam.pos + m_light.cam.forward()*10.0f, m_light.cam.up);
+  m_lightMatrix = mProjFix*mProj*mLookAt;
 }
 
 void SimpleShadowmapRender::LoadScene(const std::string &path, bool transpose_inst_matrices)

@@ -91,13 +91,13 @@ void SimpleRender::InitPresentation(VkSurfaceKHR &a_surface)
 void SimpleRender::CreateInstance()
 {
   VkApplicationInfo appInfo = {};
-  appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  appInfo.pNext = nullptr;
-  appInfo.pApplicationName = "VkRender";
+  appInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+  appInfo.pNext              = nullptr;
+  appInfo.pApplicationName   = "VkRender";
   appInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
-  appInfo.pEngineName = "SimpleForward";
-  appInfo.engineVersion = VK_MAKE_VERSION(0, 1, 0);
-  appInfo.apiVersion = VK_MAKE_VERSION(1, 1, 0);
+  appInfo.pEngineName        = "SimpleShadowMap";
+  appInfo.engineVersion      = VK_MAKE_VERSION(0, 1, 0);
+  appInfo.apiVersion         = VK_MAKE_VERSION(1, 1, 0);
 
   m_instance = vk_utils::createInstance(m_enableValidation, m_validationLayers, m_instanceExtensions, &appInfo);
 

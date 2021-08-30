@@ -79,11 +79,12 @@ private:
 
   struct
   {
-    LiteMath::float4x4 projView;
-    LiteMath::float4x4 model;
+    float4x4 projView;
+    float4x4 model;
   } pushConst2M;
 
-  LiteMath::float4x4 m_worldViewProj;
+  float4x4 m_worldViewProj;
+  float4x4 m_lightMatrix;    
 
   UniformParams m_uniforms {};
   VkBuffer m_ubo = VK_NULL_HANDLE;
