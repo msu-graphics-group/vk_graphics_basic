@@ -38,7 +38,7 @@ public:
   virtual void InitVulkan(std::vector<const char*> a_instanceExtensions, uint32_t a_deviceId) = 0;
   virtual void InitPresentation(VkSurfaceKHR& a_surface) = 0;
   virtual void ProcessInput(const AppInput& input) = 0;
-  virtual void UpdateCamera(const Camera &cam) = 0;
+  virtual void UpdateCamera(const Camera* cams, uint32_t a_camsNumber) = 0;
   virtual void LoadScene(const std::string &path, bool transpose_inst_matrices) = 0;
   virtual void DrawFrame(float a_time) = 0;
 

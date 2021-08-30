@@ -169,7 +169,7 @@ void SimpleShadowmapRender::SetupSimplePipeline()
   //
   std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
   {
-    shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../resources/shaders/simple.frag.spv";
+    shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../resources/shaders/simple_shadow.frag.spv";
     shader_paths[VK_SHADER_STAGE_VERTEX_BIT]   = "../resources/shaders/simple.vert.spv";
   }
   maker.LoadShaders(m_device, shader_paths);
@@ -425,20 +425,15 @@ void SimpleShadowmapRender::ProcessInput(const AppInput &input)
   // add keyboard controls here
   // camera movement is processed separately
   //
-
   if(input.keyReleased[GLFW_KEY_Q])
     m_input.drawFSQuad = !m_input.drawFSQuad;
-
-  if(input.keyReleased[GLFW_KEY_L])
-    m_input.conrolLight = !m_input.conrolLight;
 }
 
-void SimpleShadowmapRender::UpdateCamera(const Camera &cam)
+void SimpleShadowmapRender::UpdateCamera(const Camera* cams, uint32_t a_camsNumber)
 {
-  if(m_input.conrolLight)
-    m_light.cam = cam;
-  else
-    m_cam = cam;
+  m_cam = cams[0];
+  if(a_camsNumber >= 2)
+    m_light.cam = cams[1];
   UpdateView(); 
 }
 

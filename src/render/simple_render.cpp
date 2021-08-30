@@ -350,13 +350,13 @@ void SimpleRender::ProcessInput(const AppInput &input)
 {
   // add keyboard controls here
   // camera movement is processed separately
-//  if(input.keyPressed[GLFW_KEY_SPACE])
-//
+  //  if(input.keyPressed[GLFW_KEY_SPACE])
+  //
 }
 
-void SimpleRender::UpdateCamera(const Camera &cam)
+void SimpleRender::UpdateCamera(const Camera* cams, uint32_t a_camsNumber)
 {
-  m_cam = cam;
+  m_cam = cams[0];
   UpdateView();
 }
 

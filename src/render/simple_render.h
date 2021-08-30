@@ -27,7 +27,7 @@ public:
   void InitPresentation(VkSurfaceKHR& a_surface) override;
 
   void ProcessInput(const AppInput& input) override;
-  void UpdateCamera(const Camera &cam) override;
+  void UpdateCamera(const Camera* cams, uint32_t a_camsNumber) override;
   void UpdateView();
 
   void LoadScene(const std::string &path, bool transpose_inst_matrices) override;

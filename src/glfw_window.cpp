@@ -200,7 +200,7 @@ void MainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window)
     UpdateCamera(window, g_appInput.cams[currCam], static_cast<float>(diffTime));
     
     app->ProcessInput(g_appInput);
-    app->UpdateCamera(g_appInput.cams[currCam]);
+    app->UpdateCamera(g_appInput.cams, 2);
     app->DrawFrame(static_cast<float>(thisTime));
 
     // count and print FPS
