@@ -163,7 +163,9 @@ void SimpleShadowmapRender::SetupSimplePipeline()
   m_pBindings->BindEnd(&m_quadDS, &m_quadDSLayout);
 
   vk_utils::GraphicsPipelineMaker maker;
-
+  
+  // pipeline for drawing objects
+  //
   std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
   {
     shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../resources/shaders/simple.frag.spv";
@@ -176,7 +178,20 @@ void SimpleShadowmapRender::SetupSimplePipeline()
 
   m_basicForwardPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(),
                                                        m_screenRenderPass);
-                                                       
+  
+  // pipeline for rendering objects to shadowmap
+  //
+  shader_paths.clear();
+  shader_paths[VK_SHADER_STAGE_VERTEX_BIT] = "../resources/shaders/simple.vert.spv";
+  maker.LoadShaders(m_device, shader_paths);
+
+  maker.viewport.width  = float(m_pShadowMap->Width());
+  maker.viewport.height = float(m_pShadowMap->Height());
+  maker.scissor.extent  = VkExtent2D{ uint32_t(m_pShadowMap->Width()), uint32_t(m_pShadowMap->Height()) };
+
+  m_shadowPipeline.layout   = m_basicForwardPipeline.layout;
+  m_shadowPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), 
+                                                 m_pShadowMap->Renderpass());                                                       
 }
 
 void SimpleShadowmapRender::CreateUniformBuffer()
@@ -208,6 +223,29 @@ void SimpleShadowmapRender::UpdateUniformBuffer(float a_time)
   memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));
 }
 
+void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4x4& a_wvp)
+{
+  VkShaderStageFlags stageFlags = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+
+  VkDeviceSize zero_offset = 0u;
+  VkBuffer vertexBuf = m_pScnMgr->GetVertexBuffer();
+  VkBuffer indexBuf  = m_pScnMgr->GetIndexBuffer();
+  
+  vkCmdBindVertexBuffers(a_cmdBuff, 0, 1, &vertexBuf, &zero_offset);
+  vkCmdBindIndexBuffer(a_cmdBuff, indexBuf, 0, VK_INDEX_TYPE_UINT32);
+
+  pushConst2M.projView = a_wvp;
+  for (size_t i = 0; i < m_pScnMgr->InstancesNum(); ++i)
+  {
+    auto inst         = m_pScnMgr->GetInstanceInfo(i);
+    pushConst2M.model = m_pScnMgr->GetInstanceMatrix(i);
+    vkCmdPushConstants(a_cmdBuff, m_basicForwardPipeline.layout, stageFlags, 0, sizeof(pushConst2M), &pushConst2M);
+
+    auto mesh_info = m_pScnMgr->GetMeshInfo(inst.mesh_id);
+    vkCmdDrawIndexed(a_cmdBuff, mesh_info.m_indNum, 1, mesh_info.m_indexOffset, mesh_info.m_vertexOffset, 0);
+  }
+}
+
 void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff,
                                                      VkImageView a_targetImageView, VkPipeline a_pipeline)
 {
@@ -223,15 +261,13 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
   VkRect2D scissor{};
   VkExtent2D ext;
   ext.height = m_height;
-  ext.width = m_width;
-
+  ext.width  = m_width;
   viewport.x = 0.0f;
   viewport.y = 0.0f;
   viewport.width  = static_cast<float>(ext.width);
   viewport.height = static_cast<float>(ext.height);
   viewport.minDepth = 0.0f;
   viewport.maxDepth = 1.0f;
-
   scissor.offset = {0, 0};
   scissor.extent = ext;
 
@@ -240,7 +276,30 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
   vkCmdSetViewport(a_cmdBuff, 0, 1, viewports.data());
   vkCmdSetScissor(a_cmdBuff, 0, 1, scissors.data());
 
-  ///// draw final scene to screen
+  //// draw scene to shadowmap
+  //
+  float4x4 lightMatrix;
+  {
+    m_pShadowMap->BeginRenderingToThisTexture(a_cmdBuff);
+    vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_shadowPipeline.pipeline);
+
+    LiteMath::float4x4 mProj;
+    if(m_light.usePerspectiveM)
+      mProj = perspectiveMatrix(m_light.cam.fov, 1.0f, 1.0f, m_light.lightTargetDist*2.0f);
+    else
+      mProj = ortoMatrix(-m_light.radius, +m_light.radius, -m_light.radius, +m_light.radius, 0.0f, m_light.lightTargetDist);
+      
+    auto mProjFix       = m_light.usePerspectiveM ? LiteMath::float4x4() : OpenglToVulkanProjectionMatrixFix(); // don't understang why fix is not needed for perspective case for shadowmap ... it works for common rendering
+    auto mLookAt        = LiteMath::lookAt(m_light.cam.pos, m_light.cam.pos + m_light.cam.forward()*10.0f, m_light.cam.up);
+    auto mWorldViewProj = mProjFix*mProj*mLookAt;
+
+    DrawSceneCmd(a_cmdBuff, mWorldViewProj);
+    m_pShadowMap->EndRenderingToThisTexture(a_cmdBuff);
+    lightMatrix = mWorldViewProj;
+  }
+
+  //// draw final scene to screen
+  //
   {
     VkRenderPassBeginInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -253,34 +312,14 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
     clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
     clearValues[1].depthStencil = {1.0f, 0};
     renderPassInfo.clearValueCount = 2;
-    renderPassInfo.pClearValues = &clearValues[0];
+    renderPassInfo.pClearValues    = &clearValues[0];
 
     vkCmdBeginRenderPass(a_cmdBuff, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
     vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, a_pipeline);
+    vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.layout, 0, 1, &m_dSet, 0, VK_NULL_HANDLE);
 
-    vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.layout, 0, 1,
-                            &m_dSet, 0, VK_NULL_HANDLE);
-
-    VkShaderStageFlags stageFlags = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-
-    VkDeviceSize zero_offset = 0u;
-    VkBuffer vertexBuf = m_pScnMgr->GetVertexBuffer();
-    VkBuffer indexBuf = m_pScnMgr->GetIndexBuffer();
-
-    vkCmdBindVertexBuffers(a_cmdBuff, 0, 1, &vertexBuf, &zero_offset);
-    vkCmdBindIndexBuffer(a_cmdBuff, indexBuf, 0, VK_INDEX_TYPE_UINT32);
-
-    for (size_t i = 0; i < m_pScnMgr->InstancesNum(); ++i)
-    {
-      auto inst = m_pScnMgr->GetInstanceInfo(i);
-
-      pushConst2M.model = m_pScnMgr->GetInstanceMatrix(i);
-      vkCmdPushConstants(a_cmdBuff, m_basicForwardPipeline.layout, stageFlags, 0,
-                         sizeof(pushConst2M), &pushConst2M);
-
-      auto mesh_info = m_pScnMgr->GetMeshInfo(inst.mesh_id);
-      vkCmdDrawIndexed(a_cmdBuff, mesh_info.m_indNum, 1, mesh_info.m_indexOffset, mesh_info.m_vertexOffset, 0);
-    }
+    DrawSceneCmd(a_cmdBuff, m_worldViewProj);
 
     vkCmdEndRenderPass(a_cmdBuff);
   }
@@ -416,7 +455,7 @@ void SimpleShadowmapRender::UpdateView()
   auto mLookAt = LiteMath::lookAt(m_cam.pos, m_cam.lookAt, m_cam.up);
   auto mWorldViewProj = mProjFix * mProj * mLookAt;
 
-  pushConst2M.projView = mWorldViewProj;
+  m_worldViewProj = mWorldViewProj;
 }
 
 void SimpleShadowmapRender::LoadScene(const std::string &path, bool transpose_inst_matrices)

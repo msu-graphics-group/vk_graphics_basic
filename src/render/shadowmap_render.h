@@ -83,12 +83,15 @@ private:
     LiteMath::float4x4 model;
   } pushConst2M;
 
+  LiteMath::float4x4 m_worldViewProj;
+
   UniformParams m_uniforms {};
   VkBuffer m_ubo = VK_NULL_HANDLE;
   VkDeviceMemory m_uboAlloc = VK_NULL_HANDLE;
   void* m_uboMappedMem = nullptr;
 
   pipeline_data_t m_basicForwardPipeline {};
+  pipeline_data_t m_shadowPipeline;
 
   VkDescriptorSet m_dSet = VK_NULL_HANDLE;
   VkDescriptorSetLayout m_dSetLayout = VK_NULL_HANDLE;
@@ -127,16 +130,41 @@ private:
   struct InputControlMouseEtc
   {
     bool drawFSQuad = false;
-  };
-  InputControlMouseEtc m_input;
+
+  } m_input;
+
+  /**
+  \brief basic parameters that you need for sdhadowmappinh usually
+  */
+  struct ShadowMapCam
+  {
+    ShadowMapCam() 
+    {  
+      cam.pos    = float3(10.0f, 10.0f, 10.0f);
+      cam.lookAt = float3(0, 0, 0);
+      cam.up     = float3(0, 1, 0);
+  
+      radius          = 5.0f;
+      lightTargetDist = 20.0f;
+      usePerspectiveM = false;
+    }
+
+    float  radius;           ///!< ignored when usePerspectiveM == true 
+    float  lightTargetDist;  ///!< identify depth range
+    Camera cam;              ///!< user control for light to later get light worldViewProj matrix
+    bool   usePerspectiveM;  ///!< use perspective matrix if true and ortographics otherwise
+  
+  } m_light;
  
   void DrawFrameSimple();
 
   void CreateInstance();
   void CreateDevice(uint32_t a_deviceId);
 
-  void BuildCommandBufferSimple(VkCommandBuffer cmdBuff, VkFramebuffer frameBuff,
+  void BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff,
                                 VkImageView a_targetImageView, VkPipeline a_pipeline);
+
+  void DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4x4& a_wvp);
 
   void SetupSimplePipeline();
   void CleanupPipelineAndSwapchain();
