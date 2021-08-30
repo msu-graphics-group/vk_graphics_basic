@@ -146,8 +146,7 @@ void UpdateCamera(GLFWwindow* a_window, Camera& a_cam, float secondsElapsed)
   g_inputDesktop.scrollY = 0.0f;
 }
 
-GLFWwindow* Init(std::shared_ptr<IRender> app, uint32_t a_deviceId, GLFWkeyfun keyboard, GLFWcursorposfun mouseMove,
-  GLFWmousebuttonfun mouseBtn, GLFWscrollfun mouseScroll)
+GLFWwindow* Init(std::shared_ptr<IRender> app, uint32_t a_deviceId, GLFWkeyfun keyboard, GLFWcursorposfun mouseMove,GLFWmousebuttonfun mouseBtn, GLFWscrollfun mouseScroll)
 {
   glfwInit();
 

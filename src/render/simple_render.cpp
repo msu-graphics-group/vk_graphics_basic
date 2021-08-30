@@ -424,11 +424,10 @@ void SimpleRender::DrawFrameSimple()
   {
     RecreateSwapChain();
   }
-  else
-    if (presentRes != VK_SUCCESS)
-    {
-      RUN_TIME_ERROR("Failed to present swapchain image");
-    }
+  else if (presentRes != VK_SUCCESS)
+  {
+    RUN_TIME_ERROR("Failed to present swapchain image");
+  }
 
   m_presentationResources.currentFrame = (m_presentationResources.currentFrame + 1) % m_framesInFlight;
 
