@@ -427,6 +427,9 @@ void SimpleShadowmapRender::ProcessInput(const AppInput &input)
   //
   if(input.keyReleased[GLFW_KEY_Q])
     m_input.drawFSQuad = !m_input.drawFSQuad;
+
+  if(input.keyReleased[GLFW_KEY_P])
+    m_light.usePerspectiveM = !m_light.usePerspectiveM;
 }
 
 void SimpleShadowmapRender::UpdateCamera(const Camera* cams, uint32_t a_camsNumber)
