@@ -21,5 +21,15 @@
                 "$gcc"
             ]
         },
+
+        {
+            "label": "CleanUpAndBuildDebug",
+            "type": "shell",
+            "command": "cd cmake-build-debug && rm -rf * && cmake .. -DCMAKE_BUILD_TYPE=Debug && make -j 8",
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
     ]
 }

@@ -83,8 +83,7 @@ void SimpleRender::InitPresentation(VkSurfaceKHR &a_surface)
       VK_FORMAT_D16_UNORM
   };
   vk_utils::getSupportedDepthFormat(m_physicalDevice, depthFormats, &m_depthBuffer.format);
-  vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, &m_depthBuffer);
-
+  m_depthBuffer  = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
   m_frameBuffers = vk_utils::CreateFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
 }
 
@@ -144,7 +143,7 @@ void SimpleRender::SetupSimplePipeline()
   maker.SetDefaultState(m_width, m_height);
 
   m_basicForwardPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(),
-                                                       m_screenRenderPass);
+                                                       m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR});
 }
 
 void SimpleRender::CreateUniformBuffer()
@@ -283,7 +282,7 @@ void SimpleRender::CleanupPipelineAndSwapchain()
 
   vkDestroyRenderPass(m_device, m_screenRenderPass, nullptr);
 
-  m_swapchain.Cleanup();
+//  m_swapchain.Cleanup();
 }
 
 void SimpleRender::RecreateSwapChain()
@@ -294,11 +293,18 @@ void SimpleRender::RecreateSwapChain()
   m_presentationResources.queue = m_swapchain.CreateSwapChain(m_physicalDevice, m_device, m_surface, m_width, m_height,
                                                               m_vsync);
 
+  std::vector<VkFormat> depthFormats = {
+      VK_FORMAT_D32_SFLOAT,
+      VK_FORMAT_D32_SFLOAT_S8_UINT,
+      VK_FORMAT_D24_UNORM_S8_UINT,
+      VK_FORMAT_D16_UNORM_S8_UINT,
+      VK_FORMAT_D16_UNORM
+  };                                                            
+  vk_utils::getSupportedDepthFormat(m_physicalDevice, depthFormats, &m_depthBuffer.format);
+  
   m_screenRenderPass = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat());
-
-  vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, &m_depthBuffer);
-
-  m_frameBuffers = vk_utils::CreateFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
+  m_depthBuffer      = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
+  m_frameBuffers     = vk_utils::CreateFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
 
   m_frameFences.resize(m_framesInFlight);
   VkFenceCreateInfo fenceInfo = {};
@@ -362,12 +368,11 @@ void SimpleRender::UpdateCamera(const Camera* cams, uint32_t a_camsNumber)
 
 void SimpleRender::UpdateView()
 {
-  const float aspect = float(m_width) / float(m_height);
-  auto mProjFix = OpenglToVulkanProjectionMatrixFix();
-  auto mProj = projectionMatrix(m_cam.fov, aspect, 0.1f, 1000.0f);
-  auto mLookAt = LiteMath::lookAt(m_cam.pos, m_cam.lookAt, m_cam.up);
-  auto mWorldViewProj = mProjFix * mProj * mLookAt;
-
+  const float aspect   = float(m_width) / float(m_height);
+  auto mProjFix        = OpenglToVulkanProjectionMatrixFix();
+  auto mProj           = projectionMatrix(m_cam.fov, aspect, 0.1f, 1000.0f);
+  auto mLookAt         = LiteMath::lookAt(m_cam.pos, m_cam.lookAt, m_cam.up);
+  auto mWorldViewProj  = mProjFix * mProj * mLookAt;
   pushConst2M.projView = mWorldViewProj;
 }
 

@@ -81,8 +81,7 @@ void SimpleShadowmapRender::InitPresentation(VkSurfaceKHR &a_surface)
       VK_FORMAT_D16_UNORM
   };
   vk_utils::getSupportedDepthFormat(m_physicalDevice, depthFormats, &m_depthBuffer.format);
-  vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, &m_depthBuffer);
-
+  m_depthBuffer  = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
   m_frameBuffers = vk_utils::CreateFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
   
   // create full screen quad for debug purposes
@@ -179,9 +178,11 @@ void SimpleShadowmapRender::SetupSimplePipeline()
 
   m_basicForwardPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(),
                                                        m_screenRenderPass);
+                                                       //, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}
   
   // pipeline for rendering objects to shadowmap
   //
+  // maker.SetDefaultState(m_width, m_height);
   shader_paths.clear();
   shader_paths[VK_SHADER_STAGE_VERTEX_BIT] = "../resources/shaders/simple.vert.spv";
   maker.LoadShaders(m_device, shader_paths);
@@ -348,7 +349,7 @@ void SimpleShadowmapRender::CleanupPipelineAndSwapchain()
 
   vkDestroyRenderPass(m_device, m_screenRenderPass, nullptr);
 
-  m_swapchain.Cleanup();
+  //m_swapchain.Cleanup();
 }
 
 void SimpleShadowmapRender::RecreateSwapChain()
@@ -358,12 +359,18 @@ void SimpleShadowmapRender::RecreateSwapChain()
   CleanupPipelineAndSwapchain();
   m_presentationResources.queue = m_swapchain.CreateSwapChain(m_physicalDevice, m_device, m_surface, m_width, m_height,
                                                               m_vsync);
+  std::vector<VkFormat> depthFormats = {
+      VK_FORMAT_D32_SFLOAT,
+      VK_FORMAT_D32_SFLOAT_S8_UINT,
+      VK_FORMAT_D24_UNORM_S8_UINT,
+      VK_FORMAT_D16_UNORM_S8_UINT,
+      VK_FORMAT_D16_UNORM
+  };                                                            
+  vk_utils::getSupportedDepthFormat(m_physicalDevice, depthFormats, &m_depthBuffer.format);
 
   m_screenRenderPass = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat());
-
-  vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, &m_depthBuffer);
-
-  m_frameBuffers = vk_utils::CreateFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
+  m_depthBuffer      = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
+  m_frameBuffers     = vk_utils::CreateFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
 
   m_frameFences.resize(m_framesInFlight);
   VkFenceCreateInfo fenceInfo = {};
