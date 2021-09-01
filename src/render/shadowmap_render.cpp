@@ -116,7 +116,6 @@ void SimpleShadowmapRender::InitPresentation(VkSurfaceKHR &a_surface)
   m_pShadowMap2->CreateViewAndBindMemory(m_memShadowMap, {0});
   m_pShadowMap2->CreateDefaultSampler();
   m_pShadowMap2->CreateDefaultRenderPass();
-
 }
 
 void SimpleShadowmapRender::CreateInstance()
@@ -296,7 +295,8 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
   VkClearValue clearDepth = {};
   clearDepth.depthStencil.depth   = 1.0f;
   clearDepth.depthStencil.stencil = 0;
-  VkRenderPassBeginInfo renderToShadowMap = m_pShadowMap2->GetRenderPassBeginInfo(0, {clearDepth});
+  std::vector<VkClearValue> clear =  {clearDepth};
+  VkRenderPassBeginInfo renderToShadowMap = m_pShadowMap2->GetRenderPassBeginInfo(0, clear);
   vkCmdBeginRenderPass(a_cmdBuff, &renderToShadowMap, VK_SUBPASS_CONTENTS_INLINE);
   {
     vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_shadowPipeline.pipeline);
