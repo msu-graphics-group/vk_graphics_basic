@@ -189,26 +189,8 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
 
   VK_CHECK_RESULT(vkBeginCommandBuffer(a_cmdBuff, &beginInfo));
 
-  VkViewport viewport{};
-  VkRect2D scissor{};
-  VkExtent2D ext;
-  ext.height = m_height;
-  ext.width = m_width;
-
-  viewport.x = 0.0f;
-  viewport.y = 0.0f;
-  viewport.width  = static_cast<float>(ext.width);
-  viewport.height = static_cast<float>(ext.height);
-  viewport.minDepth = 0.0f;
-  viewport.maxDepth = 1.0f;
-
-  scissor.offset = {0, 0};
-  scissor.extent = ext;
-
-  std::vector<VkViewport> viewports = {viewport};
-  std::vector<VkRect2D> scissors = {scissor};
-  vkCmdSetViewport(a_cmdBuff, 0, 1, viewports.data());
-  vkCmdSetScissor(a_cmdBuff, 0, 1, scissors.data());
+  vk_utils::setDefaultViewport(a_cmdBuff, static_cast<float>(m_width), static_cast<float>(m_height));
+  vk_utils::setDefaultScissor(a_cmdBuff, m_width, m_height);
 
   ///// draw final scene to screen
   {
