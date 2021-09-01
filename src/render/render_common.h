@@ -48,8 +48,7 @@ public:
 
 enum class RenderEngineType
 {
-  SIMPLE_FORWARD, 
-  SIMPLE_SHADOWMAP
+  SIMPLE_FORWARD
 };
 
 std::unique_ptr<IRender> CreateRender(uint32_t w, uint32_t h, RenderEngineType type);

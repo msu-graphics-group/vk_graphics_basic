@@ -21,16 +21,13 @@ set(SOURCE_FILES
         ../external/vkutils/geom/vk_mesh.cpp
         ../external/vkutils/geom/cmesh.cpp
         ../external/vkutils/vk_quad.cpp
-        ../external/vkutils/vk_texture.cpp
 
         loader_utils/pugixml.cpp
         loader_utils/hydraxml.cpp
 
         render/create_render.cpp
         render/scene_mgr.cpp
-        render/simple_render.cpp
-        
-        render/shadowmap_render.cpp)
+        render/simple_render.cpp)
 
 add_executable(renderer main.cpp glfw_window.cpp ${SOURCE_FILES}) #
 
