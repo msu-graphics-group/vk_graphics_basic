@@ -148,7 +148,8 @@ void SimpleRender::SetupSimplePipeline()
 
 void SimpleRender::CreateUniformBuffer()
 {
-  auto memReq = vk_utils::createBuffer(m_device, sizeof(UniformParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, m_ubo);
+  VkMemoryRequirements memReq;
+  m_ubo = vk_utils::createBuffer(m_device, sizeof(UniformParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &memReq);
 
   VkMemoryAllocateInfo allocateInfo = {};
   allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
