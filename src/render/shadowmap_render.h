@@ -122,7 +122,7 @@ private:
   
   // objects and data for shadow map
   //
-  std::shared_ptr<vk_utils::FSQuad> m_pFSQuad;
+  std::shared_ptr<vk_utils::IQuad>               m_pFSQuad;
   std::shared_ptr<vk_utils::RenderableTexture2D> m_pShadowMap;
   VkDeviceMemory        m_memShadowMap = VK_NULL_HANDLE;
   VkDescriptorSet       m_quadDS; 
