@@ -11,7 +11,6 @@
 #include <vk_images.h>
 #include <vk_swapchain.h>
 #include <vk_quad.h>
-#include <vk_texture.h>
 
 #include <string>
 #include <iostream>
@@ -100,7 +99,7 @@ private:
 
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
 
-  VkSurfaceKHR m_surface = VK_NULL_HANDLE;;
+  VkSurfaceKHR m_surface = VK_NULL_HANDLE;
   VulkanSwapChain m_swapchain;
   std::vector<VkFramebuffer> m_frameBuffers;
   vk_utils::VulkanImageMem m_depthBuffer{}; // screen depthbuffer
@@ -123,7 +122,10 @@ private:
   // objects and data for shadow map
   //
   std::shared_ptr<vk_utils::IQuad>               m_pFSQuad;
-  std::shared_ptr<vk_utils::RenderableTexture2D> m_pShadowMap;
+  //std::shared_ptr<vk_utils::RenderableTexture2D> m_pShadowMap;
+  std::shared_ptr<vk_utils::RenderTarget>        m_pShadowMap2;
+  uint32_t                                       m_shadowMapId = 0;
+  
   VkDeviceMemory        m_memShadowMap = VK_NULL_HANDLE;
   VkDescriptorSet       m_quadDS; 
   VkDescriptorSetLayout m_quadDSLayout = nullptr;

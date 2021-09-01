@@ -21,7 +21,7 @@ set(SOURCE_FILES
         ../external/vkutils/geom/vk_mesh.cpp
         ../external/vkutils/geom/cmesh.cpp
         ../external/vkutils/vk_quad.cpp
-        ../external/vkutils/vk_texture.cpp
+        ../external/vkutils/vk_fbuf_attachment.cpp
 
         loader_utils/pugixml.cpp
         loader_utils/hydraxml.cpp
