@@ -10,7 +10,9 @@ else()
     include_directories(${GLFW_INCLUDE_DIRS})
 endif()
 
-set(SOURCE_FILES
+# vk_utils source code files used by this project
+# you can add other files (i.e. ray tracing helpers) when you'll need them
+set(VK_UTILS
         ../external/vkutils/vk_copy.cpp
         ../external/vkutils/vk_utils.cpp
         ../external/vkutils/vk_buffers.cpp
@@ -20,16 +22,18 @@ set(SOURCE_FILES
         ../external/vkutils/vk_pipeline.cpp
         ../external/vkutils/geom/vk_mesh.cpp
         ../external/vkutils/geom/cmesh.cpp
-        ../external/vkutils/vk_quad.cpp
+        ../external/vkutils/vk_quad.cpp)
 
+set(SCENE_LOADER
         loader_utils/pugixml.cpp
-        loader_utils/hydraxml.cpp
+        loader_utils/hydraxml.cpp)
 
+set(RENDER_SOURCE
         render/create_render.cpp
         render/scene_mgr.cpp
         render/simple_render.cpp)
 
-add_executable(renderer main.cpp glfw_window.cpp ${SOURCE_FILES}) #
+add_executable(renderer main.cpp glfw_window.cpp ${VK_UTILS} ${SCENE_LOADER} ${RENDER_SOURCE})
 
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
     set_target_properties(renderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
