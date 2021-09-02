@@ -28,6 +28,12 @@ struct pipeline_data_t
   VkPipeline pipeline;
 };
 
+enum class DrawMode
+{
+  WITH_GUI,
+  NO_GUI
+};
+
 class IRender
 {
 public:
@@ -40,7 +46,7 @@ public:
   virtual void ProcessInput(const AppInput& input) = 0;
   virtual void UpdateCamera(const Camera* cams, uint32_t a_camsCount) = 0;
   virtual void LoadScene(const char* path, bool transpose_inst_matrices) = 0;
-  virtual void DrawFrame(float a_time) = 0;
+  virtual void DrawFrame(float a_time, DrawMode a_mode) = 0;
 
   virtual ~IRender() = default;
 

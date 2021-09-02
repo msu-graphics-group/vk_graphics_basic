@@ -1,9 +1,10 @@
 #include "render/render_common.h"
 #include "glfw_window.h"
 
+
 int main()
 {
-  std::shared_ptr<IRender> app = CreateRender(1024, 1024, RenderEngineType::SIMPLE_FORWARD);
+  std::shared_ptr<IRender> app = CreateRender(2048, 2048, RenderEngineType::SIMPLE_FORWARD);
   if(app == nullptr)
   {
     std::cout << "Can't create render of specified type\n";

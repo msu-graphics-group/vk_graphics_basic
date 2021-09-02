@@ -28,7 +28,10 @@ void main()
     const vec4 dark_violet = vec4(0.59f, 0.0f, 0.82f, 1.0f);
     const vec4 chartreuse  = vec4(0.5f, 1.0f, 0.0f, 1.0f);
 
-    vec4 lightColor1 = mix(dark_violet, chartreuse, abs(sin(Params.time)));
+    vec4 lightColor1 = mix(dark_violet, chartreuse, 0.5f);
+    if(Params.animateLightColor)
+        lightColor1 = mix(dark_violet, chartreuse, abs(sin(Params.time)));
+
     vec4 lightColor2 = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
     vec3 N = surf.wNorm; 

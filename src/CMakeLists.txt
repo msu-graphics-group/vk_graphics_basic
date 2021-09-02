@@ -1,5 +1,6 @@
 include_directories(../external/volk)
 include_directories(../external/vkutils)
+include_directories(../external/imgui)
 include_directories(../external)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
@@ -28,12 +29,23 @@ set(SCENE_LOADER
         loader_utils/pugixml.cpp
         loader_utils/hydraxml.cpp)
 
+set(IMGUI_SRC
+        ../external/imgui/imgui.cpp
+        ../external/imgui/imgui_draw.cpp
+        ../external/imgui/imgui_tables.cpp
+        ../external/imgui/imgui_widgets.cpp
+        ../external/imgui/imgui_demo.cpp
+        ../external/imgui/backends/imgui_impl_vulkan.cpp
+        ../external/imgui/backends/imgui_impl_glfw.cpp)
+
+
+
 set(RENDER_SOURCE
         render/create_render.cpp
         render/scene_mgr.cpp
-        render/simple_render.cpp)
+        render/simple_render.cpp render/render_gui.h render/render_imgui.cpp)
 
-add_executable(renderer main.cpp glfw_window.cpp ${VK_UTILS} ${SCENE_LOADER} ${RENDER_SOURCE})
+add_executable(renderer main.cpp glfw_window.cpp ${VK_UTILS} ${SCENE_LOADER} ${RENDER_SOURCE} ${IMGUI_SRC})
 
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
     set_target_properties(renderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")

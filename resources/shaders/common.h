@@ -25,6 +25,7 @@ struct UniformParams
   vec3  lightPos;
   float time;
   vec3  baseColor;
+  bool animateLightColor;
 };
 
 #endif //VK_GRAPHICS_BASIC_COMMON_H

@@ -2,8 +2,10 @@
 #define CHIMERA_SIMPLE_RENDER_H
 
 #define VK_NO_PROTOTYPES
+
 #include "scene_mgr.h"
 #include "render_common.h"
+#include "render_gui.h"
 #include "../resources/shaders/common.h"
 #include <geom/vk_mesh.h>
 #include <vk_descriptor_sets.h>
@@ -31,7 +33,7 @@ public:
   void UpdateView();
 
   void LoadScene(const char *path, bool transpose_inst_matrices) override;
-  void DrawFrame(float a_time) override;
+  void DrawFrame(float a_time, DrawMode a_mode) override;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -93,10 +95,18 @@ private:
 
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
 
-  VkSurfaceKHR m_surface = VK_NULL_HANDLE;;
+  // *** presentation
+  VkSurfaceKHR m_surface = VK_NULL_HANDLE;
   VulkanSwapChain m_swapchain;
   std::vector<VkFramebuffer> m_frameBuffers;
-  vk_utils::VulkanImageMem m_depthBuffer{}; // screen depthbuffer
+  vk_utils::VulkanImageMem m_depthBuffer{};
+  // ***
+
+  // *** GUI
+  std::shared_ptr<IRenderGUI> m_pGUIRender;
+  void SetupGUIElements();
+  void DrawFrameWithGUI();
+  //
 
   Camera   m_cam;
   uint32_t m_width  = 1024u;

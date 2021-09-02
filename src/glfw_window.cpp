@@ -170,6 +170,7 @@ GLFWwindow* Init(std::shared_ptr<IRender> app, uint32_t a_deviceId, GLFWkeyfun k
   VkSurfaceKHR surface;
   VK_CHECK_RESULT(glfwCreateWindowSurface(app->GetVkInstance(), window, nullptr, &surface));
 
+  setupImGuiContext(window);
   app->InitPresentation(surface);
 
   return window;
@@ -200,7 +201,7 @@ void MainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window)
     
     app->ProcessInput(g_appInput);
     app->UpdateCamera(g_appInput.cams, 2);
-    app->DrawFrame(static_cast<float>(thisTime));
+    app->DrawFrame(static_cast<float>(thisTime), DrawMode::WITH_GUI);
 
     // count and print FPS
     //
@@ -216,8 +217,22 @@ void MainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window)
       avgTime    = 0.0;
       avgCounter = 0;
     }
-
   }
 }
 
+void setupImGuiContext(GLFWwindow* a_window)
+{
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO &io = ImGui::GetIO();
+  (void)io;
+  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  // ImGui::StyleColorsClassic();
+
+  // Setup Platform/Renderer backends
+  ImGui_ImplGlfw_InitForVulkan(a_window, true);
+}
