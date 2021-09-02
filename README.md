@@ -49,6 +49,12 @@ cd vk_graphics_basic/external
 git clone --depth 1 https://github.com/zeux/volk.git
 ```
 
+#### imgui:
+```
+cd vk_graphics_basic/external
+git clone --depth 1 https://github.com/ocornut/imgui.git
+```
+
 #### vkutils:
 ```
 cd vk_graphics_basic/external
