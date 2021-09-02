@@ -41,7 +41,7 @@ void ImGuiRender::InitImGui()
   init_info.Allocator = VK_NULL_HANDLE;
   init_info.MinImageCount = m_swapchain.GetMinImageCount();
   init_info.ImageCount = m_swapchain.GetImageCount();
-  init_info.CheckVkResultFn = vk_utils::checkResultFn;
+  init_info.CheckVkResultFn = nullptr;
 
   vk_utils::RenderTargetInfo2D rtInfo = {};
   rtInfo.format = m_swapchain.GetFormat();
