@@ -31,9 +31,13 @@ void SimpleRender::SetupValidationLayers()
   m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
 }
 
-void SimpleRender::InitVulkan(std::vector<const char *> a_instanceExtensions, uint32_t a_deviceId)
+void SimpleRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId)
 {
-  m_instanceExtensions = std::move(a_instanceExtensions);
+  for(size_t i = 0; i < a_instanceExtensionsCount; ++i)
+  {
+    m_instanceExtensions.push_back(a_instanceExtensions[i]);
+  }
+
   SetupValidationLayers();
   VK_CHECK_RESULT(volkInitialize());
   CreateInstance();
@@ -343,8 +347,9 @@ void SimpleRender::ProcessInput(const AppInput &input)
   //
 }
 
-void SimpleRender::UpdateCamera(const Camera* cams, uint32_t a_camsNumber)
+void SimpleRender::UpdateCamera(const Camera* cams, uint32_t a_camsCount)
 {
+  assert(a_camsCount > 0);
   m_cam = cams[0];
   UpdateView();
 }
@@ -359,7 +364,7 @@ void SimpleRender::UpdateView()
   pushConst2M.projView = mWorldViewProj;
 }
 
-void SimpleRender::LoadScene(const std::string &path, bool transpose_inst_matrices)
+void SimpleRender::LoadScene(const char* path, bool transpose_inst_matrices)
 {
   m_pScnMgr->LoadSceneXML(path, transpose_inst_matrices);
 

@@ -165,9 +165,8 @@ GLFWwindow* Init(std::shared_ptr<IRender> app, uint32_t a_deviceId, GLFWkeyfun k
   uint32_t glfwExtensionCount = 0;
   const char** glfwExtensions;
   glfwExtensions  = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-  auto instanceExtensions = std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-  app->InitVulkan(instanceExtensions, a_deviceId);
+  app->InitVulkan(glfwExtensions, glfwExtensionCount, a_deviceId);
   VkSurfaceKHR surface;
   VK_CHECK_RESULT(glfwCreateWindowSurface(app->GetVkInstance(), window, nullptr, &surface));
 
