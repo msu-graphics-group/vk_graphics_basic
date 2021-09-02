@@ -10,6 +10,9 @@ ImGuiRender::ImGuiRender(VkInstance a_instance, VkDevice a_device, VkPhysicalDev
   InitImGui();
 }
 
+static VkInstance g_instance = VK_NULL_HANDLE;
+PFN_vkVoidFunction vulkanLoaderFunction(const char* function_name, void*) { return vkGetInstanceProcAddr(g_instance, function_name); }
+
 void ImGuiRender::InitImGui()
 {
   vk_utils::DescriptorTypesVec descrTypes = {{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
@@ -54,6 +57,9 @@ void ImGuiRender::InitImGui()
   m_drawGUICmdBuffers.reserve(m_swapchain.GetImageCount());
   m_drawGUICmdBuffers = vk_utils::createCommandBuffers(m_device, m_commandPool, m_swapchain.GetImageCount());
 
+  g_instance = m_instance;
+
+  ImGui_ImplVulkan_LoadFunctions(vulkanLoaderFunction);
   ImGui_ImplVulkan_Init(&init_info, m_renderpass);
 
   // Upload GUI fonts texture

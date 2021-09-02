@@ -47,6 +47,8 @@ set(RENDER_SOURCE
 
 add_executable(renderer main.cpp glfw_window.cpp ${VK_UTILS} ${SCENE_LOADER} ${RENDER_SOURCE} ${IMGUI_SRC})
 
+add_compile_definitions(IMGUI_USER_CONFIG="${CMAKE_CURRENT_SOURCE_DIR}/render/my_imgui_config.h")
+
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
     set_target_properties(renderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
