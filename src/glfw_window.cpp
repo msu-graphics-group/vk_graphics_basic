@@ -177,7 +177,7 @@ GLFWwindow* Init(std::shared_ptr<IRender> app, uint32_t a_deviceId, GLFWkeyfun k
 }
 
 
-void MainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window)
+void MainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window, bool displayGUI)
 {
   constexpr int NAverage = 60;
   double avgTime = 0.0;
@@ -201,7 +201,10 @@ void MainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window)
     
     app->ProcessInput(g_appInput);
     app->UpdateCamera(g_appInput.cams, 2);
-    app->DrawFrame(static_cast<float>(thisTime), DrawMode::WITH_GUI);
+    if(displayGUI)
+      app->DrawFrame(static_cast<float>(thisTime), DrawMode::WITH_GUI);
+    else
+      app->DrawFrame(static_cast<float>(thisTime), DrawMode::NO_GUI);
 
     // count and print FPS
     //
