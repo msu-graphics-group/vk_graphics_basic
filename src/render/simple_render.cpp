@@ -316,6 +316,7 @@ void SimpleRender::RecreateSwapChain()
 
 void SimpleRender::Cleanup()
 {
+  m_pGUIRender = nullptr;
   ImGui::DestroyContext();
   CleanupPipelineAndSwapchain();
 
