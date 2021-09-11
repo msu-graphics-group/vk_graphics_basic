@@ -66,7 +66,7 @@ namespace hydra_xml
 	public:
   
 		// Default constructor
-		LocIterator() : m_libraryRootDir("") {}
+		LocIterator() = default;
 		LocIterator(const pugi::xml_node_iterator& a_iter, const std::string& a_str) : m_iter(a_iter), m_libraryRootDir(a_str) {}
   
 		// Iterator operators
@@ -99,7 +99,7 @@ namespace hydra_xml
 	public:
   
 		// Default constructor
-		InstIterator() {}
+		InstIterator() = default;
 		InstIterator(const pugi::xml_node_iterator& a_iter, const pugi::xml_node_iterator& a_end) : m_iter(a_iter), m_end(a_end) {}
   
 		// Iterator operators
@@ -134,7 +134,7 @@ namespace hydra_xml
 	public:
   
 		// Default constructor
-		CamIterator() {}
+		CamIterator() = default;
 		CamIterator(const pugi::xml_node_iterator& a_iter) : m_iter(a_iter) {}
   
 		// Iterator operators
@@ -143,7 +143,7 @@ namespace hydra_xml
   
     Camera operator*() const 
     { 
-      Camera cam;
+      Camera cam = {};
       cam.fov       = m_iter->child(L"fov").text().as_float(); 
       cam.nearPlane = m_iter->child(L"nearClipPlane").text().as_float();
       cam.farPlane  = m_iter->child(L"farClipPlane").text().as_float();  
@@ -197,28 +197,25 @@ namespace hydra_xml
     
     //// please also use this functions with C++11 range for
     //
-    pugi::xml_object_range<LocIterator> MeshFiles()    { return pugi::xml_object_range(LocIterator(m_geometryLib.begin(), m_libraryRootDir), 
-                                                                                       LocIterator(m_geometryLib.end(), m_libraryRootDir)
-                                                                                       ); }
+    pugi::xml_object_range<LocIterator> MeshFiles()    { return {LocIterator(m_geometryLib.begin(), m_libraryRootDir),
+                                                                 LocIterator(m_geometryLib.end(), m_libraryRootDir)}; }
 
-    pugi::xml_object_range<LocIterator> TextureFiles() { return pugi::xml_object_range(LocIterator(m_texturesLib.begin(), m_libraryRootDir), 
-                                                                                       LocIterator(m_texturesLib.end(), m_libraryRootDir)
-                                                                                       ); }
+    pugi::xml_object_range<LocIterator> TextureFiles() { return {LocIterator(m_texturesLib.begin(), m_libraryRootDir),
+                                                                 LocIterator(m_texturesLib.end(), m_libraryRootDir)}; }
 
-    pugi::xml_object_range<InstIterator> InstancesGeom() { return pugi::xml_object_range(InstIterator(m_sceneNode.child(L"scene").child(L"instance"), m_sceneNode.child(L"scene").end()), 
-                                                                                         InstIterator(m_sceneNode.child(L"scene").end(), m_sceneNode.child(L"scene").end())
-                                                                                         ); }
+    pugi::xml_object_range<InstIterator> InstancesGeom() { return {InstIterator(m_sceneNode.child(L"scene").child(L"instance"), m_sceneNode.child(L"scene").end()),
+                                                                   InstIterator(m_sceneNode.child(L"scene").end(), m_sceneNode.child(L"scene").end())}; }
     
     std::vector<LightInstance> InstancesLights(uint32_t a_sceneId = 0);
 
-    pugi::xml_object_range<CamIterator> Cameras() { return pugi::xml_object_range(CamIterator(m_cameraLib.begin()), 
-                                                                                  CamIterator(m_cameraLib.end())); }
+    pugi::xml_object_range<CamIterator> Cameras() { return {CamIterator(m_cameraLib.begin()),
+                                                            CamIterator(m_cameraLib.end())}; }
 
     std::vector<LiteMath::float4x4> GetAllInstancesOfMeshLoc(const std::string& a_loc) const 
     { 
       auto pFound = m_instancesPerMeshLoc.find(a_loc);
       if(pFound == m_instancesPerMeshLoc.end())
-        return std::vector<LiteMath::float4x4>();
+        return {};
       else
         return pFound->second; 
     }
