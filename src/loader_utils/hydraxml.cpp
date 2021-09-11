@@ -1,7 +1,9 @@
 #include "hydraxml.h"
+
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <locale>
 #include <codecvt>
 
 #if defined(__ANDROID__)
@@ -15,7 +17,6 @@ namespace hydra_xml
   {
     using convert_typeX = std::codecvt_utf8<wchar_t>;
     std::wstring_convert<convert_typeX, wchar_t> converterX;
-
     return converterX.from_bytes(str);
   }
 
@@ -23,7 +24,6 @@ namespace hydra_xml
   {
     using convert_typeX = std::codecvt_utf8<wchar_t>;
     std::wstring_convert<convert_typeX, wchar_t> converterX;
-
     return converterX.to_bytes(wstr);
   }
 
@@ -89,9 +89,7 @@ namespace hydra_xml
 #else
   int HydraScene::LoadState(const std::string &path)
   {
-    pugi::xml_document xmlDoc;
-
-    auto loaded = xmlDoc.load_file(path.c_str());
+    auto loaded = m_xmlDoc.load_file(path.c_str());
 
     if(!loaded)
     {
@@ -107,24 +105,23 @@ namespace hydra_xml
     auto pos = path.find_last_of(L'/');
     m_libraryRootDir = path.substr(0, pos);
 
-    auto texturesLib  = xmlDoc.child(L"textures_lib");
-    auto materialsLib = xmlDoc.child(L"materials_lib");
-    auto geometryLib  = xmlDoc.child(L"geometry_lib");
-    auto lightsLib    = xmlDoc.child(L"lights_lib");
+    m_texturesLib  = m_xmlDoc.child(L"textures_lib");
+    m_materialsLib = m_xmlDoc.child(L"materials_lib");
+    m_geometryLib  = m_xmlDoc.child(L"geometry_lib");
+    m_lightsLib    = m_xmlDoc.child(L"lights_lib");
 
-    auto cameraLib    = xmlDoc.child(L"cam_lib");
-    auto settingsNode = xmlDoc.child(L"render_lib");
-    auto sceneNode    = xmlDoc.child(L"scenes");
+    m_cameraLib    = m_xmlDoc.child(L"cam_lib");
+    m_settingsNode = m_xmlDoc.child(L"render_lib");
+    m_sceneNode    = m_xmlDoc.child(L"scenes");
 
-    if (texturesLib == nullptr || materialsLib == nullptr || lightsLib == nullptr || cameraLib == nullptr ||
-        geometryLib == nullptr || settingsNode == nullptr || sceneNode == nullptr)
+    if (m_texturesLib == nullptr || m_materialsLib == nullptr || m_lightsLib == nullptr || m_cameraLib == nullptr || m_geometryLib == nullptr || m_settingsNode == nullptr || m_sceneNode == nullptr)
     {
       std::string errMsg = "Loaded state (" +  path + ") doesn't have one of (textures_lib, materials_lib, lights_lib, cam_lib, geometry_lib, render_lib, scenes";
       LogError(errMsg);
       return -1;
     }
 
-    parseInstancedMeshes(sceneNode, geometryLib);
+    parseInstancedMeshes(m_sceneNode, m_geometryLib);
 
     return 0;
   }
@@ -148,7 +145,7 @@ namespace hydra_xml
         auto meshLoc = ws2s(std::wstring(meshNode.attribute(L"loc").as_string()));
         meshLoc = m_libraryRootDir + "/" + meshLoc;
 
-#ifndef __ANDROID__
+#if not defined(__ANDROID__)
         std::ifstream checkMesh(meshLoc);
         if(!checkMesh.good())
         {
@@ -164,7 +161,7 @@ namespace hydra_xml
         if(unique_meshes.find(meshLoc) == unique_meshes.end())
         {
           unique_meshes.emplace(meshLoc);
-          m_meshloc.push_back(meshLoc);
+          //m_meshloc.push_back(meshLoc);
         }
 
 
@@ -187,13 +184,85 @@ namespace hydra_xml
   {
     LiteMath::float4x4 result;
     std::wstringstream inputStream(matrix_str);
-
-    inputStream >> result[0][0]  >> result[0][1]  >> result[0][2]  >> result[0][3]
-                >> result[1][0]  >> result[1][1]  >> result[1][2]  >> result[1][3]
-                >> result[2][0]  >> result[2][1]  >> result[2][2]  >> result[2][3]
-                >> result[3][0]  >> result[3][1]  >> result[3][2]  >> result[3][3];
+    
+    float data[16];
+    for(int i=0;i<16;i++)
+      inputStream >> data[i];
+    
+    result.set_row(0, LiteMath::float4(data[0],data[1], data[2], data[3]));
+    result.set_row(1, LiteMath::float4(data[4],data[5], data[6], data[7]));
+    result.set_row(2, LiteMath::float4(data[8],data[9], data[10], data[11]));
+    result.set_row(3, LiteMath::float4(data[12],data[13], data[14], data[15])); 
 
     return result;
   }
+
+  LiteMath::float3 read3f(pugi::xml_attribute a_attr)
+  {
+    LiteMath::float3 res(0, 0, 0);
+    const wchar_t* camPosStr = a_attr.as_string();
+    if (camPosStr != nullptr)
+    {
+      std::wstringstream inputStream(camPosStr);
+      inputStream >> res.x >> res.y >> res.z;
+    }
+    return res;
+  }
+
+  LiteMath::float3 read3f(pugi::xml_node a_node)
+  {
+    LiteMath::float3 res(0,0,0);
+    const wchar_t* camPosStr = a_node.text().as_string();
+    if (camPosStr != nullptr)
+    {
+      std::wstringstream inputStream(camPosStr);
+      inputStream >> res.x >> res.y >> res.z;
+    }
+    return res;
+  }
+
+  LiteMath::float3 readval3f(pugi::xml_node a_node)
+  {
+    float3 color;
+    if(a_node.attribute(L"val") != nullptr)
+      color = hydra_xml::read3f(a_node.attribute(L"val"));
+    else
+      color = hydra_xml::read3f(a_node);
+    return color;
+  }
+
+  std::vector<LightInstance> HydraScene::InstancesLights(uint32_t a_sceneId) 
+  {
+    auto sceneNode = m_sceneNode.child(L"scene");
+    if(a_sceneId != 0)
+    {
+      std::wstringstream temp;
+      temp << a_sceneId;
+      std::wstring tempStr = temp.str();
+      sceneNode = m_sceneNode.find_child_by_attribute(L"id", tempStr.c_str());
+    }
+
+    std::vector<pugi::xml_node> lights; 
+    lights.reserve(256);
+    for(auto lightNode : m_lightsLib.children())
+      lights.push_back(lightNode);
+
+    std::vector<LightInstance> result;
+    result.reserve(256);
+
+    LightInstance inst;
+    for(auto instNode = sceneNode.child(L"instance_light"); instNode != nullptr; instNode = instNode.next_sibling())
+    {
+      std::wstring nameStr = instNode.name();
+      if(nameStr != L"instance_light")
+        continue;
+      inst.instNode  = instNode;
+      inst.instId    = instNode.attribute(L"id").as_uint();
+      inst.lightId   = instNode.attribute(L"light_id").as_uint(); 
+      inst.lightNode = lights[inst.lightId];
+    }
+    return result;
+  }
+
 }
 
