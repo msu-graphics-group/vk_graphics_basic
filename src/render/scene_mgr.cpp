@@ -43,11 +43,10 @@ bool SceneManager::LoadSceneXML(const std::string &scenePath, bool transpose)
     return false;
   }
 
-  for(size_t i = 0; i < hscene_main->m_meshloc.size(); ++i)
+  for(auto loc : hscene_main->MeshFiles())
   {
-    auto meshId = AddMeshFromFile(hscene_main->m_meshloc[i]);
-
-    auto instances = hscene_main->m_instancesPerMeshLoc[hscene_main->m_meshloc[i]];
+    auto meshId    = AddMeshFromFile(loc);
+    auto instances = hscene_main->GetAllInstancesOfMeshLoc(loc); 
     for(size_t j = 0; j < instances.size(); ++j)
     {
       if(transpose)
