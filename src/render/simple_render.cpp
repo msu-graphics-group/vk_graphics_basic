@@ -99,7 +99,7 @@ void SimpleRender::CreateInstance()
   appInfo.pNext              = nullptr;
   appInfo.pApplicationName   = "VkRender";
   appInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
-  appInfo.pEngineName        = "SimpleShadowMap";
+  appInfo.pEngineName        = "SimpleForward";
   appInfo.engineVersion      = VK_MAKE_VERSION(0, 1, 0);
   appInfo.apiVersion         = VK_MAKE_VERSION(1, 1, 0);
 
@@ -130,7 +130,9 @@ void SimpleRender::SetupSimplePipeline()
       {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1},
       {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             1}
   };
-  m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_device, dtypes, 1);
+
+  if(m_pBindings == nullptr)
+    m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_device, dtypes, 1);
 
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
   m_pBindings->BindBuffer(0, m_ubo, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -139,8 +141,8 @@ void SimpleRender::SetupSimplePipeline()
   vk_utils::GraphicsPipelineMaker maker;
 
   std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
-  shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../resources/shaders/simple.frag.spv";
-  shader_paths[VK_SHADER_STAGE_VERTEX_BIT] = "../resources/shaders/simple.vert.spv";
+  shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = FRAGMENT_SHADER_PATH + ".spv";
+  shader_paths[VK_SHADER_STAGE_VERTEX_BIT]   = VERTEX_SHADER_PATH + ".spv";
 
   maker.LoadShaders(m_device, shader_paths);
 
@@ -347,8 +349,24 @@ void SimpleRender::ProcessInput(const AppInput &input)
 {
   // add keyboard controls here
   // camera movement is processed separately
-  //  if(input.keyPressed[GLFW_KEY_SPACE])
-  //
+
+  // recreate pipeline to reload shaders
+  if(input.keyPressed[GLFW_KEY_B])
+  {
+#ifdef WIN32
+    std::system("rebuildShaders.bat");
+#else
+    std::system("./rebuildShaders.sh");
+#endif
+    SetupSimplePipeline();
+
+    for (size_t i = 0; i < m_framesInFlight; ++i)
+    {
+      BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
+                               m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
+    }
+  }
+
 }
 
 void SimpleRender::UpdateCamera(const Camera* cams, uint32_t a_camsCount)
@@ -458,15 +476,20 @@ void SimpleRender::SetupGUIElements()
   ImGui::NewFrame();
   {
 //    ImGui::ShowDemoWindow();
-
     ImGui::Begin("Simple render settings");
-    ImGui::Text("This is some useful text.");
 
     ImGui::ColorEdit3("Meshes base color", m_uniforms.baseColor.M, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoInputs);
     ImGui::Checkbox("Animate light source color", &m_uniforms.animateLightColor);
     ImGui::SliderFloat3("Light source position", m_uniforms.lightPos.M, -10.f, 10.f);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+    ImGui::NewLine();
+
+    ImGui::Text("Press 'B' to recompile and reload shaders (bin/rebuildShaders)");
+    ImGui::Text("Changing bindings is not supported.");
+    ImGui::Text("Vertex shader path: %s", VERTEX_SHADER_PATH.c_str());
+    ImGui::Text("Fragment shader path: %s", FRAGMENT_SHADER_PATH.c_str());
     ImGui::End();
   }
 
