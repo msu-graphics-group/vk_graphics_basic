@@ -459,6 +459,24 @@ void SimpleShadowmapRender::ProcessInput(const AppInput &input)
 
   if(input.keyReleased[GLFW_KEY_P])
     m_light.usePerspectiveM = !m_light.usePerspectiveM;
+
+  // recreate pipeline to reload shaders
+  if(input.keyPressed[GLFW_KEY_B])
+  {
+#ifdef WIN32
+    std::system("cd ../resources/shaders && python compile_shadowmap_shaders.py");
+#else
+    std::system("cd ../resources/shaders && python3 compile_shadowmap_shaders.py");
+#endif
+
+    SetupSimplePipeline();
+
+    for (size_t i = 0; i < m_framesInFlight; ++i)
+    {
+      BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
+                               m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
+    }
+  }
 }
 
 void SimpleShadowmapRender::UpdateCamera(const Camera* cams, uint32_t a_camsNumber)
