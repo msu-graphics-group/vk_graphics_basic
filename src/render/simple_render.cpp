@@ -353,7 +353,11 @@ void SimpleRender::ProcessInput(const AppInput &input)
   // recreate pipeline to reload shaders
   if(input.keyPressed[GLFW_KEY_B])
   {
+#ifdef WIN32
+    std::system("rebuildShaders.bat");
+#else
     std::system("./rebuildShaders.sh");
+#endif
     SetupSimplePipeline();
 
     for (size_t i = 0; i < m_framesInFlight; ++i)
@@ -482,7 +486,7 @@ void SimpleRender::SetupGUIElements()
 
     ImGui::NewLine();
 
-    ImGui::Text("Press 'B' to recompile and reload shaders (bin/rebuildShaders.sh)");
+    ImGui::Text("Press 'B' to recompile and reload shaders (bin/rebuildShaders.bat)");
     ImGui::Text("Changing bindings is not supported.");
     ImGui::Text("Vertex shader path: %s", VERTEX_SHADER_PATH.c_str());
     ImGui::Text("Fragment shader path: %s", FRAGMENT_SHADER_PATH.c_str());
