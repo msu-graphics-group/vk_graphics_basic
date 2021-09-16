@@ -35,7 +35,7 @@ struct input_sample
 
 AppInput g_appInput;
 
-void OnKeyboardPressed_basic(GLFWwindow* window, int key, int scancode, int action, int mode)
+void onKeyboardPressedBasic(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
   switch (key)
   {
@@ -63,7 +63,7 @@ void OnKeyboardPressed_basic(GLFWwindow* window, int key, int scancode, int acti
   }
 }
 
-void OnMouseButtonClicked_basic(GLFWwindow* window, int button, int action, int mods)
+void onMouseButtonClickedBasic(GLFWwindow* window, int button, int action, int mods)
 {
   if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
     g_inputDesktop.captureMouse = !g_inputDesktop.captureMouse;
@@ -78,7 +78,7 @@ void OnMouseButtonClicked_basic(GLFWwindow* window, int button, int action, int 
 
 }
 
-void OnMouseMove_basic(GLFWwindow* window, double xpos, double ypos)
+void onMouseMoveBasic(GLFWwindow* window, double xpos, double ypos)
 {
   if (g_inputDesktop.firstMouse)
   {
@@ -94,7 +94,7 @@ void OnMouseMove_basic(GLFWwindow* window, double xpos, double ypos)
   g_inputDesktop.lastY = float(ypos);
 }
 
-void OnMouseScroll_basic(GLFWwindow* window, double xoffset, double yoffset)
+void onMouseScrollBasic(GLFWwindow* window, double xoffset, double yoffset)
 {
   g_inputDesktop.scrollY = float(yoffset);
 }
@@ -146,14 +146,15 @@ void UpdateCamera(GLFWwindow* a_window, Camera& a_cam, float secondsElapsed)
   g_inputDesktop.scrollY = 0.0f;
 }
 
-GLFWwindow* Init(std::shared_ptr<IRender> app, uint32_t a_deviceId, GLFWkeyfun keyboard, GLFWcursorposfun mouseMove,GLFWmousebuttonfun mouseBtn, GLFWscrollfun mouseScroll)
+GLFWwindow* initWindow(int width, int height, GLFWkeyfun keyboard, GLFWcursorposfun mouseMove,
+                       GLFWmousebuttonfun mouseBtn, GLFWscrollfun mouseScroll)
 {
   glfwInit();
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-  GLFWwindow *window = glfwCreateWindow(app->GetWidth(), app->GetHeight(), "GLFW window", nullptr, nullptr);
+  GLFWwindow *window = glfwCreateWindow(width, height, "GLFW window", nullptr, nullptr);
 
   glfwSetKeyCallback        (window, keyboard);
   glfwSetCursorPosCallback  (window, mouseMove);
@@ -162,22 +163,28 @@ GLFWwindow* Init(std::shared_ptr<IRender> app, uint32_t a_deviceId, GLFWkeyfun k
   //glfwSetInputMode          (window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwSwapInterval(0);
 
-  uint32_t glfwExtensionCount = 0;
-  const char** glfwExtensions;
-  glfwExtensions  = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-  app->InitVulkan(glfwExtensions, glfwExtensionCount, a_deviceId);
-  VkSurfaceKHR surface;
-  VK_CHECK_RESULT(glfwCreateWindowSurface(app->GetVkInstance(), window, nullptr, &surface));
-
-  setupImGuiContext(window);
-  app->InitPresentation(surface);
-
   return window;
 }
 
+void setupImGuiContext(GLFWwindow* a_window)
+{
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO &io = ImGui::GetIO();
+  (void)io;
+  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
-void MainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window, bool displayGUI)
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  // ImGui::StyleColorsClassic();
+
+  // Setup Platform/Renderer backends
+  ImGui_ImplGlfw_InitForVulkan(a_window, true);
+}
+
+
+void mainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window, bool displayGUI)
 {
   constexpr int NAverage = 60;
   double avgTime = 0.0;
@@ -221,21 +228,4 @@ void MainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window, bool displayGUI
       avgCounter = 0;
     }
   }
-}
-
-void setupImGuiContext(GLFWwindow* a_window)
-{
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGuiIO &io = ImGui::GetIO();
-  (void)io;
-  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-  // Setup Dear ImGui style
-  ImGui::StyleColorsDark();
-  // ImGui::StyleColorsClassic();
-
-  // Setup Platform/Renderer backends
-  ImGui_ImplGlfw_InitForVulkan(a_window, true);
 }
