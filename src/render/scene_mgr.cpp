@@ -4,7 +4,7 @@
 #include "vk_utils.h"
 #include "vk_buffers.h"
 #include "../loader_utils/hydraxml.h"
-#include <ray_tracing/vk_rt_funcs.h>
+
 
 VkTransformMatrixKHR transformMatrixFromFloat4x4(const LiteMath::float4x4 &m)
 {
