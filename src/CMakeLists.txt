@@ -23,7 +23,8 @@ set(VK_UTILS
         ../external/vkutils/vk_pipeline.cpp
         ../external/vkutils/geom/vk_mesh.cpp
         ../external/vkutils/geom/cmesh.cpp
-        ../external/vkutils/vk_quad.cpp)
+        ../external/vkutils/vk_quad.cpp
+        ../external/vkutils/vk_fbuf_attachment.cpp)
 
 set(SCENE_LOADER
         loader_utils/pugixml.cpp
@@ -43,7 +44,9 @@ set(IMGUI_SRC
 set(RENDER_SOURCE
         render/create_render.cpp
         render/scene_mgr.cpp
-        render/simple_render.cpp render/render_gui.h render/render_imgui.cpp)
+        render/simple_render.cpp
+        render/shadowmap_render.cpp
+        render/render_gui.h render/render_imgui.cpp)
 
 add_executable(renderer main.cpp glfw_window.cpp ${VK_UTILS} ${SCENE_LOADER} ${RENDER_SOURCE} ${IMGUI_SRC})
 
