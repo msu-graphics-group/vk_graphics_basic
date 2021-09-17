@@ -28,7 +28,8 @@ set(VK_UTILS
 
 set(SCENE_LOADER
         loader_utils/pugixml.cpp
-        loader_utils/hydraxml.cpp)
+        loader_utils/hydraxml.cpp
+        loader_utils/images.cpp)
 
 set(IMGUI_SRC
         ../external/imgui/imgui.cpp
@@ -37,7 +38,10 @@ set(IMGUI_SRC
         ../external/imgui/imgui_widgets.cpp
         ../external/imgui/imgui_demo.cpp
         ../external/imgui/backends/imgui_impl_vulkan.cpp
-        ../external/imgui/backends/imgui_impl_glfw.cpp)
+        ../external/imgui/backends/imgui_impl_glfw.cpp
+
+        ../external/imgui/misc/cpp/imgui_stdlib.cpp
+        )
 
 
 
@@ -45,6 +49,7 @@ set(RENDER_SOURCE
         render/create_render.cpp
         render/scene_mgr.cpp
         render/simple_render.cpp
+        render/simple_render_tex.cpp
         render/shadowmap_render.cpp
         render/render_gui.h render/render_imgui.cpp)
 

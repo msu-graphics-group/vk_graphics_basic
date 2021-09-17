@@ -178,6 +178,25 @@ void SimpleShadowmapRender::SetupSimplePipeline()
   m_pBindings->BindImage(0, shadowMap.view, m_pShadowMap2->m_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   m_pBindings->BindEnd(&m_quadDS, &m_quadDSLayout);
 
+  // if we are recreating pipeline (for example, to reload shaders)
+  // we need to cleanup old pipeline
+  if(m_basicForwardPipeline.layout != VK_NULL_HANDLE)
+  {
+    vkDestroyPipelineLayout(m_device, m_basicForwardPipeline.layout, nullptr);
+    m_basicForwardPipeline.layout = VK_NULL_HANDLE;
+  }
+  if(m_basicForwardPipeline.pipeline != VK_NULL_HANDLE)
+  {
+    vkDestroyPipeline(m_device, m_basicForwardPipeline.pipeline, nullptr);
+    m_basicForwardPipeline.pipeline = VK_NULL_HANDLE;
+  }
+
+  if(m_shadowPipeline.pipeline != VK_NULL_HANDLE)
+  {
+    vkDestroyPipeline(m_device, m_shadowPipeline.pipeline, nullptr);
+    m_shadowPipeline.pipeline = VK_NULL_HANDLE;
+  }
+
   vk_utils::GraphicsPipelineMaker maker;
   
   // pipeline for drawing objects

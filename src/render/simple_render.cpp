@@ -127,7 +127,6 @@ void SimpleRender::CreateDevice(uint32_t a_deviceId)
 void SimpleRender::SetupSimplePipeline()
 {
   std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
-      {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1},
       {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             1}
   };
 
@@ -137,6 +136,19 @@ void SimpleRender::SetupSimplePipeline()
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
   m_pBindings->BindBuffer(0, m_ubo, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
   m_pBindings->BindEnd(&m_dSet, &m_dSetLayout);
+
+  // if we are recreating pipeline (for example, to reload shaders)
+  // we need to cleanup old pipeline
+  if(m_basicForwardPipeline.layout != VK_NULL_HANDLE)
+  {
+    vkDestroyPipelineLayout(m_device, m_basicForwardPipeline.layout, nullptr);
+    m_basicForwardPipeline.layout = VK_NULL_HANDLE;
+  }
+  if(m_basicForwardPipeline.pipeline != VK_NULL_HANDLE)
+  {
+    vkDestroyPipeline(m_device, m_basicForwardPipeline.pipeline, nullptr);
+    m_basicForwardPipeline.pipeline = VK_NULL_HANDLE;
+  }
 
   vk_utils::GraphicsPipelineMaker maker;
 
@@ -260,20 +272,31 @@ void SimpleRender::CleanupPipelineAndSwapchain()
 
   for (size_t i = 0; i < m_frameFences.size(); i++)
   {
-    vkDestroyFence(m_device, m_frameFences[i], nullptr);
+    if(m_frameFences[i] != VK_NULL_HANDLE)
+    {
+      vkDestroyFence(m_device, m_frameFences[i], nullptr);
+      m_frameFences[i] = VK_NULL_HANDLE;
+    }
   }
 
-  vkDestroyImageView(m_device, m_depthBuffer.view, nullptr);
-  vkDestroyImage(m_device, m_depthBuffer.image, nullptr);
+  vk_utils::deleteImg(m_device, &m_depthBuffer);
 
   for (size_t i = 0; i < m_frameBuffers.size(); i++)
   {
-    vkDestroyFramebuffer(m_device, m_frameBuffers[i], nullptr);
+    if(m_frameBuffers[i] != VK_NULL_HANDLE)
+    {
+      vkDestroyFramebuffer(m_device, m_frameBuffers[i], nullptr);
+      m_frameBuffers[i] = VK_NULL_HANDLE;
+    }
   }
 
-  vkDestroyRenderPass(m_device, m_screenRenderPass, nullptr);
+  if(m_screenRenderPass != VK_NULL_HANDLE)
+  {
+    vkDestroyRenderPass(m_device, m_screenRenderPass, nullptr);
+    m_screenRenderPass = VK_NULL_HANDLE;
+  }
 
-//  m_swapchain.Cleanup();
+  m_swapchain.Cleanup();
 }
 
 void SimpleRender::RecreateSwapChain()
@@ -320,28 +343,79 @@ void SimpleRender::Cleanup()
   m_pGUIRender = nullptr;
   ImGui::DestroyContext();
   CleanupPipelineAndSwapchain();
+  if(m_surface != VK_NULL_HANDLE)
+  {
+    vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+    m_surface = VK_NULL_HANDLE;
+  }
 
   if (m_basicForwardPipeline.pipeline != VK_NULL_HANDLE)
   {
     vkDestroyPipeline(m_device, m_basicForwardPipeline.pipeline, nullptr);
+    m_basicForwardPipeline.pipeline = VK_NULL_HANDLE;
   }
   if (m_basicForwardPipeline.layout != VK_NULL_HANDLE)
   {
     vkDestroyPipelineLayout(m_device, m_basicForwardPipeline.layout, nullptr);
+    m_basicForwardPipeline.layout = VK_NULL_HANDLE;
   }
 
   if (m_presentationResources.imageAvailable != VK_NULL_HANDLE)
   {
     vkDestroySemaphore(m_device, m_presentationResources.imageAvailable, nullptr);
+    m_presentationResources.imageAvailable = VK_NULL_HANDLE;
   }
   if (m_presentationResources.renderingFinished != VK_NULL_HANDLE)
   {
     vkDestroySemaphore(m_device, m_presentationResources.renderingFinished, nullptr);
+    m_presentationResources.renderingFinished = VK_NULL_HANDLE;
   }
 
   if (m_commandPool != VK_NULL_HANDLE)
   {
     vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+    m_commandPool = VK_NULL_HANDLE;
+  }
+
+  if(m_ubo != VK_NULL_HANDLE)
+  {
+    vkDestroyBuffer(m_device, m_ubo, nullptr);
+    m_ubo = VK_NULL_HANDLE;
+  }
+
+  if(m_uboAlloc != VK_NULL_HANDLE)
+  {
+    vkFreeMemory(m_device, m_uboAlloc, nullptr);
+    m_uboAlloc = VK_NULL_HANDLE;
+  }
+
+//  vk_utils::deleteImg(m_device, &m_depthBuffer); // already deleted with swapchain
+
+  if(m_depthBuffer.mem != VK_NULL_HANDLE)
+  {
+    vkFreeMemory(m_device, m_depthBuffer.mem, nullptr);
+    m_depthBuffer.mem = VK_NULL_HANDLE;
+  }
+
+  m_pBindings = nullptr;
+  m_pScnMgr   = nullptr;
+
+  if(m_device != VK_NULL_HANDLE)
+  {
+    vkDestroyDevice(m_device, nullptr);
+    m_device = VK_NULL_HANDLE;
+  }
+
+  if(m_debugReportCallback != VK_NULL_HANDLE)
+  {
+    vkDestroyDebugReportCallbackEXT(m_instance, m_debugReportCallback, nullptr);
+    m_debugReportCallback = VK_NULL_HANDLE;
+  }
+
+  if(m_instance != VK_NULL_HANDLE)
+  {
+    vkDestroyInstance(m_instance, nullptr);
+    m_instance = VK_NULL_HANDLE;
   }
 }
 
@@ -456,6 +530,7 @@ void SimpleRender::DrawFrame(float a_time, DrawMode a_mode)
   switch (a_mode)
   {
   case DrawMode::WITH_GUI:
+    SetupGUIElements();
     DrawFrameWithGUI();
     break;
   case DrawMode::NO_GUI:
@@ -464,7 +539,6 @@ void SimpleRender::DrawFrame(float a_time, DrawMode a_mode)
   default:
     DrawFrameSimple();
   }
-
 }
 
 
@@ -487,7 +561,7 @@ void SimpleRender::SetupGUIElements()
 
     ImGui::NewLine();
 
-    ImGui::Text("Press 'B' to recompile and reload shaders");
+    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f),"Press 'B' to recompile and reload shaders");
     ImGui::Text("Changing bindings is not supported.");
     ImGui::Text("Vertex shader path: %s", VERTEX_SHADER_PATH.c_str());
     ImGui::Text("Fragment shader path: %s", FRAGMENT_SHADER_PATH.c_str());
@@ -500,8 +574,6 @@ void SimpleRender::SetupGUIElements()
 
 void SimpleRender::DrawFrameWithGUI()
 {
-  SetupGUIElements();
-
   vkWaitForFences(m_device, 1, &m_frameFences[m_presentationResources.currentFrame], VK_TRUE, UINT64_MAX);
   vkResetFences(m_device, 1, &m_frameFences[m_presentationResources.currentFrame]);
 

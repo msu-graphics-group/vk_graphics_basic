@@ -27,7 +27,7 @@ SceneManager::SceneManager(VkDevice a_device, VkPhysicalDevice a_physDevice,
   vkGetDeviceQueue(m_device, m_transferQId, 0, &m_transferQ);
   vkGetDeviceQueue(m_device, m_graphicsQId, 0, &m_graphicsQ);
   VkDeviceSize scratchMemSize = 64 * 1024 * 1024;
-  m_pCopyHelper = std::make_unique<vk_utils::PingPongCopyHelper>(m_physDevice, m_device, m_transferQ, m_transferQId, scratchMemSize);
+  m_pCopyHelper = std::make_shared<vk_utils::PingPongCopyHelper>(m_physDevice, m_device, m_transferQ, m_transferQId, scratchMemSize);
   m_pMeshData   = std::make_shared<Mesh8F>();
 
 }
@@ -209,6 +209,12 @@ void SceneManager::DestroyScene()
   {
     vkDestroyBuffer(m_device, m_geoIdxBuf, nullptr);
     m_geoIdxBuf = VK_NULL_HANDLE;
+  }
+
+  if(m_meshInfoBuf != VK_NULL_HANDLE)
+  {
+    vkDestroyBuffer(m_device, m_meshInfoBuf, nullptr);
+    m_meshInfoBuf = VK_NULL_HANDLE;
   }
 
   if(m_instanceMatricesBuffer != VK_NULL_HANDLE)
