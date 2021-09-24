@@ -2,10 +2,8 @@
 #define SIMPLE_QUAD2D_RENDER_H
 
 #define VK_NO_PROTOTYPES
-#include "scene_mgr.h"
 #include "render_common.h"
 #include "../resources/shaders/common.h"
-#include <geom/vk_mesh.h>
 #include <vk_descriptor_sets.h>
 #include <vk_fbuf_attachment.h>
 #include <vk_images.h>
@@ -31,7 +29,6 @@ public:
 
   void ProcessInput(const AppInput& input) override;
   void UpdateCamera(const Camera* cams, uint32_t a_camsNumber) override;
-  void UpdateView();
 
   void LoadScene(const std::string &path, bool transpose_inst_matrices) override;
   void DrawFrame(float a_time) override;
@@ -76,15 +73,6 @@ private:
 
   std::vector<VkFence> m_frameFences;
   std::vector<VkCommandBuffer> m_cmdBuffersDrawMain;
-
-
-  UniformParams m_uniforms {};
-  VkBuffer m_ubo = VK_NULL_HANDLE;
-  VkDeviceMemory m_uboAlloc = VK_NULL_HANDLE;
-  void* m_uboMappedMem = nullptr;
-
-  VkDescriptorSet m_dSet = VK_NULL_HANDLE;
-  VkDescriptorSetLayout m_dSetLayout = VK_NULL_HANDLE;
   VkRenderPass m_screenRenderPass = VK_NULL_HANDLE; // main renderpass
 
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
@@ -94,7 +82,6 @@ private:
   std::vector<VkFramebuffer> m_frameBuffers;
   vk_utils::VulkanImageMem m_depthBuffer{}; // screen depthbuffer
 
-  Camera   m_cam;
   uint32_t m_width  = 1024u;
   uint32_t m_height = 1024u;
   uint32_t m_framesInFlight = 2u;
@@ -106,8 +93,6 @@ private:
 
   bool m_enableValidation;
   std::vector<const char*> m_validationLayers;
-
-  std::shared_ptr<SceneManager>          m_pScnMgr;
   std::shared_ptr<vk_utils::ICopyEngine> m_pCopyHelper;
   
   // objects and data for shadow map
@@ -115,34 +100,6 @@ private:
   std::shared_ptr<vk_utils::IQuad>               m_pFSQuad;
   VkDescriptorSet       m_quadDS; 
   VkDescriptorSetLayout m_quadDSLayout = nullptr;
-
-  struct InputControlMouseEtc
-  {
-    bool drawFSQuad = false;
-  } m_input;
-
-  /**
-  \brief basic parameters that you need for sdhadowmappinh usually
-  */
-  struct ShadowMapCam
-  {
-    ShadowMapCam() 
-    {  
-      cam.pos    = float3(4.0f, 4.0f, 4.0f);
-      cam.lookAt = float3(0, 0, 0);
-      cam.up     = float3(0, 1, 0);
-  
-      radius          = 5.0f;
-      lightTargetDist = 20.0f;
-      usePerspectiveM = true;
-    }
-
-    float  radius;           ///!< ignored when usePerspectiveM == true 
-    float  lightTargetDist;  ///!< identify depth range
-    Camera cam;              ///!< user control for light to later get light worldViewProj matrix
-    bool   usePerspectiveM;  ///!< use perspective matrix if true and ortographics otherwise
-  
-  } m_light;
  
   vk_utils::VulkanImageMem m_imageData;
   VkSampler                m_imageSampler;
@@ -158,8 +115,6 @@ private:
   void SetupSimplePipeline();
   void CleanupPipelineAndSwapchain();
   void RecreateSwapChain();
-
-  void CreateUniformBuffer();
 
   void Cleanup();
 

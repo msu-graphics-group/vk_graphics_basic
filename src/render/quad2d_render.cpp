@@ -55,12 +55,7 @@ void Quad2D_Render::InitVulkan(std::vector<const char *> a_instanceExtensions, u
     VK_CHECK_RESULT(vkCreateFence(m_device, &fenceInfo, nullptr, &m_frameFences[i]));
   }
   
-  VkQueue computeQueue, transferQueue;
-  auto queueComputeFID = vk_utils::getQueueFamilyIndex(m_physicalDevice, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
-  vkGetDeviceQueue(m_device, queueComputeFID, 0, &computeQueue);
-  vkGetDeviceQueue(m_device, queueComputeFID, 0, &transferQueue);
-  m_pCopyHelper = std::make_shared<vk_utils::SimpleCopyHelper>(m_physicalDevice, m_device, transferQueue, queueComputeFID, 8*1024*1024);
-  m_pScnMgr     = std::make_shared<SceneManager>(m_device, m_physicalDevice, m_queueFamilyIDXs.transfer, m_queueFamilyIDXs.graphics, false);
+  m_pCopyHelper = std::make_shared<vk_utils::SimpleCopyHelper>(m_physicalDevice, m_device, m_transferQueue, m_queueFamilyIDXs.graphics, 8*1024*1024);
 }
 
 void Quad2D_Render::InitPresentation(VkSurfaceKHR &a_surface)
@@ -96,7 +91,7 @@ void Quad2D_Render::InitPresentation(VkSurfaceKHR &a_surface)
   //                                                VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR }); // seems we need LOAD_OP_LOAD if we want to draw quad to part of screen
   
   m_pFSQuad = std::make_shared<vk_utils::QuadRenderer>(0,0, 1024, 1024);
-  m_pFSQuad->Create(m_device, "../resources/shaders/quad3_vert.vert.spv", "../resources/shaders/quad_frag.spv", 
+  m_pFSQuad->Create(m_device, "../resources/shaders/quad3_vert.vert.spv", "../resources/shaders/my_quad.frag.spv", 
                     vk_utils::RenderTargetInfo2D{ VkExtent2D{ m_width, m_height }, m_swapchain.GetFormat(),                                        // this is debug full scree quad
                                                   VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR }); // seems we need LOAD_OP_LOAD if we want to draw quad to part of screen
 }
@@ -113,7 +108,6 @@ void Quad2D_Render::CreateInstance()
   appInfo.apiVersion = VK_MAKE_VERSION(1, 1, 0);
 
   m_instance = vk_utils::createInstance(m_enableValidation, m_validationLayers, m_instanceExtensions, &appInfo);
-
   if (m_enableValidation)
     vk_utils::initDebugReportCallback(m_instance, &debugReportCallbackFn, &m_debugReportCallback);
 }
@@ -144,31 +138,8 @@ void Quad2D_Render::SetupSimplePipeline()
 
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
   m_pBindings->BindImage(0, m_imageData.view, m_imageSampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-  m_pBindings->BindEnd(&m_quadDS, &m_quadDSLayout);
-                                
+  m_pBindings->BindEnd(&m_quadDS, &m_quadDSLayout);                      
 }
-
-void Quad2D_Render::CreateUniformBuffer()
-{
-  VkMemoryRequirements memReq;
-  m_ubo = vk_utils::createBuffer(m_device, sizeof(UniformParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &memReq);
-
-  VkMemoryAllocateInfo allocateInfo = {};
-  allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  allocateInfo.pNext = nullptr;
-  allocateInfo.allocationSize = memReq.size;
-  allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
-                                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                          m_physicalDevice);
-  VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &m_uboAlloc));
-  VK_CHECK_RESULT(vkBindBufferMemory(m_device, m_ubo, m_uboAlloc, 0));
-
-  vkMapMemory(m_device, m_uboAlloc, 0, sizeof(m_uniforms), 0, &m_uboMappedMem);
-
-}
-
-
 
 void Quad2D_Render::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff,
                                              VkImageView a_targetImageView, VkPipeline a_pipeline)
@@ -201,11 +172,9 @@ void Quad2D_Render::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFrameb
     vkCmdEndRenderPass(a_cmdBuff);
   }
 
- 
   float scaleAndOffset[4] = {0.5f, 0.5f, -0.5f, +0.5f};
   m_pFSQuad->SetRenderTarget(a_targetImageView);
   m_pFSQuad->DrawCmd(a_cmdBuff, m_quadDS, scaleAndOffset);
-
 
   VK_CHECK_RESULT(vkEndCommandBuffer(a_cmdBuff));
 }
@@ -227,6 +196,10 @@ void Quad2D_Render::CleanupPipelineAndSwapchain()
 
   vkDestroyImageView(m_device, m_depthBuffer.view, nullptr);
   vkDestroyImage(m_device, m_depthBuffer.image, nullptr);
+
+  vkDestroyImageView(m_device, m_imageData.view, nullptr);
+  vkDestroyImage(m_device, m_imageData.image, nullptr);
+  vkFreeMemory(m_device, m_imageData.mem, nullptr);
 
   for (size_t i = 0; i < m_frameBuffers.size(); i++)
   {
@@ -294,28 +267,14 @@ void Quad2D_Render::Cleanup()
 
 void Quad2D_Render::ProcessInput(const AppInput &input)
 {
-  // add keyboard controls here
-  // camera movement is processed separately
-  //
-  if(input.keyReleased[GLFW_KEY_Q])
-    m_input.drawFSQuad = !m_input.drawFSQuad;
-
-  if(input.keyReleased[GLFW_KEY_P])
-    m_light.usePerspectiveM = !m_light.usePerspectiveM;
+  
 }
 
 void Quad2D_Render::UpdateCamera(const Camera* cams, uint32_t a_camsNumber)
 {
-  m_cam = cams[0];
-  if(a_camsNumber >= 2)
-    m_light.cam = cams[1];
-  UpdateView(); 
+
 }
 
-void Quad2D_Render::UpdateView()
-{
-  
-}
 
 static std::vector<unsigned> LoadBMP(const char* filename, unsigned* pW, unsigned* pH)
 {
@@ -411,12 +370,7 @@ void Quad2D_Render::LoadScene(const std::string &path, bool transpose_inst_matri
   vkEndCommandBuffer(commandBuffer);  
   vk_utils::executeCommandBufferNow(commandBuffer, m_transferQueue, m_device);
 
-  m_pScnMgr->LoadSceneXML(path, transpose_inst_matrices);
-
-  CreateUniformBuffer();
   SetupSimplePipeline();
-
-  UpdateView();
 
   for (size_t i = 0; i < m_framesInFlight; ++i)
     BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i], m_swapchain.GetAttachment(i).view, nullptr);
@@ -472,4 +426,3 @@ void Quad2D_Render::DrawFrame(float a_time)
 {
   DrawFrameSimple();
 }
-
