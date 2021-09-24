@@ -29,8 +29,8 @@ set(SOURCE_FILES
         render/create_render.cpp
         render/scene_mgr.cpp
         render/simple_render.cpp
-        
-        render/shadowmap_render.cpp)
+        render/shadowmap_render.cpp
+        render/quad2d_render.cpp)
 
 add_executable(renderer main.cpp glfw_window.cpp ${SOURCE_FILES}) #
 
