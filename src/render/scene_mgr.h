@@ -4,7 +4,6 @@
 #include <vector>
 
 #include <geom/vk_mesh.h>
-#include <ray_tracing/vk_rt_utils.h>
 #include "LiteMath.h"
 #include <vk_copy.h>
 
