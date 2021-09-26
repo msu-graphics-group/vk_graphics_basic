@@ -43,6 +43,7 @@ struct SceneManager
   VkBuffer GetVertexBuffer() const { return m_geoVertBuf; }
   VkBuffer GetIndexBuffer()  const { return m_geoIdxBuf; }
   VkBuffer GetMeshInfoBuffer()  const { return m_meshInfoBuf; }
+  std::shared_ptr<vk_utils::ICopyEngine> GetCopyHelper() { return  m_pCopyHelper; }
 
   uint32_t MeshesNum() const {return m_meshInfos.size();}
   uint32_t InstancesNum() const {return m_instanceInfos.size();}
@@ -76,7 +77,7 @@ private:
 
   uint32_t m_graphicsQId = UINT32_MAX;
   VkQueue m_graphicsQ = VK_NULL_HANDLE;
-  std::unique_ptr<vk_utils::ICopyEngine> m_pCopyHelper;
+  std::shared_ptr<vk_utils::ICopyEngine> m_pCopyHelper;
 
   bool m_debug = false;
   // for debugging

@@ -30,9 +30,13 @@ void SimpleShadowmapRender::SetupValidationLayers()
   m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
 }
 
-void SimpleShadowmapRender::InitVulkan(std::vector<const char *> a_instanceExtensions, uint32_t a_deviceId)
+void SimpleShadowmapRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId)
 {
-  m_instanceExtensions = std::move(a_instanceExtensions);
+  for(size_t i = 0; i < a_instanceExtensionsCount; ++i)
+  {
+    m_instanceExtensions.push_back(a_instanceExtensions[i]);
+  }
+
   SetupValidationLayers();
   VK_CHECK_RESULT(volkInitialize());
   CreateInstance();
@@ -84,12 +88,7 @@ void SimpleShadowmapRender::InitPresentation(VkSurfaceKHR &a_surface)
   m_frameBuffers = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
   
   // create full screen quad for debug purposes
-  //
-  //m_pFSQuad = std::make_shared<vk_utils::FSQuad>();
-  //m_pFSQuad->Create(m_device, "../resources/shaders/quad_vert.spv", "../resources/shaders/quad_frag.spv", 
-  //                  vk_utils::RenderTargetInfo2D{ VkExtent2D{ m_width, m_height }, m_swapchain.GetFormat(),                                        // this is debug full scree quad
-  //                                                VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR }); // seems we need LOAD_OP_LOAD if we want to draw quad to part of screen
-  
+  // 
   m_pFSQuad = std::make_shared<vk_utils::QuadRenderer>(0,0, 512, 512);
   m_pFSQuad->Create(m_device, "../resources/shaders/quad3_vert.vert.spv", "../resources/shaders/quad_frag.spv", 
                     vk_utils::RenderTargetInfo2D{ VkExtent2D{ m_width, m_height }, m_swapchain.GetFormat(),                                        // this is debug full scree quad
@@ -129,7 +128,7 @@ void SimpleShadowmapRender::CreateInstance()
   appInfo.pNext = nullptr;
   appInfo.pApplicationName = "VkRender";
   appInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
-  appInfo.pEngineName = "SimpleForward";
+  appInfo.pEngineName = "ShadowMap";
   appInfo.engineVersion = VK_MAKE_VERSION(0, 1, 0);
   appInfo.apiVersion = VK_MAKE_VERSION(1, 1, 0);
 
@@ -175,6 +174,25 @@ void SimpleShadowmapRender::SetupSimplePipeline()
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
   m_pBindings->BindImage(0, shadowMap.view, m_pShadowMap2->m_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   m_pBindings->BindEnd(&m_quadDS, &m_quadDSLayout);
+
+  // if we are recreating pipeline (for example, to reload shaders)
+  // we need to cleanup old pipeline
+  if(m_basicForwardPipeline.layout != VK_NULL_HANDLE)
+  {
+    vkDestroyPipelineLayout(m_device, m_basicForwardPipeline.layout, nullptr);
+    m_basicForwardPipeline.layout = VK_NULL_HANDLE;
+  }
+  if(m_basicForwardPipeline.pipeline != VK_NULL_HANDLE)
+  {
+    vkDestroyPipeline(m_device, m_basicForwardPipeline.pipeline, nullptr);
+    m_basicForwardPipeline.pipeline = VK_NULL_HANDLE;
+  }
+
+  if(m_shadowPipeline.pipeline != VK_NULL_HANDLE)
+  {
+    vkDestroyPipeline(m_device, m_shadowPipeline.pipeline, nullptr);
+    m_shadowPipeline.pipeline = VK_NULL_HANDLE;
+  }
 
   vk_utils::GraphicsPipelineMaker maker;
   
@@ -457,6 +475,24 @@ void SimpleShadowmapRender::ProcessInput(const AppInput &input)
 
   if(input.keyReleased[GLFW_KEY_P])
     m_light.usePerspectiveM = !m_light.usePerspectiveM;
+
+  // recreate pipeline to reload shaders
+  if(input.keyPressed[GLFW_KEY_B])
+  {
+#ifdef WIN32
+    std::system("cd ../resources/shaders && python compile_shadowmap_shaders.py");
+#else
+    std::system("cd ../resources/shaders && python3 compile_shadowmap_shaders.py");
+#endif
+
+    SetupSimplePipeline();
+
+    for (size_t i = 0; i < m_framesInFlight; ++i)
+    {
+      BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
+                               m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
+    }
+  }
 }
 
 void SimpleShadowmapRender::UpdateCamera(const Camera* cams, uint32_t a_camsNumber)
@@ -495,7 +531,7 @@ void SimpleShadowmapRender::UpdateView()
   m_lightMatrix = mProjFix*mProj*mLookAt;
 }
 
-void SimpleShadowmapRender::LoadScene(const std::string &path, bool transpose_inst_matrices)
+void SimpleShadowmapRender::LoadScene(const char* path, bool transpose_inst_matrices)
 {
   m_pScnMgr->LoadSceneXML(path, transpose_inst_matrices);
 
@@ -558,9 +594,21 @@ void SimpleShadowmapRender::DrawFrameSimple()
   vkQueueWaitIdle(m_presentationResources.queue);
 }
 
-void SimpleShadowmapRender::DrawFrame(float a_time)
+void SimpleShadowmapRender::DrawFrame(float a_time, DrawMode a_mode)
 {
   UpdateUniformBuffer(a_time);
-  DrawFrameSimple();
+  switch (a_mode)
+  {
+    case DrawMode::WITH_GUI:
+//      DrawFrameWithGUI();
+//      break;
+    case DrawMode::NO_GUI:
+      DrawFrameSimple();
+      break;
+    default:
+      DrawFrameSimple();
+  }
+
 }
+
 

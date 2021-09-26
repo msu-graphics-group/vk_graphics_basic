@@ -1,9 +1,11 @@
-#ifndef CHIMERA_SIMPLE_RENDER_H
-#define CHIMERA_SIMPLE_RENDER_H
+#ifndef SIMPLE_RENDER_H
+#define SIMPLE_RENDER_H
 
 #define VK_NO_PROTOTYPES
+
 #include "scene_mgr.h"
 #include "render_common.h"
+#include "render_gui.h"
 #include "../resources/shaders/common.h"
 #include <geom/vk_mesh.h>
 #include <vk_descriptor_sets.h>
@@ -16,22 +18,25 @@
 class SimpleRender : public IRender
 {
 public:
+  const std::string VERTEX_SHADER_PATH = "../resources/shaders/simple.vert";
+  const std::string FRAGMENT_SHADER_PATH = "../resources/shaders/simple.frag";
+
   SimpleRender(uint32_t a_width, uint32_t a_height);
   ~SimpleRender()  { Cleanup(); };
 
   inline uint32_t     GetWidth()      const override { return m_width; }
   inline uint32_t     GetHeight()     const override { return m_height; }
   inline VkInstance   GetVkInstance() const override { return m_instance; }
-  void InitVulkan(std::vector<const char*> a_instanceExtensions, uint32_t a_deviceId) override;
+  void InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId) override;
 
   void InitPresentation(VkSurfaceKHR& a_surface) override;
 
   void ProcessInput(const AppInput& input) override;
-  void UpdateCamera(const Camera* cams, uint32_t a_camsNumber) override;
+  void UpdateCamera(const Camera* cams, uint32_t a_camsCount) override;
   void UpdateView();
 
-  void LoadScene(const std::string &path, bool transpose_inst_matrices) override;
-  void DrawFrame(float a_time) override;
+  void LoadScene(const char *path, bool transpose_inst_matrices) override;
+  void DrawFrame(float a_time, DrawMode a_mode) override;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -52,7 +57,7 @@ public:
   }
 
   VkDebugReportCallbackEXT m_debugReportCallback = nullptr;
-private:
+protected:
 
   VkInstance       m_instance       = VK_NULL_HANDLE;
   VkCommandPool    m_commandPool    = VK_NULL_HANDLE;
@@ -93,10 +98,18 @@ private:
 
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
 
-  VkSurfaceKHR m_surface = VK_NULL_HANDLE;;
+  // *** presentation
+  VkSurfaceKHR m_surface = VK_NULL_HANDLE;
   VulkanSwapChain m_swapchain;
   std::vector<VkFramebuffer> m_frameBuffers;
-  vk_utils::VulkanImageMem m_depthBuffer{}; // screen depthbuffer
+  vk_utils::VulkanImageMem m_depthBuffer{};
+  // ***
+
+  // *** GUI
+  std::shared_ptr<IRenderGUI> m_pGUIRender;
+  void SetupGUIElements();
+  void DrawFrameWithGUI();
+  //
 
   Camera   m_cam;
   uint32_t m_width  = 1024u;
@@ -136,4 +149,4 @@ private:
 };
 
 
-#endif //CHIMERA_SIMPLE_RENDER_H
+#endif //SIMPLE_RENDER_H

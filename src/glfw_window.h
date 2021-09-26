@@ -2,24 +2,28 @@
 #define CBVH_STF_GLFW_WINDOW_H
 
 #include "render/render_common.h"
+#include "render/render_gui.h"
 
 #include "GLFW/glfw3.h"
 #include <memory>
 #include <unordered_map>
 
 
-void OnKeyboardPressed_basic(GLFWwindow* window, int key, int scancode, int action, int mode);
-void OnMouseButtonClicked_basic(GLFWwindow* window, int button, int action, int mods);
-void OnMouseMove_basic(GLFWwindow* window, double xpos, double ypos);
-void OnMouseScroll_basic(GLFWwindow* window, double xoffset, double yoffset);
+void onKeyboardPressedBasic(GLFWwindow* window, int key, int scancode, int action, int mode);
+void onMouseButtonClickedBasic(GLFWwindow* window, int button, int action, int mods);
+void onMouseMoveBasic(GLFWwindow* window, double xpos, double ypos);
+void onMouseScrollBasic(GLFWwindow* window, double xoffset, double yoffset);
 
-GLFWwindow * Init(std::shared_ptr<IRender> app, uint32_t a_deviceId = 0,
-                  GLFWkeyfun keyboard = OnKeyboardPressed_basic,
-                  GLFWcursorposfun mouseMove = OnMouseMove_basic,
-                  GLFWmousebuttonfun mouseBtn = OnMouseButtonClicked_basic,
-                  GLFWscrollfun mouseScroll = OnMouseScroll_basic);
-void MainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window);
+GLFWwindow * initWindow(int width, int height,
+                        GLFWkeyfun keyboard = onKeyboardPressedBasic,
+                        GLFWcursorposfun mouseMove = onMouseMoveBasic,
+                        GLFWmousebuttonfun mouseBtn = onMouseButtonClickedBasic,
+                        GLFWscrollfun mouseScroll = onMouseScrollBasic);
 
-std::unordered_map<std::string, std::string> ReadCommandLineParams(int argc, const char** argv);
+void mainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window, bool displayGUI = false);
+
+void setupImGuiContext(GLFWwindow* a_window);
+
+std::unordered_map<std::string, std::string> readCommandLineParams(int argc, const char** argv);
 
 #endif //CBVH_STF_GLFW_WINDOW_H

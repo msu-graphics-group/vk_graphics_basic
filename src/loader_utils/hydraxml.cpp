@@ -186,7 +186,7 @@ namespace hydra_xml
     std::wstringstream inputStream(matrix_str);
     
     float data[16];
-    for(int i=0;i<16;i++)
+    for(int i = 0; i < 16; i++)
       inputStream >> data[i];
     
     result.set_row(0, LiteMath::float4(data[0],data[1], data[2], data[3]));

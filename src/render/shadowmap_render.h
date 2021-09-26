@@ -24,7 +24,7 @@ public:
   inline uint32_t     GetWidth()      const override { return m_width; }
   inline uint32_t     GetHeight()     const override { return m_height; }
   inline VkInstance   GetVkInstance() const override { return m_instance; }
-  void InitVulkan(std::vector<const char*> a_instanceExtensions, uint32_t a_deviceId) override;
+  void InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId) override;
 
   void InitPresentation(VkSurfaceKHR& a_surface) override;
 
@@ -32,8 +32,8 @@ public:
   void UpdateCamera(const Camera* cams, uint32_t a_camsNumber) override;
   void UpdateView();
 
-  void LoadScene(const std::string &path, bool transpose_inst_matrices) override;
-  void DrawFrame(float a_time) override;
+  void LoadScene(const char *path, bool transpose_inst_matrices) override;
+  void DrawFrame(float a_time, DrawMode a_mode) override;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -136,7 +136,7 @@ private:
   } m_input;
 
   /**
-  \brief basic parameters that you need for sdhadowmappinh usually
+  \brief basic parameters that you usually need for shadow mapping
   */
   struct ShadowMapCam
   {
