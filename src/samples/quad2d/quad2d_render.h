@@ -80,7 +80,6 @@ private:
   VkSurfaceKHR m_surface = VK_NULL_HANDLE;
   VulkanSwapChain m_swapchain;
   std::vector<VkFramebuffer> m_frameBuffers;
-  vk_utils::VulkanImageMem m_depthBuffer{}; // screen depthbuffer
 
   uint32_t m_width  = 1024u;
   uint32_t m_height = 1024u;

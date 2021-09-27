@@ -4,6 +4,7 @@
 #include <geom/vk_mesh.h>
 #include <vk_pipeline.h>
 #include <vk_buffers.h>
+#include <vk_utils.h>
 
 Quad2D_Render::Quad2D_Render(uint32_t a_width, uint32_t a_height) : m_width(a_width), m_height(a_height)
 {
@@ -73,25 +74,15 @@ void Quad2D_Render::InitPresentation(VkSurfaceKHR &a_surface)
   semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
   VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_presentationResources.imageAvailable));
   VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_presentationResources.renderingFinished));
-  m_screenRenderPass = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat());
 
-  std::vector<VkFormat> depthFormats = {
-      VK_FORMAT_D32_SFLOAT,
-      VK_FORMAT_D32_SFLOAT_S8_UINT,
-      VK_FORMAT_D24_UNORM_S8_UINT,
-      VK_FORMAT_D16_UNORM_S8_UINT,
-      VK_FORMAT_D16_UNORM
-  };
-  vk_utils::getSupportedDepthFormat(m_physicalDevice, depthFormats, &m_depthBuffer.format);
-  m_depthBuffer  = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
-  m_frameBuffers = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
-  
-  // create full screen quad for debug purposes
-  //
-  //m_pFSQuad = std::make_shared<vk_utils::FSQuad>();
-  //m_pFSQuad->Create(m_device, "../resources/shaders/quad_vert.spv", "../resources/shaders/quad_frag.spv", 
-  //                  vk_utils::RenderTargetInfo2D{ VkExtent2D{ m_width, m_height }, m_swapchain.GetFormat(),                                        // this is debug full scree quad
-  //                                                VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR }); // seems we need LOAD_OP_LOAD if we want to draw quad to part of screen
+  vk_utils::RenderTargetInfo2D rtargetInfo;
+  rtargetInfo.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  rtargetInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  rtargetInfo.format = m_swapchain.GetFormat();
+  rtargetInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  m_screenRenderPass = vk_utils::createRenderPass(m_device, rtargetInfo);
+
+  m_frameBuffers = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass);
   
   m_pFSQuad = std::make_shared<vk_utils::QuadRenderer>(0,0, 1024, 1024);
   m_pFSQuad->Create(m_device, "../resources/shaders/quad3_vert.vert.spv", "../resources/shaders/my_quad.frag.spv", 
@@ -197,9 +188,6 @@ void Quad2D_Render::CleanupPipelineAndSwapchain()
     vkDestroyFence(m_device, m_frameFences[i], nullptr);
   }
 
-  vkDestroyImageView(m_device, m_depthBuffer.view, nullptr);
-  vkDestroyImage(m_device, m_depthBuffer.image, nullptr);
-
   vkDestroyImageView(m_device, m_imageData.view, nullptr);
   vkDestroyImage(m_device, m_imageData.image, nullptr);
   vkFreeMemory(m_device, m_imageData.mem, nullptr);
@@ -221,18 +209,14 @@ void Quad2D_Render::RecreateSwapChain()
   CleanupPipelineAndSwapchain();
   m_presentationResources.queue = m_swapchain.CreateSwapChain(m_physicalDevice, m_device, m_surface, m_width, m_height,
                                                               m_vsync);
-  std::vector<VkFormat> depthFormats = {
-      VK_FORMAT_D32_SFLOAT,
-      VK_FORMAT_D32_SFLOAT_S8_UINT,
-      VK_FORMAT_D24_UNORM_S8_UINT,
-      VK_FORMAT_D16_UNORM_S8_UINT,
-      VK_FORMAT_D16_UNORM
-  };                                                            
-  vk_utils::getSupportedDepthFormat(m_physicalDevice, depthFormats, &m_depthBuffer.format);
 
-  m_screenRenderPass = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat());
-  m_depthBuffer      = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
-  m_frameBuffers     = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
+  vk_utils::RenderTargetInfo2D rtargetInfo;
+  rtargetInfo.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  rtargetInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  rtargetInfo.format = m_swapchain.GetFormat();
+  rtargetInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  m_screenRenderPass = vk_utils::createRenderPass(m_device, rtargetInfo);
+  m_frameBuffers     = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass);
 
   m_frameFences.resize(m_framesInFlight);
   VkFenceCreateInfo fenceInfo = {};
