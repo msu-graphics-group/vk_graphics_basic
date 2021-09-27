@@ -83,7 +83,12 @@ void Quad2D_Render::InitPresentation(VkSurfaceKHR &a_surface)
   m_screenRenderPass = vk_utils::createRenderPass(m_device, rtargetInfo);
 
   m_frameBuffers = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass);
-  
+  SetupQuadRenderer();
+}
+
+void Quad2D_Render::SetupQuadRenderer()
+{
+  m_pFSQuad.reset();
   m_pFSQuad = std::make_shared<vk_utils::QuadRenderer>(0,0, 1024, 1024);
   m_pFSQuad->Create(m_device, "../resources/shaders/quad3_vert.vert.spv", "../resources/shaders/my_quad.frag.spv", 
                     vk_utils::RenderTargetInfo2D{ VkExtent2D{ m_width, m_height }, m_swapchain.GetFormat(),                                        // this is debug full scree quad
@@ -97,7 +102,7 @@ void Quad2D_Render::CreateInstance()
   appInfo.pNext = nullptr;
   appInfo.pApplicationName = "VkRender";
   appInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
-  appInfo.pEngineName = "SimpleForward";
+  appInfo.pEngineName = "Quad2D";
   appInfo.engineVersion = VK_MAKE_VERSION(0, 1, 0);
   appInfo.apiVersion = VK_MAKE_VERSION(1, 1, 0);
 
@@ -254,7 +259,28 @@ void Quad2D_Render::Cleanup()
 
 void Quad2D_Render::ProcessInput(const AppInput &input)
 {
-  
+  // add keyboard controls here
+  // camera movement is processed separately
+
+  // recreate pipeline to reload shaders
+  if(input.keyPressed[GLFW_KEY_B])
+  {
+#ifdef WIN32
+    std::system("cd ../resources/shaders && python compile_quad_render_shaders.py");
+#else
+    std::system("cd ../resources/shaders && python3 compile_quad_render_shaders.py");
+#endif
+
+    SetupQuadRenderer();
+    SetupSimplePipeline();
+
+    for (size_t i = 0; i < m_framesInFlight; ++i)
+    {
+      BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
+                               m_swapchain.GetAttachment(i).view, nullptr);
+    }
+  }
+
 }
 
 void Quad2D_Render::UpdateCamera(const Camera* cams, uint32_t a_camsNumber)

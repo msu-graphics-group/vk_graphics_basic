@@ -110,6 +110,7 @@ private:
                                 VkImageView a_targetImageView, VkPipeline a_pipeline);
 
   void SetupSimplePipeline();
+  void SetupQuadRenderer();
   void CleanupPipelineAndSwapchain();
   void RecreateSwapChain();
 
