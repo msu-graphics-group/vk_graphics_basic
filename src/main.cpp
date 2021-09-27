@@ -29,7 +29,7 @@ int main()
   constexpr int HEIGHT = 2048;
   constexpr int VULKAN_DEVICE_ID = 0;
 
-  std::shared_ptr<IRender> app = CreateRender(WIDTH, HEIGHT, RenderEngineType::SHADOW_MAP);
+  std::shared_ptr<IRender> app = CreateRender(WIDTH, HEIGHT, RenderEngineType::SIMPLE_QUAD2D);
   if(app == nullptr)
   {
     std::cout << "Can't create render of specified type" << std::endl;

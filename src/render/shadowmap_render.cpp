@@ -4,7 +4,6 @@
 #include <geom/vk_mesh.h>
 #include <vk_pipeline.h>
 #include <vk_buffers.h>
-#include <ray_tracing/vk_rt_funcs.h>
 
 SimpleShadowmapRender::SimpleShadowmapRender(uint32_t a_width, uint32_t a_height) : m_width(a_width), m_height(a_height)
 {
@@ -89,14 +88,12 @@ void SimpleShadowmapRender::InitPresentation(VkSurfaceKHR &a_surface)
   m_frameBuffers = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
   
   // create full screen quad for debug purposes
-  //
-  m_pFSQuad = std::make_shared<vk_utils::FSQuad>();
-  m_pFSQuad->Create(m_device, "../resources/shaders/quad.vert.spv", "../resources/shaders/quad.frag.spv",
-                    vk_utils::RenderTargetInfo2D{ VkExtent2D{ m_width, m_height },
-                                                  m_swapchain.GetFormat(),
-                                                  VK_ATTACHMENT_LOAD_OP_LOAD, // seems we need LOAD_OP_LOAD if we want to draw quad to part of screen
-                                                  VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                                                  VK_IMAGE_LAYOUT_PRESENT_SRC_KHR });
+  // 
+  m_pFSQuad = std::make_shared<vk_utils::QuadRenderer>(0,0, 512, 512);
+  m_pFSQuad->Create(m_device, "../resources/shaders/quad3_vert.vert.spv", "../resources/shaders/quad_frag.spv", 
+                    vk_utils::RenderTargetInfo2D{ VkExtent2D{ m_width, m_height }, m_swapchain.GetFormat(),                                        // this is debug full scree quad
+                                                  VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR }); // seems we need LOAD_OP_LOAD if we want to draw quad to part of screen
+
   // create shadow map
   //
   m_pShadowMap2 = std::make_shared<vk_utils::RenderTarget>(m_device, VkExtent2D{2048, 2048});
