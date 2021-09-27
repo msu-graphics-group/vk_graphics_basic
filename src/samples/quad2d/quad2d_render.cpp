@@ -1,5 +1,5 @@
 #include "quad2d_render.h"
-#include "../utils/input_definitions.h"
+#include "utils/input_definitions.h"
 
 #include <geom/vk_mesh.h>
 #include <vk_pipeline.h>

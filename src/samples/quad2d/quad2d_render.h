@@ -2,7 +2,7 @@
 #define SIMPLE_QUAD2D_RENDER_H
 
 #define VK_NO_PROTOTYPES
-#include "render_common.h"
+#include "render/render_common.h"
 #include "../resources/shaders/common.h"
 #include <vk_descriptor_sets.h>
 #include <vk_fbuf_attachment.h>
@@ -94,9 +94,7 @@ private:
   bool m_enableValidation;
   std::vector<const char*> m_validationLayers;
   std::shared_ptr<vk_utils::ICopyEngine> m_pCopyHelper;
-  
-  // objects and data for shadow map
-  //
+
   std::shared_ptr<vk_utils::IQuad>               m_pFSQuad;
   VkDescriptorSet       m_quadDS; 
   VkDescriptorSetLayout m_quadDSLayout = nullptr;

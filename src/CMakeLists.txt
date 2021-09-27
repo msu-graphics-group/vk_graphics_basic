@@ -49,7 +49,6 @@ set(RENDER_SOURCE
         render/create_render.cpp
         render/scene_mgr.cpp
         render/simple_render.cpp
-        render/quad2d_render.cpp
         render/simple_render_tex.cpp
         render/shadowmap_render.cpp
         render/render_gui.h render/render_imgui.cpp)

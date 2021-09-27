@@ -27,5 +27,6 @@ endif()
 
 add_subdirectory(external/volk)
 add_subdirectory(src)
+add_subdirectory(src/samples/quad2d)
 
 
