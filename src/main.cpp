@@ -25,11 +25,11 @@ void initVulkanGLFW(std::shared_ptr<IRender> &app, GLFWwindow* window, int devic
 
 int main()
 {
-  constexpr int WIDTH = 2048;
-  constexpr int HEIGHT = 2048;
+  constexpr int WIDTH = 1024;
+  constexpr int HEIGHT = 1024;
   constexpr int VULKAN_DEVICE_ID = 0;
 
-  std::shared_ptr<IRender> app = CreateRender(WIDTH, HEIGHT, RenderEngineType::SIMPLE_QUAD2D);
+  std::shared_ptr<IRender> app = CreateRender(WIDTH, HEIGHT, RenderEngineType::SHADOW_MAP);
   if(app == nullptr)
   {
     std::cout << "Can't create render of specified type" << std::endl;

@@ -30,9 +30,12 @@ void Quad2D_Render::SetupValidationLayers()
   m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
 }
 
-void Quad2D_Render::InitVulkan(std::vector<const char *> a_instanceExtensions, uint32_t a_deviceId)
+void Quad2D_Render::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId)
 {
-  m_instanceExtensions = std::move(a_instanceExtensions);
+  m_instanceExtensions.clear();
+  for (uint32_t i = 0; i < a_instanceExtensionsCount; ++i) {
+    m_instanceExtensions.push_back(a_instanceExtensions[i]);
+  }
   SetupValidationLayers();
   VK_CHECK_RESULT(volkInitialize());
   CreateInstance();
@@ -319,7 +322,7 @@ static std::vector<unsigned> LoadBMP(const char* filename, unsigned* pW, unsigne
   return res;
 }
 
-void Quad2D_Render::LoadScene(const std::string &path, bool transpose_inst_matrices)
+void Quad2D_Render::LoadScene(const char* path, bool transpose_inst_matrices)
 {
   uint32_t texW, texH;
   auto texData = LoadBMP("../resources/textures/texture1.bmp", &texW, &texH);
@@ -422,7 +425,7 @@ void Quad2D_Render::DrawFrameSimple()
   vkQueueWaitIdle(m_presentationResources.queue);
 }
 
-void Quad2D_Render::DrawFrame(float a_time)
+void Quad2D_Render::DrawFrame(float a_time, DrawMode a_mode)
 {
   DrawFrameSimple();
 }
