@@ -1,5 +1,4 @@
 #include "glfw_window.h"
-#include "render/render_common.h"
 
 #ifdef WIN32
 #pragma comment(lib,"glfw3.lib")

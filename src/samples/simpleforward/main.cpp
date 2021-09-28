@@ -1,5 +1,6 @@
-#include "render/render_common.h"
-#include "glfw_window.h"
+#include "simple_render.h"
+#include "create_render.h"
+#include "utils/glfw_window.h"
 
 void initVulkanGLFW(std::shared_ptr<IRender> &app, GLFWwindow* window, int deviceID)
 {
@@ -29,7 +30,9 @@ int main()
   constexpr int HEIGHT = 1024;
   constexpr int VULKAN_DEVICE_ID = 0;
 
-  std::shared_ptr<IRender> app = CreateRender(WIDTH, HEIGHT, RenderEngineType::SHADOW_MAP);
+  std::shared_ptr<IRender> app = CreateRender(WIDTH, HEIGHT, RenderEngineType::SIMPLE_FORWARD);
+//  std::shared_ptr<IRender> app = CreateRender(WIDTH, HEIGHT, RenderEngineType::SIMPLE_TEXTURE);
+
   if(app == nullptr)
   {
     std::cout << "Can't create render of specified type" << std::endl;

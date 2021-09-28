@@ -2,9 +2,9 @@
 #define SIMPLE_SHADOWMAP_RENDER_H
 
 #define VK_NO_PROTOTYPES
-#include "scene_mgr.h"
-#include "render_common.h"
-#include "../resources/shaders/common.h"
+#include "../../render/scene_mgr.h"
+#include "../../render/render_common.h"
+#include "../../../resources/shaders/common.h"
 #include <geom/vk_mesh.h>
 #include <vk_descriptor_sets.h>
 #include <vk_fbuf_attachment.h>

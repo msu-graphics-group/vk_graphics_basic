@@ -3,7 +3,7 @@
 
 #include "volk.h"
 #include "vk_utils.h"
-#include "../Camera.h"
+#include "utils/Camera.h"
 #include <cstring>
 #include <memory>
 
@@ -51,15 +51,5 @@ public:
   virtual ~IRender() = default;
 
 };
-
-enum class RenderEngineType
-{
-  SIMPLE_FORWARD,
-  SHADOW_MAP,
-  SIMPLE_TEXTURE,
-  SIMPLE_QUAD2D
-};
-
-std::unique_ptr<IRender> CreateRender(uint32_t w, uint32_t h, RenderEngineType type);
 
 #endif//CHIMERA_RENDER_COMMON_H

@@ -1,8 +1,8 @@
 #ifndef CBVH_STF_GLFW_WINDOW_H
 #define CBVH_STF_GLFW_WINDOW_H
 
-#include "render/render_common.h"
-#include "render/render_gui.h"
+#include "../render/render_common.h"
+#include "../render/render_gui.h"
 
 #include "GLFW/glfw3.h"
 #include <memory>

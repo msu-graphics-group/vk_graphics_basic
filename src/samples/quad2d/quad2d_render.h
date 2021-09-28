@@ -2,7 +2,7 @@
 #define SIMPLE_QUAD2D_RENDER_H
 
 #define VK_NO_PROTOTYPES
-#include "render_common.h"
+#include "../../render/render_common.h"
 #include "../resources/shaders/common.h"
 #include <vk_descriptor_sets.h>
 #include <vk_fbuf_attachment.h>
@@ -80,7 +80,6 @@ private:
   VkSurfaceKHR m_surface = VK_NULL_HANDLE;
   VulkanSwapChain m_swapchain;
   std::vector<VkFramebuffer> m_frameBuffers;
-  vk_utils::VulkanImageMem m_depthBuffer{}; // screen depthbuffer
 
   uint32_t m_width  = 1024u;
   uint32_t m_height = 1024u;
@@ -94,9 +93,7 @@ private:
   bool m_enableValidation;
   std::vector<const char*> m_validationLayers;
   std::shared_ptr<vk_utils::ICopyEngine> m_pCopyHelper;
-  
-  // objects and data for shadow map
-  //
+
   std::shared_ptr<vk_utils::IQuad>               m_pFSQuad;
   VkDescriptorSet       m_quadDS; 
   VkDescriptorSetLayout m_quadDSLayout = nullptr;
@@ -113,6 +110,7 @@ private:
                                 VkImageView a_targetImageView, VkPipeline a_pipeline);
 
   void SetupSimplePipeline();
+  void SetupQuadRenderer();
   void CleanupPipelineAndSwapchain();
   void RecreateSwapChain();
 
@@ -124,4 +122,4 @@ private:
 };
 
 
-#endif //CHIMERA_SIMPLE_RENDER_H
+#endif //SIMPLE_QUAD2D_RENDER_H
