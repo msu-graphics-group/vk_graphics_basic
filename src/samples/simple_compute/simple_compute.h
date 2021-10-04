@@ -57,7 +57,7 @@ private:
 
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
 
-  uint32_t m_length  = 1024u;
+  uint32_t m_length  = 16u;
   
   VkPhysicalDeviceFeatures m_enabledDeviceFeatures = {};
   std::vector<const char*> m_deviceExtensions      = {};

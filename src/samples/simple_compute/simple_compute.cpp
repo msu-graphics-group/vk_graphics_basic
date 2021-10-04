@@ -16,7 +16,7 @@ SimpleCompute::SimpleCompute(uint32_t a_length) : m_length(a_length)
 void SimpleCompute::SetupValidationLayers()
 {
   m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
-  //m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
+  m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
 }
 
 void SimpleCompute::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId)
@@ -89,12 +89,12 @@ void SimpleCompute::SetupSimplePipeline()
   m_pBindings->BindBuffer(2, m_sum);
   m_pBindings->BindEnd(&m_sumDS, &m_sumDSLayout);
 
-  std::vector<float> values(16);
-  for (int i = 0; i < values.size(); ++i) {
+  std::vector<float> values(m_length);
+  for (uint32_t i = 0; i < values.size(); ++i) {
     values[i] = i;
   }
   m_pCopyHelper->UpdateBuffer(m_A, 0, values.data(), sizeof(float) * values.size());
-  for (int i = 0; i < values.size(); ++i) {
+  for (uint32_t i = 0; i < values.size(); ++i) {
     values[i] = i * i;
   }
   m_pCopyHelper->UpdateBuffer(m_B, 0, values.data(), sizeof(float) * values.size());
@@ -113,9 +113,9 @@ void SimpleCompute::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkPipeli
   vkCmdBindPipeline      (a_cmdBuff, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
   vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_COMPUTE, m_layout, 0, 1, &m_sumDS, 0, NULL);
 
-  //vkCmdPushConstants(a_cmdBuff, m_layout, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), 0, 8*sizeof(float), scaleAndOffset);
+  vkCmdPushConstants(a_cmdBuff, m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(m_length), &m_length);
 
-  vkCmdDispatch(a_cmdBuff, 16, 1, 1);
+  vkCmdDispatch(a_cmdBuff, 1, 1, 1);
 
   VK_CHECK_RESULT(vkEndCommandBuffer(a_cmdBuff));
 }
@@ -131,6 +131,9 @@ void SimpleCompute::CleanupPipeline()
   vkDestroyBuffer(m_device, m_A, nullptr);
   vkDestroyBuffer(m_device, m_B, nullptr);
   vkDestroyBuffer(m_device, m_sum, nullptr);
+
+  vkDestroyPipelineLayout(m_device, m_layout, nullptr);
+  vkDestroyPipeline(m_device, m_pipeline, nullptr);
 }
 
 
@@ -162,10 +165,17 @@ void SimpleCompute::CreateComputePipeline()
   shaderStageCreateInfo.module = shaderModule;
   shaderStageCreateInfo.pName  = "main";
 
+  VkPushConstantRange pcRange = {};
+  pcRange.offset = 0;
+  pcRange.size = sizeof(m_length);
+  pcRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
   VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
   pipelineLayoutCreateInfo.sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipelineLayoutCreateInfo.setLayoutCount = 1;
   pipelineLayoutCreateInfo.pSetLayouts    = &m_sumDSLayout;
+  pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+  pipelineLayoutCreateInfo.pPushConstantRanges = &pcRange;
   VK_CHECK_RESULT(vkCreatePipelineLayout(m_device, &pipelineLayoutCreateInfo, NULL, &m_layout));
 
   VkComputePipelineCreateInfo pipelineCreateInfo = {};
@@ -174,6 +184,8 @@ void SimpleCompute::CreateComputePipeline()
   pipelineCreateInfo.layout = m_layout;
 
   VK_CHECK_RESULT(vkCreateComputePipelines(m_device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, NULL, &m_pipeline));
+
+  vkDestroyShaderModule(m_device, shaderModule, nullptr);
 }
 
 
@@ -198,7 +210,7 @@ void SimpleCompute::Execute()
 
   VK_CHECK_RESULT(vkWaitForFences(m_device, 1, &m_fence, VK_TRUE, 100000000000));
 
-  std::vector<float> values(16);
+  std::vector<float> values(m_length);
   m_pCopyHelper->ReadBuffer(m_sum, 0, values.data(), sizeof(float) * values.size());
   for (auto v: values) {
     std::cout << v << ' ';
