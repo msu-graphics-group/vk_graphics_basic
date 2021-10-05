@@ -76,6 +76,7 @@ void SimpleCompute::SetupSimplePipeline()
       {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             3}
   };
 
+  // Создание и аллокация буферов
   m_A = vk_utils::createBuffer(m_device, sizeof(float) * m_length, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
   m_B = vk_utils::createBuffer(m_device, sizeof(float) * m_length, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
   m_sum = vk_utils::createBuffer(m_device, sizeof(float) * m_length, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -83,12 +84,14 @@ void SimpleCompute::SetupSimplePipeline()
 
   m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_device, dtypes, 1);
 
+  // Создание descriptor set для передачи буферов в шейдер
   m_pBindings->BindBegin(VK_SHADER_STAGE_COMPUTE_BIT);
   m_pBindings->BindBuffer(0, m_A);
   m_pBindings->BindBuffer(1, m_B);
   m_pBindings->BindBuffer(2, m_sum);
   m_pBindings->BindEnd(&m_sumDS, &m_sumDSLayout);
 
+  // Заполнение буферов
   std::vector<float> values(m_length);
   for (uint32_t i = 0; i < values.size(); ++i) {
     values[i] = i;
@@ -108,6 +111,7 @@ void SimpleCompute::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkPipeli
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
+  // Заполняем буфер команд
   VK_CHECK_RESULT(vkBeginCommandBuffer(a_cmdBuff, &beginInfo));
 
   vkCmdBindPipeline      (a_cmdBuff, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
@@ -150,6 +154,7 @@ void SimpleCompute::Cleanup()
 
 void SimpleCompute::CreateComputePipeline()
 {
+  // Загружаем шейдер
   std::vector<uint32_t> code = vk_utils::readSPVFile("../resources/shaders/simple.comp.spv");
   VkShaderModuleCreateInfo createInfo = {};
   createInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -157,6 +162,7 @@ void SimpleCompute::CreateComputePipeline()
   createInfo.codeSize = code.size()*sizeof(uint32_t);
     
   VkShaderModule shaderModule;
+  // Создаём шейдер в вулкане
   VK_CHECK_RESULT(vkCreateShaderModule(m_device, &createInfo, NULL, &shaderModule));
 
   VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {};
@@ -170,6 +176,7 @@ void SimpleCompute::CreateComputePipeline()
   pcRange.size = sizeof(m_length);
   pcRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
+  // Создаём layout для pipeline
   VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
   pipelineLayoutCreateInfo.sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipelineLayoutCreateInfo.setLayoutCount = 1;
@@ -183,6 +190,7 @@ void SimpleCompute::CreateComputePipeline()
   pipelineCreateInfo.stage  = shaderStageCreateInfo;
   pipelineCreateInfo.layout = m_layout;
 
+  // Создаём pipeline - объект, который выставляет шейдер и его параметры
   VK_CHECK_RESULT(vkCreateComputePipelines(m_device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, NULL, &m_pipeline));
 
   vkDestroyShaderModule(m_device, shaderModule, nullptr);
@@ -206,8 +214,10 @@ void SimpleCompute::Execute()
   fenceCreateInfo.flags = 0;
   VK_CHECK_RESULT(vkCreateFence(m_device, &fenceCreateInfo, NULL, &m_fence));
 
+  // Отправляем буфер команд на выполнение
   VK_CHECK_RESULT(vkQueueSubmit(m_computeQueue, 1, &submitInfo, m_fence));
 
+  //Ждём конца выполнения команд
   VK_CHECK_RESULT(vkWaitForFences(m_device, 1, &m_fence, VK_TRUE, 100000000000));
 
   std::vector<float> values(m_length);
