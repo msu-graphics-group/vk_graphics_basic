@@ -69,7 +69,7 @@ void SimpleRender::InitPresentation(VkSurfaceKHR &a_surface)
   m_surface = a_surface;
 
   m_presentationResources.queue = m_swapchain.CreateSwapChain(m_physicalDevice, m_device, m_surface,
-                                                              m_width, m_height, m_vsync);
+                                                              m_width, m_height, m_framesInFlight, m_vsync);
   m_presentationResources.currentFrame = 0;
 
   VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -304,8 +304,9 @@ void SimpleRender::RecreateSwapChain()
   vkDeviceWaitIdle(m_device);
 
   CleanupPipelineAndSwapchain();
+  auto oldImagesNum = m_swapchain.GetImageCount();
   m_presentationResources.queue = m_swapchain.CreateSwapChain(m_physicalDevice, m_device, m_surface, m_width, m_height,
-                                                              m_vsync);
+    oldImagesNum, m_vsync);
 
   std::vector<VkFormat> depthFormats = {
       VK_FORMAT_D32_SFLOAT,
@@ -485,7 +486,7 @@ void SimpleRender::DrawFrameSimple()
   uint32_t imageIdx;
   m_swapchain.AcquireNextImage(m_presentationResources.imageAvailable, &imageIdx);
 
-  auto currentCmdBuf = m_cmdBuffersDrawMain[imageIdx];
+  auto currentCmdBuf = m_cmdBuffersDrawMain[m_presentationResources.currentFrame];
 
   VkSemaphore waitSemaphores[] = {m_presentationResources.imageAvailable};
   VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -580,7 +581,7 @@ void SimpleRender::DrawFrameWithGUI()
   uint32_t imageIdx;
   m_swapchain.AcquireNextImage(m_presentationResources.imageAvailable, &imageIdx);
 
-  auto currentCmdBuf = m_cmdBuffersDrawMain[imageIdx];
+  auto currentCmdBuf = m_cmdBuffersDrawMain[m_presentationResources.currentFrame];
 
   VkSemaphore waitSemaphores[] = {m_presentationResources.imageAvailable};
   VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
