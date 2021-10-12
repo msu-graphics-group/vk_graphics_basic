@@ -106,8 +106,7 @@ private:
   void CreateInstance();
   void CreateDevice(uint32_t a_deviceId);
 
-  void BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff,
-                                VkImageView a_targetImageView, VkPipeline a_pipeline);
+  void BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff, VkImageView a_targetImageView);
 
   void SetupSimplePipeline();
   void SetupQuadRenderer();
