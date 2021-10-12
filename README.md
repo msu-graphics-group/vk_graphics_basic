@@ -1,8 +1,13 @@
 # Basic graphics pipeline sample using Vulkan API
-This project implements basic forward rendering on a 3d scene in Hydra Renderer XML format (https://github.com/Ray-Tracing-Systems/HydraAPI, http://www.raytracing.ru/)
+This project provides basic graphics applications samples:
+* Forward rendering of a 3d scene in Hydra Renderer XML format ([HydraAPI](https://github.com/Ray-Tracing-Systems/HydraAPI), [Hydra renderer](http://www.raytracing.ru/)) located [here](https://github.com/msu-graphics-group/vk_graphics_basic/tree/main/src/samples/simpleforward). This sample has two renderers, which are selected directly in [code](https://github.com/msu-graphics-group/vk_graphics_basic/blob/main/src/samples/simpleforward/main.cpp) (search for *CreateRender*):
+  * *SIMPLE_FORWARD* renders scene in diffuse material
+  * *SIMPLE_TEXTURE* renders scene in diffuse textured material
+* Shadow map sample located in [shadowmap](https://github.com/msu-graphics-group/vk_graphics_basic/tree/main/src/samples/shadowmap)
+* Full screen quad render located in [quad2d](https://github.com/msu-graphics-group/vk_graphics_basic/tree/main/src/samples/quad2d)
 
-This project is a simplified part of https://gitlab.com/vsan/chimera which implements other example rendering types 
-(including various approaches to using hardware accelerated ray tracing).
+You can also take a look at [Chimera project](https://gitlab.com/vsan/chimera) which served as a base for these samples and implements other example renders
+including various approaches to using hardware accelerated ray tracing.
 
 ## Build
 
