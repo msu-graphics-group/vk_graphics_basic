@@ -26,13 +26,13 @@ protected:
   std::string m_texturePath = "../resources/textures/test_tex_1.png";
 
   vk_utils::VulkanImageMem m_texture {};
-  VkSampler m_textureSampler;
+  VkSampler m_textureSampler = VK_NULL_HANDLE;
 
   void LoadTexture();
 
-  void SetupGUIElements();
-  void SetupSimplePipeline();
-  void Cleanup();
+  void SetupGUIElements() override;
+  void SetupSimplePipeline() override;
+  void Cleanup() override;
 
 };
 

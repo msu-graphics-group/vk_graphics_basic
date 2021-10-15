@@ -107,14 +107,14 @@ protected:
 
   // *** GUI
   std::shared_ptr<IRenderGUI> m_pGUIRender;
-  void SetupGUIElements();
+  virtual void SetupGUIElements();
   void DrawFrameWithGUI();
   //
 
   Camera   m_cam;
   uint32_t m_width  = 1024u;
   uint32_t m_height = 1024u;
-  uint32_t m_framesInFlight = 2u;
+  uint32_t m_framesInFlight  = 2u;
   bool m_vsync = false;
 
   VkPhysicalDeviceFeatures m_enabledDeviceFeatures = {};
@@ -134,14 +134,14 @@ protected:
   void BuildCommandBufferSimple(VkCommandBuffer cmdBuff, VkFramebuffer frameBuff,
                                 VkImageView a_targetImageView, VkPipeline a_pipeline);
 
-  void SetupSimplePipeline();
+  virtual void SetupSimplePipeline();
   void CleanupPipelineAndSwapchain();
   void RecreateSwapChain();
 
   void CreateUniformBuffer();
   void UpdateUniformBuffer(float a_time);
 
-  void Cleanup();
+  virtual void Cleanup();
 
   void SetupDeviceFeatures();
   void SetupDeviceExtensions();

@@ -67,7 +67,7 @@ void Quad2D_Render::InitPresentation(VkSurfaceKHR &a_surface)
   m_surface = a_surface;
 
   m_presentationResources.queue = m_swapchain.CreateSwapChain(m_physicalDevice, m_device, m_surface,
-                                                              m_width, m_height, m_vsync);
+                                                              m_width, m_height, m_framesInFlight, m_vsync);
   m_presentationResources.currentFrame = 0;
 
   VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -75,7 +75,7 @@ void Quad2D_Render::InitPresentation(VkSurfaceKHR &a_surface)
   VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_presentationResources.imageAvailable));
   VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_presentationResources.renderingFinished));
 
-  vk_utils::RenderTargetInfo2D rtargetInfo;
+  vk_utils::RenderTargetInfo2D rtargetInfo = {};
   rtargetInfo.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
   rtargetInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   rtargetInfo.format = m_swapchain.GetFormat();
@@ -140,8 +140,7 @@ void Quad2D_Render::SetupSimplePipeline()
   m_pBindings->BindEnd(&m_quadDS, &m_quadDSLayout);                      
 }
 
-void Quad2D_Render::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff,
-                                             VkImageView a_targetImageView, VkPipeline a_pipeline)
+void Quad2D_Render::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff, VkImageView a_targetImageView)
 {
   vkResetCommandBuffer(a_cmdBuff, 0);
 
@@ -212,10 +211,11 @@ void Quad2D_Render::RecreateSwapChain()
   vkDeviceWaitIdle(m_device);
 
   CleanupPipelineAndSwapchain();
+  auto oldImageNum = m_swapchain.GetImageCount();
   m_presentationResources.queue = m_swapchain.CreateSwapChain(m_physicalDevice, m_device, m_surface, m_width, m_height,
-                                                              m_vsync);
+    oldImageNum, m_vsync);
 
-  vk_utils::RenderTargetInfo2D rtargetInfo;
+  vk_utils::RenderTargetInfo2D rtargetInfo = {};
   rtargetInfo.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
   rtargetInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   rtargetInfo.format = m_swapchain.GetFormat();
@@ -235,7 +235,7 @@ void Quad2D_Render::RecreateSwapChain()
   m_cmdBuffersDrawMain = vk_utils::createCommandBuffers(m_device, m_commandPool, m_framesInFlight);
   for (size_t i = 0; i < m_swapchain.GetImageCount(); ++i)
   {
-    BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i], m_swapchain.GetAttachment(i).view, nullptr);
+    BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i], m_swapchain.GetAttachment(i).view);
   }
 }
 
@@ -276,8 +276,7 @@ void Quad2D_Render::ProcessInput(const AppInput &input)
 
     for (size_t i = 0; i < m_framesInFlight; ++i)
     {
-      BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
-                               m_swapchain.GetAttachment(i).view, nullptr);
+      BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i], m_swapchain.GetAttachment(i).view);
     }
   }
 
@@ -298,7 +297,7 @@ static std::vector<unsigned> LoadBMP(const char* filename, unsigned* pW, unsigne
     (*pW) = 0;
     (*pH) = 0;
     std::cout << "can't open file" << std::endl;
-    return std::vector<unsigned>();
+    return {};
   }
 
   unsigned char info[54];
@@ -306,14 +305,14 @@ static std::vector<unsigned> LoadBMP(const char* filename, unsigned* pW, unsigne
   if(readRes != 54)
   {
     std::cout << "can't read 54 byte BMP header" << std::endl;
-    return std::vector<unsigned>();
+    return {};
   }
 
   int width  = *(int*)&info[18];
   int height = *(int*)&info[22];
 
-  int row_padded      = (width*3 + 3) & (~3);
-  unsigned char* data = new unsigned char[row_padded];
+  int row_padded = (width*3 + 3) & (~3);
+  auto data      = new unsigned char[row_padded];
 
   std::vector<unsigned> res(width*height);
 
@@ -386,7 +385,7 @@ void Quad2D_Render::LoadScene(const char* path, bool transpose_inst_matrices)
   SetupSimplePipeline();
 
   for (size_t i = 0; i < m_framesInFlight; ++i)
-    BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i], m_swapchain.GetAttachment(i).view, nullptr);
+    BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i], m_swapchain.GetAttachment(i).view);
 }
 
 void Quad2D_Render::DrawFrameSimple()
@@ -397,12 +396,12 @@ void Quad2D_Render::DrawFrameSimple()
   uint32_t imageIdx;
   m_swapchain.AcquireNextImage(m_presentationResources.imageAvailable, &imageIdx);
 
-  auto currentCmdBuf = m_cmdBuffersDrawMain[imageIdx];
+  auto currentCmdBuf = m_cmdBuffersDrawMain[m_presentationResources.currentFrame];
 
   VkSemaphore waitSemaphores[] = {m_presentationResources.imageAvailable};
   VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
-  BuildCommandBufferSimple(currentCmdBuf, m_frameBuffers[imageIdx], m_swapchain.GetAttachment(imageIdx).view, nullptr);
+  BuildCommandBufferSimple(currentCmdBuf, m_frameBuffers[imageIdx], m_swapchain.GetAttachment(imageIdx).view);
 
   VkSubmitInfo submitInfo = {};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
