@@ -56,10 +56,37 @@ bool SceneManager::LoadSceneXML(const std::string &scenePath, bool transpose)
     }
   }
 
+  for(auto cam : hscene_main->Cameras())
+  {
+    m_sceneCameras.push_back(cam);
+  }
+
   LoadGeoDataOnGPU();
   hscene_main = nullptr;
 
   return true;
+}
+
+hydra_xml::Camera SceneManager::GetCamera(uint32_t camId) const
+{
+  if(camId >= m_sceneCameras.size())
+  {
+    std::stringstream ss;
+    ss << "[SceneManager::GetCamera] camera with id = " << camId << " was not loaded, using default camera.";
+    vk_utils::logWarning(ss.str());
+
+    hydra_xml::Camera res = {};
+    res.fov = 60;
+    res.nearPlane = 0.1f;
+    res.farPlane  = 1000.0f;
+    res.pos[0] = 0.0f; res.pos[1] = 0.0f; res.pos[2] = 15.0f;
+    res.up[0] = 0.0f; res.up[1] = 1.0f; res.up[2] = 0.0f;
+    res.lookAt[0] = 0.0f; res.lookAt[1] = 0.0f; res.lookAt[2] = 0.0f;
+
+    return res;
+  }
+
+  return m_sceneCameras[camId];
 }
 
 void SceneManager::LoadSingleTriangle()
