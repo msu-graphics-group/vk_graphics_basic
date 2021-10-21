@@ -7,6 +7,7 @@
 #include "LiteMath.h"
 #include <vk_copy.h>
 
+#include "../loader_utils/hydraxml.h"
 #include "../resources/shaders/common.h"
 
 struct InstanceInfo
@@ -48,6 +49,7 @@ struct SceneManager
   uint32_t MeshesNum() const {return m_meshInfos.size();}
   uint32_t InstancesNum() const {return m_instanceInfos.size();}
 
+  hydra_xml::Camera GetCamera(uint32_t camId) const;
   MeshInfo GetMeshInfo(uint32_t meshId) const {assert(meshId < m_meshInfos.size()); return m_meshInfos[meshId];}
   InstanceInfo GetInstanceInfo(uint32_t instId) const {assert(instId < m_instanceInfos.size()); return m_instanceInfos[instId];}
   LiteMath::float4x4 GetInstanceMatrix(uint32_t instId) const {assert(instId < m_instanceMatrices.size()); return m_instanceMatrices[instId];}
@@ -60,6 +62,8 @@ private:
 
   std::vector<InstanceInfo> m_instanceInfos = {};
   std::vector<LiteMath::float4x4> m_instanceMatrices = {};
+
+  std::vector<hydra_xml::Camera> m_sceneCameras = {};
 
   uint32_t m_totalVertices = 0u;
   uint32_t m_totalIndices  = 0u;

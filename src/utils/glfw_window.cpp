@@ -190,6 +190,7 @@ void mainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window, bool displayGUI
   int avgCounter = 0;
   int currCam    = 0;
 
+  g_appInput.cams[0] = app->GetCurrentCamera();
   double lastTime = glfwGetTime();
   while (!glfwWindowShouldClose(window))
   {

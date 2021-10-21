@@ -32,7 +32,7 @@ protected:
 
   void SetupGUIElements() override;
   void SetupSimplePipeline() override;
-  void Cleanup() override;
+  void Cleanup();
 
 };
 

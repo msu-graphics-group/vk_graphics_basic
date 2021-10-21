@@ -132,7 +132,7 @@ static inline float4x4 ortoMatrix(const float l, const float r, const float b, c
   res(0,2) = 0;
   res(0,3) = -(r + l) / (r - l);
   res(1,0) = 0;
-  res(1,1) = -2.0f / (t - b);  // why minus ??? check it for OpenGL please
+  res(1,1) = 2.0f / (t - b);
   res(1,2) = 0;
   res(1,3) = -(t + b) / (t - b);
   res(2,0) = 0;
@@ -143,5 +143,13 @@ static inline float4x4 ortoMatrix(const float l, const float r, const float b, c
   res(3,1) = 0.0f;
   res(3,2) = 0.0f;
   res(3,3) = 1.0f;
+  return res;
+}
+
+static inline float4x4 ortoDumb()
+{
+  float4x4 res;
+  res(2,2) = 0;
+
   return res;
 }

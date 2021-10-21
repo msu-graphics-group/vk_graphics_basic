@@ -30,6 +30,7 @@ public:
 
   void ProcessInput(const AppInput& input) override;
   void UpdateCamera(const Camera* cams, uint32_t a_camsNumber) override;
+  Camera GetCurrentCamera() override {return m_cam;}
   void UpdateView();
 
   void LoadScene(const char *path, bool transpose_inst_matrices) override;
