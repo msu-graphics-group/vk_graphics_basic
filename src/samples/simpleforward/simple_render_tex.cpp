@@ -61,27 +61,6 @@ void SimpleRenderTexture::LoadTexture()
     VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK);
 
   freeImageMemLDR(pixels);
-
-  // after texture is loaded it's in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL layout
-  // we need to change the layout suited for sampling
-  auto imgCmdBuf = vk_utils::createCommandBuffer(m_device, m_commandPool);
-  VkCommandBufferBeginInfo beginInfo = {};
-  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  vkBeginCommandBuffer(imgCmdBuf, &beginInfo);
-  {
-    VkImageSubresourceRange subresourceRange = {};
-    subresourceRange.aspectMask = m_texture.aspectMask;
-    subresourceRange.levelCount = mipLevels;
-    subresourceRange.layerCount = 1;
-    vk_utils::setImageLayout(
-      imgCmdBuf,
-      m_texture.image,
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-      subresourceRange);
-  }
-  vkEndCommandBuffer(imgCmdBuf);
-  vk_utils::executeCommandBufferNow(imgCmdBuf, m_graphicsQueue, m_device);
 }
 
 void SimpleRenderTexture::SetupSimplePipeline()
