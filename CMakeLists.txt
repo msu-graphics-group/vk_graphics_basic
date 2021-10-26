@@ -27,7 +27,7 @@ endif()
 
 add_compile_definitions(IMGUI_USER_CONFIG="${CMAKE_CURRENT_SOURCE_DIR}/src/render/my_imgui_config.h")
 
-
+add_compile_definitions(USE_VOLK)
 ##############################################
 # common sources used by all samples
 

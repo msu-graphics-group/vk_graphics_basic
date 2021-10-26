@@ -94,7 +94,7 @@ private:
   std::vector<const char*> m_validationLayers;
   std::shared_ptr<vk_utils::ICopyEngine> m_pCopyHelper;
 
-  std::shared_ptr<vk_utils::IQuad>               m_pFSQuad;
+  std::shared_ptr<vk_utils::IQuad> m_pFSQuad;
   VkDescriptorSet       m_quadDS; 
   VkDescriptorSetLayout m_quadDSLayout = nullptr;
  

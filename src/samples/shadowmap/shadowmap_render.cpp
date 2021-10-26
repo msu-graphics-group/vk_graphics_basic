@@ -157,7 +157,7 @@ void SimpleShadowmapRender::SetupSimplePipeline()
 {
   std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
       {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             1},
-      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,     1}
+      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,     2}
   };
 
   m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_device, dtypes, 2);
@@ -539,6 +539,12 @@ void SimpleShadowmapRender::LoadScene(const char* path, bool transpose_inst_matr
   CreateUniformBuffer();
   SetupSimplePipeline();
 
+  auto loadedCam = m_pScnMgr->GetCamera(0);
+  m_cam.fov = loadedCam.fov;
+  m_cam.pos = float3(loadedCam.pos);
+  m_cam.up  = float3(loadedCam.up);
+  m_cam.lookAt = float3(loadedCam.lookAt);
+  m_cam.tdist  = loadedCam.farPlane;
   UpdateView();
 
   for (size_t i = 0; i < m_framesInFlight; ++i)

@@ -17,6 +17,12 @@ void SimpleRenderTexture::LoadScene(const char* path, bool transpose_inst_matric
   LoadTexture();
   SetupSimplePipeline();
 
+  auto loadedCam = m_pScnMgr->GetCamera(0);
+  m_cam.fov = loadedCam.fov;
+  m_cam.pos = float3(loadedCam.pos);
+  m_cam.up  = float3(loadedCam.up);
+  m_cam.lookAt = float3(loadedCam.lookAt);
+  m_cam.tdist  = loadedCam.farPlane;
   UpdateView();
 
   for (size_t i = 0; i < m_framesInFlight; ++i)
@@ -61,27 +67,6 @@ void SimpleRenderTexture::LoadTexture()
     VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK);
 
   freeImageMemLDR(pixels);
-
-  // after texture is loaded it's in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL layout
-  // we need to change the layout suited for sampling
-  auto imgCmdBuf = vk_utils::createCommandBuffer(m_device, m_commandPool);
-  VkCommandBufferBeginInfo beginInfo = {};
-  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  vkBeginCommandBuffer(imgCmdBuf, &beginInfo);
-  {
-    VkImageSubresourceRange subresourceRange = {};
-    subresourceRange.aspectMask = m_texture.aspectMask;
-    subresourceRange.levelCount = mipLevels;
-    subresourceRange.layerCount = 1;
-    vk_utils::setImageLayout(
-      imgCmdBuf,
-      m_texture.image,
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-      subresourceRange);
-  }
-  vkEndCommandBuffer(imgCmdBuf);
-  vk_utils::executeCommandBufferNow(imgCmdBuf, m_graphicsQueue, m_device);
 }
 
 void SimpleRenderTexture::SetupSimplePipeline()

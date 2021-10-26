@@ -340,47 +340,6 @@ void Quad2D_Render::LoadScene(const char* path, bool transpose_inst_matrices)
                                                              m_pCopyHelper, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
   m_imageSampler = vk_utils::createSampler(m_device, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT);
-  
-  // transfer our texture layout from VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL 
-  //
-  VkCommandBuffer commandBuffer = vk_utils::createCommandBuffer(m_device, m_commandPool);
-    
-  VkCommandBufferBeginInfo beginCommandBufferInfo = {};
-  beginCommandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  beginCommandBufferInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-  vkBeginCommandBuffer(commandBuffer, &beginCommandBufferInfo);
-  {
-    VkImageMemoryBarrier imgBar = {};
-    {
-      imgBar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-      imgBar.pNext = nullptr;
-      imgBar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-      imgBar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  
-      imgBar.srcAccessMask = 0;
-      imgBar.dstAccessMask = 0;
-      imgBar.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-      imgBar.newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      imgBar.image         = m_imageData.image;
-  
-      imgBar.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-      imgBar.subresourceRange.baseMipLevel   = 0;
-      imgBar.subresourceRange.levelCount     = 1;
-      imgBar.subresourceRange.baseArrayLayer = 0;
-      imgBar.subresourceRange.layerCount     = 1;
-    };
-  
-    vkCmdPipelineBarrier(commandBuffer,
-                         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                         VK_PIPELINE_STAGE_TRANSFER_BIT,
-                         0,
-                         0, nullptr,
-                         0, nullptr,
-                         1, &imgBar);
-  }
-
-  vkEndCommandBuffer(commandBuffer);  
-  vk_utils::executeCommandBufferNow(commandBuffer, m_transferQueue, m_device);
 
   SetupSimplePipeline();
 

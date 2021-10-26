@@ -33,6 +33,7 @@ public:
 
   void ProcessInput(const AppInput& input) override;
   void UpdateCamera(const Camera* cams, uint32_t a_camsCount) override;
+  Camera GetCurrentCamera() override {return m_cam;}
   void UpdateView();
 
   void LoadScene(const char *path, bool transpose_inst_matrices) override;
@@ -141,7 +142,7 @@ protected:
   void CreateUniformBuffer();
   void UpdateUniformBuffer(float a_time);
 
-  virtual void Cleanup();
+  void Cleanup();
 
   void SetupDeviceFeatures();
   void SetupDeviceExtensions();
