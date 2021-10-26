@@ -12,6 +12,7 @@ layout (location = 0 ) in VS_OUT
   vec3 wNorm;
   vec3 wTangent;
   vec2 texCoord;
+  vec4 color;
 } surf;
 
 layout(binding = 0, set = 0) uniform AppData
@@ -20,6 +21,31 @@ layout(binding = 0, set = 0) uniform AppData
 };
 
 layout (binding = 1) uniform sampler2D shadowMap;
+
+
+
+vec3 hsv_to_rgb(vec3 hsv) {
+    
+    float h = mod(hsv.x,1)*360;
+    float s = mod(hsv.y,1);
+    float v = mod(hsv.z,1);
+
+    float c = v*s;
+    float x = c*(1.0-abs(mod(h/60.0,2)-1));
+    float m = v-c;
+
+    float r = (300<=h || h<60) ? c : ((60<=h && h<120) || (240<=h && h<300) ? x: 0);
+    float g = ((60<=h && h<180)? c : (0<=h && h<240) ? x: 0);
+    float b = ((180<=h && h<300)? c : (120<=h && h<360) ? x: 0);
+    
+
+    r = r+m;
+    g = g+m;
+    b = b+m;
+
+    return vec3(r,g,b);
+
+}
 
 void main()
 {
@@ -35,8 +61,10 @@ void main()
 
   vec4 lightColor1 = mix(dark_violet, chartreuse, abs(sin(Params.time)));
   vec4 lightColor2 = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+  vec4 lightColor3 = surf.color;
+  vec4 lightColor4 = vec4(hsv_to_rgb(vec3(length(surf.wPos*10),0.9f,0.9f)), 1.0f);
    
   vec3 lightDir   = normalize(Params.lightPos - surf.wPos);
-  vec4 lightColor = max(dot(surf.wNorm, lightDir), 0.0f) * lightColor1;
+  vec4 lightColor = max(dot(surf.wNorm, lightDir), 0.0f) * lightColor4;
   out_fragColor   = (lightColor*shadow + vec4(0.1f)) * vec4(Params.baseColor, 1.0f);
 }
