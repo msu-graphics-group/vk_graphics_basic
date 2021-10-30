@@ -337,6 +337,7 @@ void SimpleRender::RecreateSwapChain()
                              m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
   }
 
+  m_pGUIRender->OnSwapchainChanged(m_swapchain);
 }
 
 void SimpleRender::Cleanup()
@@ -586,7 +587,16 @@ void SimpleRender::DrawFrameWithGUI()
   vkResetFences(m_device, 1, &m_frameFences[m_presentationResources.currentFrame]);
 
   uint32_t imageIdx;
-  m_swapchain.AcquireNextImage(m_presentationResources.imageAvailable, &imageIdx);
+  auto result = m_swapchain.AcquireNextImage(m_presentationResources.imageAvailable, &imageIdx);
+  if (result == VK_ERROR_OUT_OF_DATE_KHR)
+  {
+    RecreateSwapChain();
+    return;
+  }
+  else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+  {
+    RUN_TIME_ERROR("Failed to acquire the next swapchain image!");
+  }
 
   auto currentCmdBuf = m_cmdBuffersDrawMain[m_presentationResources.currentFrame];
 
