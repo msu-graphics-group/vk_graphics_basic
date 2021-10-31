@@ -36,6 +36,12 @@ public:
     const char* pMessage,
     void* pUserData)
   {
+    (void)flags;
+    (void)objectType;
+    (void)object;
+    (void)location;
+    (void)messageCode;
+    (void)pUserData;
     std::cout << pLayerPrefix << ": " << pMessage << std::endl;
     return VK_FALSE;
   }

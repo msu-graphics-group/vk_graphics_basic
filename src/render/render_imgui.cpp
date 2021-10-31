@@ -27,7 +27,7 @@ void ImGuiRender::InitImGui()
     { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
     { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }};
 
-  m_descriptorPool = vk_utils::createDescriptorPool(m_device, descrTypes, descrTypes.size() * 1000);
+  m_descriptorPool = vk_utils::createDescriptorPool(m_device, descrTypes, (uint32_t)descrTypes.size() * 1000);
 
   ImGui_ImplVulkan_InitInfo init_info {};
 

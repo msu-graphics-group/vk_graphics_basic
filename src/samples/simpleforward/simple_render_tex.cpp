@@ -25,7 +25,7 @@ void SimpleRenderTexture::LoadScene(const char* path, bool transpose_inst_matric
   m_cam.tdist  = loadedCam.farPlane;
   UpdateView();
 
-  for (size_t i = 0; i < m_framesInFlight; ++i)
+  for (uint32_t i = 0; i < m_framesInFlight; ++i)
   {
     BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
       m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
@@ -149,7 +149,7 @@ void SimpleRenderTexture::ProcessInput(const AppInput &input)
 
     SetupSimplePipeline();
 
-    for (size_t i = 0; i < m_framesInFlight; ++i)
+    for (uint32_t i = 0; i < m_framesInFlight; ++i)
     {
       BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
         m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
