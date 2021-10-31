@@ -159,6 +159,11 @@ uint32_t SceneManager::AddMeshFromData(cmesh::SimpleMesh &meshData)
   m_totalIndices  += meshData.IndicesNum();
 
   m_meshInfos.push_back(info);
+  Box4f meshBox;
+  for (uint32_t i = 0; i < meshData.VerticesNum(); ++i) {
+    meshBox.include(reinterpret_cast<float4*>(meshData.vPos4f.data())[i]);
+  }
+  m_meshBboxes.push_back(meshBox);
 
   return m_meshInfos.size() - 1;
 }
@@ -177,6 +182,19 @@ uint32_t SceneManager::InstanceMesh(const uint32_t meshId, const LiteMath::float
   info.instBufOffset = (m_instanceMatrices.size() - 1) * sizeof(matrix);
 
   m_instanceInfos.push_back(info);
+
+  Box4f instBox;
+  for (uint32_t i = 0; i < 8; ++i) {
+    float4 corner = float4(
+      (i & 1) == 0 ? m_meshBboxes[meshId].boxMin.x : m_meshBboxes[meshId].boxMax.x,
+      (i & 2) == 0 ? m_meshBboxes[meshId].boxMin.y : m_meshBboxes[meshId].boxMax.y,
+      (i & 4) == 0 ? m_meshBboxes[meshId].boxMin.z : m_meshBboxes[meshId].boxMax.z,
+      1
+    );
+    instBox.include(matrix * corner);
+  }
+  sceneBbox.include(instBox);
+  m_instanceBboxes.push_back(instBox);
 
   return info.inst_id;
 }
