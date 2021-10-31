@@ -43,7 +43,7 @@ function(set_project_warnings project_name)
   set(CLANG_WARNINGS
       -Wall
       -Wno-unused-parameter
-
+      -Wno-unknown-pragmas
       -Wextra # reasonable and standard
       -Wshadow # warn the user if a variable declaration shadows one from a
                # parent context

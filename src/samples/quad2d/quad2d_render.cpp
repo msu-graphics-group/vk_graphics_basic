@@ -290,10 +290,9 @@ void Quad2D_Render::UpdateCamera(const Camera*, uint32_t)
 
 static std::vector<unsigned> LoadBMP(const char* filename, unsigned* pW, unsigned* pH)
 {
-  FILE* f;
-  const errno_t fopenRes = fopen_s(&f, filename, "rb");
+  FILE* f = fopen(filename, "rb");
 
-  if(fopenRes != 0 || f == nullptr)
+  if(f == nullptr)
   {
     (*pW) = 0;
     (*pH) = 0;
