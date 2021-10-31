@@ -271,7 +271,7 @@ void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4
   vkCmdBindIndexBuffer(a_cmdBuff, indexBuf, 0, VK_INDEX_TYPE_UINT32);
 
   pushConst2M.projView = a_wvp;
-  for (size_t i = 0; i < m_pScnMgr->InstancesNum(); ++i)
+  for (uint32_t i = 0; i < m_pScnMgr->InstancesNum(); ++i)
   {
     auto inst         = m_pScnMgr->GetInstanceInfo(i);
     pushConst2M.model = m_pScnMgr->GetInstanceMatrix(i);
@@ -421,7 +421,7 @@ void SimpleShadowmapRender::RecreateSwapChain()
   }
 
   m_cmdBuffersDrawMain = vk_utils::createCommandBuffers(m_device, m_commandPool, m_framesInFlight);
-  for (size_t i = 0; i < m_swapchain.GetImageCount(); ++i)
+  for (uint32_t i = 0; i < m_swapchain.GetImageCount(); ++i)
   {
     BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
                              m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
@@ -488,7 +488,7 @@ void SimpleShadowmapRender::ProcessInput(const AppInput &input)
 
     SetupSimplePipeline();
 
-    for (size_t i = 0; i < m_framesInFlight; ++i)
+    for (uint32_t i = 0; i < m_framesInFlight; ++i)
     {
       BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
                                m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
@@ -547,7 +547,7 @@ void SimpleShadowmapRender::LoadScene(const char* path, bool transpose_inst_matr
   m_cam.tdist  = loadedCam.farPlane;
   UpdateView();
 
-  for (size_t i = 0; i < m_framesInFlight; ++i)
+  for (uint32_t i = 0; i < m_framesInFlight; ++i)
   {
     BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
                              m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);

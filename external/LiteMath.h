@@ -139,6 +139,8 @@ namespace LiteMath
     inline uint &operator[](int i) { return M[i]; }
     inline uint operator[](int i) const { return M[i]; }
 
+    #pragma warning(push)
+    #pragma warning(disable:4201)
     union
     {
       struct
@@ -147,6 +149,7 @@ namespace LiteMath
       };
       uint M[4];
     };
+    #pragma warning(pop)
   };
 
   static inline uint4 operator+(const uint4 a, const uint4 b) { return uint4{ a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
@@ -308,6 +311,8 @@ namespace LiteMath
     inline int &operator[](int i) { return M[i]; }
     inline int operator[](int i) const { return M[i]; }
 
+    #pragma warning(push)
+    #pragma warning(disable:4201)
     union
     {
       struct
@@ -316,6 +321,7 @@ namespace LiteMath
       };
       int M[4];
     };
+    #pragma warning(pop)
   };
 
   static inline int4 operator+(const int4 a, const int4 b) { return int4{ a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
@@ -480,6 +486,8 @@ namespace LiteMath
     inline float &operator[](int i) { return M[i]; }
     inline float operator[](int i) const { return M[i]; }
 
+    #pragma warning(push)
+    #pragma warning(disable:4201)
     union
     {
       struct
@@ -488,6 +496,7 @@ namespace LiteMath
       };
       float M[4];
     };
+    #pragma warning(pop)
   };
 
   static inline float4 operator+(const float4 a, const float4 b) { return float4{ a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
@@ -692,6 +701,8 @@ namespace LiteMath
     inline uint &operator[](int i) { return M[i]; }
     inline uint operator[](int i) const { return M[i]; }
 
+    #pragma warning(push)
+    #pragma warning(disable:4201)
     union
     {
       struct
@@ -700,6 +711,7 @@ namespace LiteMath
       };
       uint M[3];
     };
+    #pragma warning(pop)
   };
 
   static inline uint3 operator+(const uint3 a, const uint3 b) { return uint3{ a.x + b.x, a.y + b.y, a.z + b.z }; }
@@ -844,6 +856,8 @@ namespace LiteMath
     inline int &operator[](int i) { return M[i]; }
     inline int operator[](int i) const { return M[i]; }
 
+    #pragma warning(push)
+    #pragma warning(disable:4201)
     union
     {
       struct
@@ -852,6 +866,7 @@ namespace LiteMath
       };
       int M[3];
     };
+    #pragma warning(pop)
   };
 
   static inline int3 operator+(const int3 a, const int3 b) { return int3{ a.x + b.x, a.y + b.y, a.z + b.z }; }
@@ -999,6 +1014,8 @@ namespace LiteMath
     inline float &operator[](int i) { return M[i]; }
     inline float operator[](int i) const { return M[i]; }
 
+    #pragma warning(push)
+    #pragma warning(disable:4201)
     union
     {
       struct
@@ -1007,6 +1024,7 @@ namespace LiteMath
       };
       float M[3];
     };
+    #pragma warning(pop)
   };
 
   static inline float3 operator+(const float3 a, const float3 b) { return float3{ a.x + b.x, a.y + b.y, a.z + b.z }; }
@@ -1161,6 +1179,8 @@ namespace LiteMath
     inline uint &operator[](int i) { return M[i]; }
     inline uint operator[](int i) const { return M[i]; }
 
+    #pragma warning(push)
+    #pragma warning(disable:4201)
     union
     {
       struct
@@ -1169,6 +1189,7 @@ namespace LiteMath
       };
       uint M[2];
     };
+    #pragma warning(pop)
   };
 
   static inline uint2 operator+(const uint2 a, const uint2 b) { return uint2{ a.x + b.x, a.y + b.y }; }
@@ -1293,6 +1314,8 @@ namespace LiteMath
     inline int &operator[](int i) { return M[i]; }
     inline int operator[](int i) const { return M[i]; }
 
+    #pragma warning(push)
+    #pragma warning(disable:4201)
     union
     {
       struct
@@ -1301,6 +1324,7 @@ namespace LiteMath
       };
       int M[2];
     };
+    #pragma warning(pop)
   };
 
   static inline int2 operator+(const int2 a, const int2 b) { return int2{ a.x + b.x, a.y + b.y }; }
@@ -1428,6 +1452,8 @@ namespace LiteMath
     inline float &operator[](int i) { return M[i]; }
     inline float operator[](int i) const { return M[i]; }
 
+    #pragma warning(push)
+    #pragma warning(disable:4201)
     union
     {
       struct
@@ -1436,6 +1462,7 @@ namespace LiteMath
       };
       float M[2];
     };
+    #pragma warning(pop)
   };
 
   static inline float2 operator+(const float2 a, const float2 b) { return float2{ a.x + b.x, a.y + b.y }; }
@@ -1730,6 +1757,8 @@ namespace LiteMath
     inline ushort &operator[](int i) { return M[i]; }
     inline ushort operator[](int i) const { return M[i]; }
 
+    #pragma warning(push)
+    #pragma warning(disable:4201)
     union
     {
       struct
@@ -1738,6 +1767,7 @@ namespace LiteMath
       };
       ushort M[4];
     };
+    #pragma warning(pop)
   };
 
   struct ushort2
@@ -1750,6 +1780,8 @@ namespace LiteMath
     inline ushort &operator[](int i) { return M[i]; }
     inline ushort operator[](int i) const { return M[i]; }
 
+    #pragma warning(push)
+    #pragma warning(disable:4201)
     union
     {
       struct
@@ -1759,6 +1791,7 @@ namespace LiteMath
       ushort M[2];
       uint64_t u64;
     };
+    #pragma warning(pop)
   };
 
   struct uchar4
@@ -1771,6 +1804,8 @@ namespace LiteMath
     inline uchar &operator[](int i) { return M[i]; }
     inline uchar operator[](int i) const { return M[i]; }
 
+    #pragma warning(push)
+    #pragma warning(disable:4201)
     union
     {
       struct
@@ -1780,9 +1815,10 @@ namespace LiteMath
       uchar M[4];
       uint32_t u32;
     };
+    #pragma warning(pop)
   };
 
-
+  
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

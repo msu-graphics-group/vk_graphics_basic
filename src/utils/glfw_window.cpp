@@ -34,7 +34,7 @@ struct input_sample
 
 AppInput g_appInput;
 
-void onKeyboardPressedBasic(GLFWwindow* window, int key, int scancode, int action, int mode)
+void onKeyboardPressedBasic(GLFWwindow* window, int key, int, int action, int)
 {
   switch (key)
   {
@@ -62,7 +62,7 @@ void onKeyboardPressedBasic(GLFWwindow* window, int key, int scancode, int actio
   }
 }
 
-void onMouseButtonClickedBasic(GLFWwindow* window, int button, int action, int mods)
+void onMouseButtonClickedBasic(GLFWwindow* window, int button, int action, int)
 {
   if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
     g_inputDesktop.captureMouse = !g_inputDesktop.captureMouse;
@@ -77,7 +77,7 @@ void onMouseButtonClickedBasic(GLFWwindow* window, int button, int action, int m
 
 }
 
-void onMouseMoveBasic(GLFWwindow* window, double xpos, double ypos)
+void onMouseMoveBasic(GLFWwindow*, double xpos, double ypos)
 {
   if (g_inputDesktop.firstMouse)
   {
@@ -93,7 +93,7 @@ void onMouseMoveBasic(GLFWwindow* window, double xpos, double ypos)
   g_inputDesktop.lastY = float(ypos);
 }
 
-void onMouseScrollBasic(GLFWwindow* window, double xoffset, double yoffset)
+void onMouseScrollBasic(GLFWwindow*, double, double yoffset)
 {
   g_inputDesktop.scrollY = float(yoffset);
 }
