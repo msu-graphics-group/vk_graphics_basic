@@ -31,16 +31,16 @@ void ImGuiRender::InitImGui()
 
   ImGui_ImplVulkan_InitInfo init_info {};
 
-  init_info.Instance = m_instance;
+  init_info.Instance       = m_instance;
   init_info.PhysicalDevice = m_physDevice;
-  init_info.Device = m_device;
-  init_info.QueueFamily = m_queue_FID;
-  init_info.Queue = m_queue;
-  init_info.PipelineCache = VK_NULL_HANDLE;
+  init_info.Device         = m_device;
+  init_info.QueueFamily    = m_queue_FID;
+  init_info.Queue          = m_queue;
+  init_info.PipelineCache  = VK_NULL_HANDLE;
   init_info.DescriptorPool = m_descriptorPool;
-  init_info.Allocator = VK_NULL_HANDLE;
-  init_info.MinImageCount = m_swapchain->GetMinImageCount();
-  init_info.ImageCount = m_swapchain->GetImageCount();
+  init_info.Allocator      = VK_NULL_HANDLE;
+  init_info.MinImageCount  = m_swapchain->GetMinImageCount();
+  init_info.ImageCount     = m_swapchain->GetImageCount();
   init_info.CheckVkResultFn = nullptr;
 
   vk_utils::RenderTargetInfo2D rtInfo = {};
@@ -49,10 +49,9 @@ void ImGuiRender::InitImGui()
   rtInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   rtInfo.finalLayout   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-  m_renderpass = vk_utils::createRenderPass(m_device, rtInfo);
+  m_renderpass   = vk_utils::createRenderPass(m_device, rtInfo);
   m_framebuffers = vk_utils::createFrameBuffers(m_device, *m_swapchain, m_renderpass);
-
-  m_commandPool = vk_utils::createCommandPool(m_device, m_queue_FID, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+  m_commandPool  = vk_utils::createCommandPool(m_device, m_queue_FID, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
   m_drawGUICmdBuffers.reserve(m_swapchain->GetImageCount());
   m_drawGUICmdBuffers = vk_utils::createCommandBuffers(m_device, m_commandPool, m_swapchain->GetImageCount());
@@ -115,6 +114,11 @@ void ImGuiRender::OnSwapchainChanged(const VulkanSwapChain &a_swapchain)
 {
   // If swapchain size changed, we are doomed, but that generaly does not happen. I think.
   m_swapchain = &a_swapchain;
+  if(!m_framebuffers.empty())
+  {
+    for(auto& fbuf: m_framebuffers)
+      vkDestroyFramebuffer(m_device, fbuf, VK_NULL_HANDLE);
+  }
   m_framebuffers = vk_utils::createFrameBuffers(m_device, *m_swapchain, m_renderpass);
 }
 
