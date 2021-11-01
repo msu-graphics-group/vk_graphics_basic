@@ -45,19 +45,13 @@ void SimpleRenderTexture::LoadTexture()
     return;
   }
 
+  // in this sample we simply reallocate memory every time
+  // in more practical scenario you would try to reuse the same memory
+  // or even better utilize some sort of allocator
   vk_utils::deleteImg(m_device, &m_texture);
   if(m_textureSampler != VK_NULL_HANDLE)
   {
     vkDestroySampler(m_device, m_textureSampler, VK_NULL_HANDLE);
-  }
-
-  // in this sample we simply reallocate memory every time
-  // in more practical scenario you would try to reuse the same memory
-  // or even better utilize some sort of allocator
-  if(m_texture.mem != VK_NULL_HANDLE)
-  {
-    vkFreeMemory(m_device, m_texture.mem, nullptr);
-    m_texture.mem = VK_NULL_HANDLE;
   }
 
   int mipLevels = 1;
