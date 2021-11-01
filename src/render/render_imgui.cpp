@@ -5,7 +5,7 @@
 
 ImGuiRender::ImGuiRender(VkInstance a_instance, VkDevice a_device, VkPhysicalDevice a_physDevice, uint32_t a_queueFID, VkQueue a_queue,
   const VulkanSwapChain &a_swapchain) : m_instance(a_instance), m_device(a_device), m_physDevice(a_physDevice),
-                                        m_queue_FID(a_queueFID), m_queue(a_queue), m_swapchain(a_swapchain)
+                                        m_queue_FID(a_queueFID), m_queue(a_queue), m_swapchain(&a_swapchain)
 {
   InitImGui();
 }
@@ -39,23 +39,23 @@ void ImGuiRender::InitImGui()
   init_info.PipelineCache = VK_NULL_HANDLE;
   init_info.DescriptorPool = m_descriptorPool;
   init_info.Allocator = VK_NULL_HANDLE;
-  init_info.MinImageCount = m_swapchain.GetMinImageCount();
-  init_info.ImageCount = m_swapchain.GetImageCount();
+  init_info.MinImageCount = m_swapchain->GetMinImageCount();
+  init_info.ImageCount = m_swapchain->GetImageCount();
   init_info.CheckVkResultFn = nullptr;
 
   vk_utils::RenderTargetInfo2D rtInfo = {};
-  rtInfo.format = m_swapchain.GetFormat();
+  rtInfo.format = m_swapchain->GetFormat();
   rtInfo.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
   rtInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   rtInfo.finalLayout   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
   m_renderpass = vk_utils::createRenderPass(m_device, rtInfo);
-  m_framebuffers = vk_utils::createFrameBuffers(m_device, m_swapchain, m_renderpass);
+  m_framebuffers = vk_utils::createFrameBuffers(m_device, *m_swapchain, m_renderpass);
 
   m_commandPool = vk_utils::createCommandPool(m_device, m_queue_FID, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-  m_drawGUICmdBuffers.reserve(m_swapchain.GetImageCount());
-  m_drawGUICmdBuffers = vk_utils::createCommandBuffers(m_device, m_commandPool, m_swapchain.GetImageCount());
+  m_drawGUICmdBuffers.reserve(m_swapchain->GetImageCount());
+  m_drawGUICmdBuffers = vk_utils::createCommandBuffers(m_device, m_commandPool, m_swapchain->GetImageCount());
 
   g_instance = m_instance;
 
@@ -97,7 +97,7 @@ VkCommandBuffer ImGuiRender::BuildGUIRenderCommand(uint32_t a_swapchainFrameIdx,
   rpassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   rpassBeginInfo.renderPass = m_renderpass;
   rpassBeginInfo.framebuffer = m_framebuffers[a_swapchainFrameIdx];
-  rpassBeginInfo.renderArea.extent = m_swapchain.GetExtent();
+  rpassBeginInfo.renderArea.extent = m_swapchain->GetExtent();
   rpassBeginInfo.clearValueCount = 1;
   rpassBeginInfo.pClearValues = &clearValue;
   vkCmdBeginRenderPass(currentCmdBuf, &rpassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -109,6 +109,13 @@ VkCommandBuffer ImGuiRender::BuildGUIRenderCommand(uint32_t a_swapchainFrameIdx,
   vkEndCommandBuffer(currentCmdBuf);
 
   return currentCmdBuf;
+}
+
+void ImGuiRender::OnSwapchainChanged(const VulkanSwapChain &a_swapchain)
+{
+  // If swapchain size changed, we are doomed, but that generaly does not happen. I think.
+  m_swapchain = &a_swapchain;
+  m_framebuffers = vk_utils::createFrameBuffers(m_device, *m_swapchain, m_renderpass);
 }
 
 void ImGuiRender::CleanupImGui()
