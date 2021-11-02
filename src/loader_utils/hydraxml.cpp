@@ -13,6 +13,10 @@
 
 namespace hydra_xml
 {
+  #pragma warning(push)
+  #pragma warning(disable: 4996)
+  // Here we use codecvt_utf8 and other types depricated in C++17
+  // TODO: Replace it with another implementation.
   std::wstring s2ws(const std::string& str)
   {
     using convert_typeX = std::codecvt_utf8<wchar_t>;
@@ -26,6 +30,7 @@ namespace hydra_xml
     std::wstring_convert<convert_typeX, wchar_t> converterX;
     return converterX.to_bytes(wstr);
   }
+  #pragma warning(pop)
 
   void HydraScene::LogError(const std::string &msg)
   {

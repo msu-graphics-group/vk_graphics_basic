@@ -233,7 +233,7 @@ void Quad2D_Render::RecreateSwapChain()
   }
 
   m_cmdBuffersDrawMain = vk_utils::createCommandBuffers(m_device, m_commandPool, m_framesInFlight);
-  for (size_t i = 0; i < m_swapchain.GetImageCount(); ++i)
+  for (uint32_t i = 0; i < m_swapchain.GetImageCount(); ++i)
   {
     BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i], m_swapchain.GetAttachment(i).view);
   }
@@ -274,7 +274,7 @@ void Quad2D_Render::ProcessInput(const AppInput &input)
     SetupQuadRenderer();
     SetupSimplePipeline();
 
-    for (size_t i = 0; i < m_framesInFlight; ++i)
+    for (uint32_t i = 0; i < m_framesInFlight; ++i)
     {
       BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i], m_swapchain.GetAttachment(i).view);
     }
@@ -282,7 +282,7 @@ void Quad2D_Render::ProcessInput(const AppInput &input)
 
 }
 
-void Quad2D_Render::UpdateCamera(const Camera* cams, uint32_t a_camsNumber)
+void Quad2D_Render::UpdateCamera(const Camera*, uint32_t)
 {
 
 }
@@ -292,7 +292,7 @@ static std::vector<unsigned> LoadBMP(const char* filename, unsigned* pW, unsigne
 {
   FILE* f = fopen(filename, "rb");
 
-  if(f == NULL)
+  if(f == nullptr)
   {
     (*pW) = 0;
     (*pH) = 0;
@@ -331,7 +331,7 @@ static std::vector<unsigned> LoadBMP(const char* filename, unsigned* pW, unsigne
   return res;
 }
 
-void Quad2D_Render::LoadScene(const char* path, bool transpose_inst_matrices)
+void Quad2D_Render::LoadScene(const char*, bool)
 {
   uint32_t texW, texH;
   auto texData = LoadBMP("../resources/textures/texture1.bmp", &texW, &texH);
@@ -343,7 +343,7 @@ void Quad2D_Render::LoadScene(const char* path, bool transpose_inst_matrices)
 
   SetupSimplePipeline();
 
-  for (size_t i = 0; i < m_framesInFlight; ++i)
+  for (uint32_t i = 0; i < m_framesInFlight; ++i)
     BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i], m_swapchain.GetAttachment(i).view);
 }
 
@@ -393,7 +393,7 @@ void Quad2D_Render::DrawFrameSimple()
   vkQueueWaitIdle(m_presentationResources.queue);
 }
 
-void Quad2D_Render::DrawFrame(float a_time, DrawMode a_mode)
+void Quad2D_Render::DrawFrame(float, DrawMode)
 {
   DrawFrameSimple();
 }

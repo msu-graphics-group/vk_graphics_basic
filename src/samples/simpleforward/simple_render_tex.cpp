@@ -25,7 +25,7 @@ void SimpleRenderTexture::LoadScene(const char* path, bool transpose_inst_matric
   m_cam.tdist  = loadedCam.farPlane;
   UpdateView();
 
-  for (size_t i = 0; i < m_framesInFlight; ++i)
+  for (uint32_t i = 0; i < m_framesInFlight; ++i)
   {
     BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
       m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
@@ -45,19 +45,13 @@ void SimpleRenderTexture::LoadTexture()
     return;
   }
 
+  // in this sample we simply reallocate memory every time
+  // in more practical scenario you would try to reuse the same memory
+  // or even better utilize some sort of allocator
   vk_utils::deleteImg(m_device, &m_texture);
   if(m_textureSampler != VK_NULL_HANDLE)
   {
     vkDestroySampler(m_device, m_textureSampler, VK_NULL_HANDLE);
-  }
-
-  // in this sample we simply reallocate memory every time
-  // in more practical scenario you would try to reuse the same memory
-  // or even better utilize some sort of allocator
-  if(m_texture.mem != VK_NULL_HANDLE)
-  {
-    vkFreeMemory(m_device, m_texture.mem, nullptr);
-    m_texture.mem = VK_NULL_HANDLE;
   }
 
   int mipLevels = 1;
@@ -149,7 +143,7 @@ void SimpleRenderTexture::ProcessInput(const AppInput &input)
 
     SetupSimplePipeline();
 
-    for (size_t i = 0; i < m_framesInFlight; ++i)
+    for (uint32_t i = 0; i < m_framesInFlight; ++i)
     {
       BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
         m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);

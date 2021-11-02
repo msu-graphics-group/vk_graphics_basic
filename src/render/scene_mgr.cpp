@@ -146,8 +146,8 @@ uint32_t SceneManager::AddMeshFromData(cmesh::SimpleMesh &meshData)
   m_pMeshData->Append(meshData);
 
   MeshInfo info;
-  info.m_vertNum = meshData.VerticesNum();
-  info.m_indNum  = meshData.IndicesNum();
+  info.m_vertNum = (uint32_t)meshData.VerticesNum();
+  info.m_indNum  = (uint32_t)meshData.IndicesNum();
 
   info.m_vertexOffset = m_totalVertices;
   info.m_indexOffset  = m_totalIndices;
@@ -155,12 +155,17 @@ uint32_t SceneManager::AddMeshFromData(cmesh::SimpleMesh &meshData)
   info.m_vertexBufOffset = info.m_vertexOffset * m_pMeshData->SingleVertexSize();
   info.m_indexBufOffset  = info.m_indexOffset  * m_pMeshData->SingleIndexSize();
 
-  m_totalVertices += meshData.VerticesNum();
-  m_totalIndices  += meshData.IndicesNum();
+  m_totalVertices += (uint32_t)meshData.VerticesNum();
+  m_totalIndices  += (uint32_t)meshData.IndicesNum();
 
   m_meshInfos.push_back(info);
+  Box4f meshBox;
+  for (uint32_t i = 0; i < meshData.VerticesNum(); ++i) {
+    meshBox.include(reinterpret_cast<float4*>(meshData.vPos4f.data())[i]);
+  }
+  m_meshBboxes.push_back(meshBox);
 
-  return m_meshInfos.size() - 1;
+  return (uint32_t)m_meshInfos.size() - 1;
 }
 
 uint32_t SceneManager::InstanceMesh(const uint32_t meshId, const LiteMath::float4x4 &matrix, bool markForRender)
@@ -171,12 +176,25 @@ uint32_t SceneManager::InstanceMesh(const uint32_t meshId, const LiteMath::float
   m_instanceMatrices.push_back(matrix);
 
   InstanceInfo info;
-  info.inst_id       = m_instanceMatrices.size() - 1;
+  info.inst_id       = (uint32_t)m_instanceMatrices.size() - 1;
   info.mesh_id       = meshId;
   info.renderMark    = markForRender;
   info.instBufOffset = (m_instanceMatrices.size() - 1) * sizeof(matrix);
 
   m_instanceInfos.push_back(info);
+
+  Box4f instBox;
+  for (uint32_t i = 0; i < 8; ++i) {
+    float4 corner = float4(
+      (i & 1) == 0 ? m_meshBboxes[meshId].boxMin.x : m_meshBboxes[meshId].boxMax.x,
+      (i & 2) == 0 ? m_meshBboxes[meshId].boxMin.y : m_meshBboxes[meshId].boxMax.y,
+      (i & 4) == 0 ? m_meshBboxes[meshId].boxMin.z : m_meshBboxes[meshId].boxMax.z,
+      1
+    );
+    instBox.include(matrix * corner);
+  }
+  sceneBbox.include(instBox);
+  m_instanceBboxes.push_back(instBox);
 
   return info.inst_id;
 }

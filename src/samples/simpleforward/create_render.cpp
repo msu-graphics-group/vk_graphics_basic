@@ -17,7 +17,6 @@ std::unique_ptr<IRender> CreateRender(uint32_t w, uint32_t h, RenderEngineType t
   default:
     return nullptr;
   }
-  return nullptr;
 }
 
 
