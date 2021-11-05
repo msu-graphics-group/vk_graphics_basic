@@ -114,11 +114,8 @@ void ImGuiRender::OnSwapchainChanged(const VulkanSwapChain &a_swapchain)
 {
   // If swapchain size changed, we are doomed, but that generaly does not happen. I think.
   m_swapchain = &a_swapchain;
-  if(!m_framebuffers.empty())
-  {
-    for(auto& fbuf: m_framebuffers)
-      vkDestroyFramebuffer(m_device, fbuf, VK_NULL_HANDLE);
-  }
+
+  ClearFrameBuffers();
   m_framebuffers = vk_utils::createFrameBuffers(m_device, *m_swapchain, m_renderpass);
 }
 
@@ -127,25 +124,37 @@ void ImGuiRender::CleanupImGui()
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplGlfw_Shutdown();
 
-  if(m_renderpass)
-    vkDestroyRenderPass(m_device, m_renderpass, VK_NULL_HANDLE);
+  ClearFrameBuffers();
 
-  if(!m_framebuffers.empty())
+  if(m_renderpass)
   {
-    for(auto& fbuf: m_framebuffers)
-      vkDestroyFramebuffer(m_device, fbuf, VK_NULL_HANDLE);
+    vkDestroyRenderPass(m_device, m_renderpass, VK_NULL_HANDLE);
+    m_renderpass = VK_NULL_HANDLE;
+  }
+  
+  if(m_commandPool)
+  {
+    vkDestroyCommandPool(m_device, m_commandPool, VK_NULL_HANDLE);
+    m_commandPool = VK_NULL_HANDLE;  
   }
 
-  if(m_commandPool)
-    vkDestroyCommandPool(m_device, m_commandPool, VK_NULL_HANDLE);
-
   if(m_descriptorPool)
+  {
     vkDestroyDescriptorPool(m_device, m_descriptorPool, VK_NULL_HANDLE);
+    m_descriptorPool = VK_NULL_HANDLE;   
+  }
 }
 
 ImGuiRender::~ImGuiRender()
 {
   CleanupImGui();
+}
+
+void ImGuiRender::ClearFrameBuffers()
+{
+  for(auto fbuf : m_framebuffers)
+    vkDestroyFramebuffer(m_device, fbuf, VK_NULL_HANDLE);
+  m_framebuffers.clear();
 }
 
 

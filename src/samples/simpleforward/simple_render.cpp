@@ -272,23 +272,23 @@ void SimpleRender::CleanupPipelineAndSwapchain()
 
   for (size_t i = 0; i < m_frameFences.size(); i++)
   {
-    if(m_frameFences[i] != VK_NULL_HANDLE)
-    {
-      vkDestroyFence(m_device, m_frameFences[i], nullptr);
-      m_frameFences[i] = VK_NULL_HANDLE;
-    }
+    vkDestroyFence(m_device, m_frameFences[i], nullptr);
   }
+  m_frameFences.clear();
 
   vk_utils::deleteImg(m_device, &m_depthBuffer);
+  
+  if(m_depthBuffer.mem != VK_NULL_HANDLE)
+  {
+    vkFreeMemory(m_device, m_depthBuffer.mem, nullptr);
+    m_depthBuffer.mem = VK_NULL_HANDLE;
+  }
 
   for (size_t i = 0; i < m_frameBuffers.size(); i++)
   {
-    if(m_frameBuffers[i] != VK_NULL_HANDLE)
-    {
-      vkDestroyFramebuffer(m_device, m_frameBuffers[i], nullptr);
-      m_frameBuffers[i] = VK_NULL_HANDLE;
-    }
+    vkDestroyFramebuffer(m_device, m_frameBuffers[i], nullptr);
   }
+  m_frameBuffers.clear();
 
   if(m_screenRenderPass != VK_NULL_HANDLE)
   {
@@ -389,14 +389,6 @@ void SimpleRender::Cleanup()
   {
     vkFreeMemory(m_device, m_uboAlloc, nullptr);
     m_uboAlloc = VK_NULL_HANDLE;
-  }
-
-//  vk_utils::deleteImg(m_device, &m_depthBuffer); // already deleted with swapchain
-
-  if(m_depthBuffer.mem != VK_NULL_HANDLE)
-  {
-    vkFreeMemory(m_device, m_depthBuffer.mem, nullptr);
-    m_depthBuffer.mem = VK_NULL_HANDLE;
   }
 
   m_pBindings = nullptr;
