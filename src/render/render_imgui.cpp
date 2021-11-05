@@ -45,8 +45,8 @@ void ImGuiRender::InitImGui()
 
   vk_utils::RenderTargetInfo2D rtInfo = {};
   rtInfo.format = m_swapchain->GetFormat();
-  rtInfo.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  rtInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  rtInfo.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+  rtInfo.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
   rtInfo.finalLayout   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
   m_renderpass   = vk_utils::createRenderPass(m_device, rtInfo);
@@ -114,11 +114,8 @@ void ImGuiRender::OnSwapchainChanged(const VulkanSwapChain &a_swapchain)
 {
   // If swapchain size changed, we are doomed, but that generaly does not happen. I think.
   m_swapchain = &a_swapchain;
-  if(!m_framebuffers.empty())
-  {
-    for(auto& fbuf: m_framebuffers)
-      vkDestroyFramebuffer(m_device, fbuf, VK_NULL_HANDLE);
-  }
+  for(auto& fbuf: m_framebuffers)
+    vkDestroyFramebuffer(m_device, fbuf, VK_NULL_HANDLE);
   m_framebuffers = vk_utils::createFrameBuffers(m_device, *m_swapchain, m_renderpass);
 }
 

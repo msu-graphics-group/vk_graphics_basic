@@ -19,7 +19,7 @@ void initVulkanGLFW(std::shared_ptr<IRender> &app, GLFWwindow* window, int devic
     VkSurfaceKHR surface;
     VK_CHECK_RESULT(glfwCreateWindowSurface(app->GetVkInstance(), window, nullptr, &surface));
 //    setupImGuiContext(window);
-    app->InitPresentation(surface);
+    app->InitPresentation(surface, DrawMode::NO_GUI);
   }
 }
 

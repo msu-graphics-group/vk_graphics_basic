@@ -2,7 +2,7 @@
 #include "create_render.h"
 #include "utils/glfw_window.h"
 
-void initVulkanGLFW(std::shared_ptr<IRender> &app, GLFWwindow* window, int deviceID)
+void initVulkanGLFW(std::shared_ptr<IRender> &app, GLFWwindow* window, int deviceID, bool drawGUI)
 {
   uint32_t glfwExtensionCount = 0;
   const char** glfwExtensions;
@@ -19,8 +19,16 @@ void initVulkanGLFW(std::shared_ptr<IRender> &app, GLFWwindow* window, int devic
   {
     VkSurfaceKHR surface;
     VK_CHECK_RESULT(glfwCreateWindowSurface(app->GetVkInstance(), window, nullptr, &surface));
-    setupImGuiContext(window);
-    app->InitPresentation(surface);
+
+    if(drawGUI)
+    {
+      setupImGuiContext(window);
+      app->InitPresentation(surface, DrawMode::WITH_GUI);
+    }
+    else
+    {
+      app->InitPresentation(surface, DrawMode::NO_GUI);
+    }
   }
 }
 
@@ -41,12 +49,12 @@ int main()
 
   auto* window = initWindow(WIDTH, HEIGHT);
 
-  initVulkanGLFW(app, window, VULKAN_DEVICE_ID);
+  bool drawGUI = true;
+  initVulkanGLFW(app, window, VULKAN_DEVICE_ID, drawGUI);
 
   app->LoadScene("../resources/scenes/043_cornell_normals/statex_00001.xml", false);
 
-  bool showGUI = true;
-  mainLoop(app, window, showGUI);
+  mainLoop(app, window);
 
   return 0;
 }

@@ -18,7 +18,7 @@
 class SimpleRender : public IRender
 {
 public:
-  const std::string VERTEX_SHADER_PATH = "../resources/shaders/simple.vert";
+  const std::string VERTEX_SHADER_PATH   = "../resources/shaders/simple.vert";
   const std::string FRAGMENT_SHADER_PATH = "../resources/shaders/simple.frag";
 
   SimpleRender(uint32_t a_width, uint32_t a_height);
@@ -29,7 +29,7 @@ public:
   inline VkInstance   GetVkInstance() const override { return m_instance; }
   void InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId) override;
 
-  void InitPresentation(VkSurfaceKHR& a_surface) override;
+  void InitPresentation(VkSurfaceKHR& a_surface, DrawMode a_mode) override;
 
   void ProcessInput(const AppInput& input) override;
   void UpdateCamera(const Camera* cams, uint32_t a_camsCount) override;
@@ -37,7 +37,7 @@ public:
   void UpdateView();
 
   void LoadScene(const char *path, bool transpose_inst_matrices) override;
-  void DrawFrame(float a_time, DrawMode a_mode) override;
+  void DrawFrame(float a_time) override;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -97,12 +97,11 @@ protected:
   VkDeviceMemory m_uboAlloc = VK_NULL_HANDLE;
   void* m_uboMappedMem = nullptr;
 
-  pipeline_data_t m_basicForwardPipeline {};
-
   VkDescriptorSet m_dSet = VK_NULL_HANDLE;
   VkDescriptorSetLayout m_dSetLayout = VK_NULL_HANDLE;
-  VkRenderPass m_screenRenderPass = VK_NULL_HANDLE; // main renderpass
 
+  VkRenderPass    m_renderPass = VK_NULL_HANDLE;
+  pipeline_data_t m_basicForwardPipeline {};
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
 
   // *** presentation
@@ -110,6 +109,7 @@ protected:
   VulkanSwapChain m_swapchain;
   std::vector<VkFramebuffer> m_frameBuffers;
   vk_utils::VulkanImageMem m_depthBuffer{};
+  DrawMode m_drawMode = DrawMode::NO_GUI;
   // ***
 
   // *** GUI
@@ -138,21 +138,22 @@ protected:
   void CreateInstance();
   void CreateDevice(uint32_t a_deviceId);
 
-  void BuildCommandBufferSimple(VkCommandBuffer cmdBuff, VkFramebuffer frameBuff,
-                                VkImageView a_targetImageView, VkPipeline a_pipeline);
+  void BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff,
+                                VkRenderPass a_renderPass, pipeline_data_t& a_pipeline);
 
-  virtual void SetupSimplePipeline();
+  virtual void SetupSimplePipeline(pipeline_data_t& a_pipeline, VkRenderPass a_renderPass);
   void CleanupPipelineAndSwapchain();
   void RecreateSwapChain();
 
   void CreateUniformBuffer();
   void UpdateUniformBuffer(float a_time);
 
-  void Cleanup();
-
   void SetupDeviceFeatures();
   void SetupDeviceExtensions();
   void SetupValidationLayers();
+
+private:
+  void Cleanup();
 };
 
 

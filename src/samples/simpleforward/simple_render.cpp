@@ -64,9 +64,10 @@ void SimpleRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_inst
                                              m_queueFamilyIDXs.graphics, false);
 }
 
-void SimpleRender::InitPresentation(VkSurfaceKHR &a_surface)
+void SimpleRender::InitPresentation(VkSurfaceKHR &a_surface, DrawMode a_mode)
 {
   m_surface = a_surface;
+  m_drawMode = a_mode;
 
   m_presentationResources.queue = m_swapchain.CreateSwapChain(m_physicalDevice, m_device, m_surface,
                                                               m_width, m_height, m_framesInFlight, m_vsync);
@@ -76,8 +77,6 @@ void SimpleRender::InitPresentation(VkSurfaceKHR &a_surface)
   semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
   VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_presentationResources.imageAvailable));
   VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_presentationResources.renderingFinished));
-  m_screenRenderPass = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat());
-
   std::vector<VkFormat> depthFormats = {
       VK_FORMAT_D32_SFLOAT,
       VK_FORMAT_D32_SFLOAT_S8_UINT,
@@ -85,11 +84,21 @@ void SimpleRender::InitPresentation(VkSurfaceKHR &a_surface)
       VK_FORMAT_D16_UNORM_S8_UINT,
       VK_FORMAT_D16_UNORM
   };
+
+  if(m_drawMode == DrawMode::WITH_GUI)
+  {
+    m_renderPass   = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat(),
+      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    m_pGUIRender = std::make_shared<ImGuiRender>(m_instance, m_device, m_physicalDevice, m_queueFamilyIDXs.graphics, m_graphicsQueue, m_swapchain);
+  }
+  else
+  {
+    m_renderPass = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat());
+  }
+
   vk_utils::getSupportedDepthFormat(m_physicalDevice, depthFormats, &m_depthBuffer.format);
   m_depthBuffer  = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
-  m_frameBuffers = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
-
-  m_pGUIRender = std::make_shared<ImGuiRender>(m_instance, m_device, m_physicalDevice, m_queueFamilyIDXs.graphics, m_graphicsQueue, m_swapchain);
+  m_frameBuffers = vk_utils::createFrameBuffers(m_device, m_swapchain, m_renderPass, m_depthBuffer.view);
 }
 
 void SimpleRender::CreateInstance()
@@ -124,7 +133,7 @@ void SimpleRender::CreateDevice(uint32_t a_deviceId)
 }
 
 
-void SimpleRender::SetupSimplePipeline()
+void SimpleRender::SetupSimplePipeline(pipeline_data_t& a_pipeline, VkRenderPass a_renderPass)
 {
   std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
       {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             1}
@@ -139,15 +148,15 @@ void SimpleRender::SetupSimplePipeline()
 
   // if we are recreating pipeline (for example, to reload shaders)
   // we need to cleanup old pipeline
-  if(m_basicForwardPipeline.layout != VK_NULL_HANDLE)
+  if(a_pipeline.layout != VK_NULL_HANDLE)
   {
-    vkDestroyPipelineLayout(m_device, m_basicForwardPipeline.layout, nullptr);
-    m_basicForwardPipeline.layout = VK_NULL_HANDLE;
+    vkDestroyPipelineLayout(m_device, a_pipeline.layout, nullptr);
+    a_pipeline.layout = VK_NULL_HANDLE;
   }
-  if(m_basicForwardPipeline.pipeline != VK_NULL_HANDLE)
+  if(a_pipeline.pipeline != VK_NULL_HANDLE)
   {
-    vkDestroyPipeline(m_device, m_basicForwardPipeline.pipeline, nullptr);
-    m_basicForwardPipeline.pipeline = VK_NULL_HANDLE;
+    vkDestroyPipeline(m_device, a_pipeline.pipeline, nullptr);
+    a_pipeline.pipeline = VK_NULL_HANDLE;
   }
 
   vk_utils::GraphicsPipelineMaker maker;
@@ -158,11 +167,11 @@ void SimpleRender::SetupSimplePipeline()
 
   maker.LoadShaders(m_device, shader_paths);
 
-  m_basicForwardPipeline.layout = maker.MakeLayout(m_device, {m_dSetLayout}, sizeof(pushConst2M));
+  a_pipeline.layout = maker.MakeLayout(m_device, {m_dSetLayout}, sizeof(pushConst2M));
   maker.SetDefaultState(m_width, m_height);
 
-  m_basicForwardPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(),
-                                                       m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR});
+  a_pipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(),
+    a_renderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR});
 }
 
 void SimpleRender::CreateUniformBuffer()
@@ -199,7 +208,7 @@ void SimpleRender::UpdateUniformBuffer(float a_time)
 }
 
 void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff,
-                                            VkImageView, VkPipeline a_pipeline)
+                                            VkRenderPass a_renderPass, pipeline_data_t& a_pipeline)
 {
   vkResetCommandBuffer(a_cmdBuff, 0);
 
@@ -216,7 +225,7 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
   {
     VkRenderPassBeginInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_screenRenderPass;
+    renderPassInfo.renderPass  = a_renderPass;
     renderPassInfo.framebuffer = a_frameBuff;
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = m_swapchain.GetExtent();
@@ -228,9 +237,9 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
     renderPassInfo.pClearValues = &clearValues[0];
 
     vkCmdBeginRenderPass(a_cmdBuff, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, a_pipeline);
+    vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, a_pipeline.pipeline);
 
-    vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.layout, 0, 1,
+    vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, a_pipeline.layout, 0, 1,
                             &m_dSet, 0, VK_NULL_HANDLE);
 
     VkShaderStageFlags stageFlags = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -247,7 +256,7 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
       auto inst = m_pScnMgr->GetInstanceInfo(i);
 
       pushConst2M.model = m_pScnMgr->GetInstanceMatrix(i);
-      vkCmdPushConstants(a_cmdBuff, m_basicForwardPipeline.layout, stageFlags, 0,
+      vkCmdPushConstants(a_cmdBuff, a_pipeline.layout, stageFlags, 0,
                          sizeof(pushConst2M), &pushConst2M);
 
       auto mesh_info = m_pScnMgr->GetMeshInfo(inst.mesh_id);
@@ -290,10 +299,10 @@ void SimpleRender::CleanupPipelineAndSwapchain()
     }
   }
 
-  if(m_screenRenderPass != VK_NULL_HANDLE)
+  if(m_renderPass != VK_NULL_HANDLE)
   {
-    vkDestroyRenderPass(m_device, m_screenRenderPass, nullptr);
-    m_screenRenderPass = VK_NULL_HANDLE;
+    vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+    m_renderPass = VK_NULL_HANDLE;
   }
 
   m_swapchain.Cleanup();
@@ -316,10 +325,19 @@ void SimpleRender::RecreateSwapChain()
       VK_FORMAT_D16_UNORM
   };                                                            
   vk_utils::getSupportedDepthFormat(m_physicalDevice, depthFormats, &m_depthBuffer.format);
-  
-  m_screenRenderPass = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat());
-  m_depthBuffer      = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
-  m_frameBuffers     = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
+  m_depthBuffer = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
+
+  if(m_drawMode == DrawMode::WITH_GUI)
+  {
+    m_renderPass   = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat(),
+      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+  }
+  else
+  {
+    m_renderPass = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat());
+  }
+
+  m_frameBuffers = vk_utils::createFrameBuffers(m_device, m_swapchain, m_renderPass, m_depthBuffer.view);
 
   m_frameFences.resize(m_framesInFlight);
   VkFenceCreateInfo fenceInfo = {};
@@ -331,10 +349,11 @@ void SimpleRender::RecreateSwapChain()
   }
 
   m_cmdBuffersDrawMain = vk_utils::createCommandBuffers(m_device, m_commandPool, m_framesInFlight);
-  for (uint32_t i = 0; i < m_swapchain.GetImageCount(); ++i)
+;
+  for (uint32_t i = 0; i < m_framesInFlight; ++i)
   {
     BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
-                             m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
+      m_renderPass, m_basicForwardPipeline);
   }
 
   m_pGUIRender->OnSwapchainChanged(m_swapchain);
@@ -342,8 +361,12 @@ void SimpleRender::RecreateSwapChain()
 
 void SimpleRender::Cleanup()
 {
-  m_pGUIRender = nullptr;
-  ImGui::DestroyContext();
+  if(m_drawMode == DrawMode::WITH_GUI)
+  {
+    m_pGUIRender = nullptr;
+    ImGui::DestroyContext();
+  }
+
   CleanupPipelineAndSwapchain();
   if(m_surface != VK_NULL_HANDLE)
   {
@@ -435,12 +458,11 @@ void SimpleRender::ProcessInput(const AppInput &input)
     std::system("cd ../resources/shaders && python3 compile_simple_render_shaders.py");
 #endif
 
-    SetupSimplePipeline();
-
+    SetupSimplePipeline(m_basicForwardPipeline,  m_renderPass);
     for (uint32_t i = 0; i < m_framesInFlight; ++i)
     {
       BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
-                               m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
+        m_renderPass, m_basicForwardPipeline);
     }
   }
 
@@ -468,7 +490,6 @@ void SimpleRender::LoadScene(const char* path, bool transpose_inst_matrices)
   m_pScnMgr->LoadSceneXML(path, transpose_inst_matrices);
 
   CreateUniformBuffer();
-  SetupSimplePipeline();
 
   auto loadedCam = m_pScnMgr->GetCamera(0);
   m_cam.fov = loadedCam.fov;
@@ -479,10 +500,11 @@ void SimpleRender::LoadScene(const char* path, bool transpose_inst_matrices)
 
   UpdateView();
 
+  SetupSimplePipeline(m_basicForwardPipeline,  m_renderPass);
   for (uint32_t i = 0; i < m_framesInFlight; ++i)
   {
     BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
-                             m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
+      m_renderPass, m_basicForwardPipeline);
   }
 }
 
@@ -499,8 +521,7 @@ void SimpleRender::DrawFrameSimple()
   VkSemaphore waitSemaphores[] = {m_presentationResources.imageAvailable};
   VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
-  BuildCommandBufferSimple(currentCmdBuf, m_frameBuffers[imageIdx], m_swapchain.GetAttachment(imageIdx).view,
-                           m_basicForwardPipeline.pipeline);
+  BuildCommandBufferSimple(currentCmdBuf, m_frameBuffers[imageIdx], m_renderPass, m_basicForwardPipeline);
 
   VkSubmitInfo submitInfo = {};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -533,10 +554,10 @@ void SimpleRender::DrawFrameSimple()
   vkQueueWaitIdle(m_presentationResources.queue);
 }
 
-void SimpleRender::DrawFrame(float a_time, DrawMode a_mode)
+void SimpleRender::DrawFrame(float a_time)
 {
   UpdateUniformBuffer(a_time);
-  switch (a_mode)
+  switch (m_drawMode)
   {
   case DrawMode::WITH_GUI:
     SetupGUIElements();
@@ -603,8 +624,7 @@ void SimpleRender::DrawFrameWithGUI()
   VkSemaphore waitSemaphores[] = {m_presentationResources.imageAvailable};
   VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
-  BuildCommandBufferSimple(currentCmdBuf, m_frameBuffers[imageIdx], m_swapchain.GetAttachment(imageIdx).view,
-    m_basicForwardPipeline.pipeline);
+  BuildCommandBufferSimple(currentCmdBuf, m_frameBuffers[imageIdx], m_renderPass,m_basicForwardPipeline);
 
   ImDrawData* pDrawData = ImGui::GetDrawData();
   auto currentGUICmdBuf = m_pGUIRender->BuildGUIRenderCommand(imageIdx, pDrawData);

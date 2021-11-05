@@ -42,12 +42,12 @@ public:
   virtual VkInstance   GetVkInstance() const = 0;
 
   virtual void InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId) = 0;
-  virtual void InitPresentation(VkSurfaceKHR& a_surface) = 0;
+  virtual void InitPresentation(VkSurfaceKHR& a_surface, DrawMode a_mode) = 0;
   virtual void ProcessInput(const AppInput& input) = 0;
   virtual void UpdateCamera(const Camera* cams, uint32_t a_camsCount) = 0;
   virtual Camera GetCurrentCamera() { return { };};
   virtual void LoadScene(const char* path, bool transpose_inst_matrices) = 0;
-  virtual void DrawFrame(float a_time, DrawMode a_mode) = 0;
+  virtual void DrawFrame(float a_time) = 0;
 
   virtual ~IRender() = default;
 

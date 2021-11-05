@@ -62,7 +62,7 @@ void Quad2D_Render::InitVulkan(const char** a_instanceExtensions, uint32_t a_ins
   m_pCopyHelper = std::make_shared<vk_utils::SimpleCopyHelper>(m_physicalDevice, m_device, m_transferQueue, m_queueFamilyIDXs.graphics, 8*1024*1024);
 }
 
-void Quad2D_Render::InitPresentation(VkSurfaceKHR &a_surface)
+void Quad2D_Render::InitPresentation(VkSurfaceKHR &a_surface, DrawMode)
 {
   m_surface = a_surface;
 
@@ -393,7 +393,7 @@ void Quad2D_Render::DrawFrameSimple()
   vkQueueWaitIdle(m_presentationResources.queue);
 }
 
-void Quad2D_Render::DrawFrame(float, DrawMode)
+void Quad2D_Render::DrawFrame(float)
 {
   DrawFrameSimple();
 }

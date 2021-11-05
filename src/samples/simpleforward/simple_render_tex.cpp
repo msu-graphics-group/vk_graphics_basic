@@ -15,7 +15,7 @@ void SimpleRenderTexture::LoadScene(const char* path, bool transpose_inst_matric
 
   CreateUniformBuffer();
   LoadTexture();
-  SetupSimplePipeline();
+  SetupSimplePipeline(m_basicForwardPipeline, m_renderPass);
 
   auto loadedCam = m_pScnMgr->GetCamera(0);
   m_cam.fov = loadedCam.fov;
@@ -27,8 +27,7 @@ void SimpleRenderTexture::LoadScene(const char* path, bool transpose_inst_matric
 
   for (uint32_t i = 0; i < m_framesInFlight; ++i)
   {
-    BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
-      m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
+    BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i], m_renderPass, m_basicForwardPipeline);
   }
 }
 
@@ -63,7 +62,7 @@ void SimpleRenderTexture::LoadTexture()
   freeImageMemLDR(pixels);
 }
 
-void SimpleRenderTexture::SetupSimplePipeline()
+void SimpleRenderTexture::SetupSimplePipeline(pipeline_data_t& a_pipeline, VkRenderPass a_renderPass)
 {
   std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
     {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
@@ -80,15 +79,15 @@ void SimpleRenderTexture::SetupSimplePipeline()
 
   // if we are recreating pipeline (for example, to reload shaders)
   // we need to cleanup old pipeline
-  if(m_basicForwardPipeline.layout != VK_NULL_HANDLE)
+  if(a_pipeline.layout != VK_NULL_HANDLE)
   {
-    vkDestroyPipelineLayout(m_device, m_basicForwardPipeline.layout, nullptr);
-    m_basicForwardPipeline.layout = VK_NULL_HANDLE;
+    vkDestroyPipelineLayout(m_device, a_pipeline.layout, nullptr);
+    a_pipeline.layout = VK_NULL_HANDLE;
   }
-  if(m_basicForwardPipeline.pipeline != VK_NULL_HANDLE)
+  if(a_pipeline.pipeline != VK_NULL_HANDLE)
   {
-    vkDestroyPipeline(m_device, m_basicForwardPipeline.pipeline, nullptr);
-    m_basicForwardPipeline.pipeline = VK_NULL_HANDLE;
+    vkDestroyPipeline(m_device, a_pipeline.pipeline, nullptr);
+    a_pipeline.pipeline = VK_NULL_HANDLE;
   }
 
   vk_utils::GraphicsPipelineMaker maker;
@@ -99,24 +98,24 @@ void SimpleRenderTexture::SetupSimplePipeline()
 
   maker.LoadShaders(m_device, shader_paths);
 
-  m_basicForwardPipeline.layout = maker.MakeLayout(m_device, {m_dSetLayout}, sizeof(pushConst2M));
+  a_pipeline.layout = maker.MakeLayout(m_device, {m_dSetLayout}, sizeof(pushConst2M));
   maker.SetDefaultState(m_width, m_height);
 
-  m_basicForwardPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(),
-    m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR});
+  a_pipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(),
+    a_renderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR});
 }
 
-void SimpleRenderTexture::DrawFrame(float a_time, DrawMode a_mode)
+void SimpleRenderTexture::DrawFrame(float a_time)
 {
   if(m_textureNeedsReload)
   {
     LoadTexture();
-    SetupSimplePipeline();
+    SetupSimplePipeline(m_basicForwardPipeline, m_renderPass);
     m_textureNeedsReload = false;
   }
 
   UpdateUniformBuffer(a_time);
-  switch (a_mode)
+  switch (m_drawMode)
   {
   case DrawMode::WITH_GUI:
     SetupGUIElements();
@@ -141,12 +140,11 @@ void SimpleRenderTexture::ProcessInput(const AppInput &input)
     std::system("cd ../resources/shaders && python3 compile_simple_texture_shaders.py");
 #endif
 
-    SetupSimplePipeline();
+    SetupSimplePipeline(m_basicForwardPipeline, m_renderPass);
 
     for (uint32_t i = 0; i < m_framesInFlight; ++i)
     {
-      BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
-        m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
+      BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i], m_renderPass,m_basicForwardPipeline);
     }
   }
 

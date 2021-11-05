@@ -17,7 +17,7 @@ public:
 
   void ProcessInput(const AppInput& input) override;
   void LoadScene(const char *path, bool transpose_inst_matrices) override;
-  void DrawFrame(float a_time, DrawMode a_mode) override;
+  void DrawFrame(float a_time) override;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 protected:
@@ -31,9 +31,10 @@ protected:
   void LoadTexture();
 
   void SetupGUIElements() override;
-  void SetupSimplePipeline() override;
-  void Cleanup();
+  void SetupSimplePipeline(pipeline_data_t& a_pipeline, VkRenderPass a_renderPass) override;
 
+private:
+  void Cleanup();
 };
 
 

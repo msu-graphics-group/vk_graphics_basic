@@ -62,7 +62,7 @@ void SimpleShadowmapRender::InitVulkan(const char** a_instanceExtensions, uint32
   m_pScnMgr = std::make_shared<SceneManager>(m_device, m_physicalDevice, m_queueFamilyIDXs.transfer, m_queueFamilyIDXs.graphics, false);
 }
 
-void SimpleShadowmapRender::InitPresentation(VkSurfaceKHR &a_surface)
+void SimpleShadowmapRender::InitPresentation(VkSurfaceKHR &a_surface, DrawMode)
 {
   m_surface = a_surface;
 
@@ -601,21 +601,10 @@ void SimpleShadowmapRender::DrawFrameSimple()
   vkQueueWaitIdle(m_presentationResources.queue);
 }
 
-void SimpleShadowmapRender::DrawFrame(float a_time, DrawMode a_mode)
+void SimpleShadowmapRender::DrawFrame(float a_time)
 {
   UpdateUniformBuffer(a_time);
-  switch (a_mode)
-  {
-    case DrawMode::WITH_GUI:
-//      DrawFrameWithGUI();
-//      break;
-    case DrawMode::NO_GUI:
-      DrawFrameSimple();
-      break;
-    default:
-      DrawFrameSimple();
-  }
-
+  DrawFrameSimple();
 }
 
 
