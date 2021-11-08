@@ -30,6 +30,10 @@ public:
   void OnSwapchainChanged(const VulkanSwapChain &a_swapchain) override;
 
   ~ImGuiRender() override;
+
+private:
+  void ClearFrameBuffers();
+
 private:
   VkInstance m_instance = VK_NULL_HANDLE;
   VkDevice m_device = VK_NULL_HANDLE;
