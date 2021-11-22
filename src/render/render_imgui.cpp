@@ -45,8 +45,8 @@ void ImGuiRender::InitImGui()
 
   vk_utils::RenderTargetInfo2D rtInfo = {};
   rtInfo.format = m_swapchain->GetFormat();
-  rtInfo.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  rtInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  rtInfo.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+  rtInfo.initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
   rtInfo.finalLayout   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
   m_renderpass   = vk_utils::createRenderPass(m_device, rtInfo);
@@ -89,16 +89,13 @@ VkCommandBuffer ImGuiRender::BuildGUIRenderCommand(uint32_t a_swapchainFrameIdx,
   cmdBeginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   VK_CHECK_RESULT(vkBeginCommandBuffer(currentCmdBuf, &cmdBeginInfo));
 
-  VkClearValue clearValue;
-  clearValue.color = {0.0f, 0.0f, 0.0f, 1.0f};
-
   VkRenderPassBeginInfo rpassBeginInfo = {};
   rpassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   rpassBeginInfo.renderPass = m_renderpass;
   rpassBeginInfo.framebuffer = m_framebuffers[a_swapchainFrameIdx];
   rpassBeginInfo.renderArea.extent = m_swapchain->GetExtent();
-  rpassBeginInfo.clearValueCount = 1;
-  rpassBeginInfo.pClearValues = &clearValue;
+  rpassBeginInfo.clearValueCount = 0;
+  rpassBeginInfo.pClearValues = nullptr;
   vkCmdBeginRenderPass(currentCmdBuf, &rpassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
   ImGui_ImplVulkan_RenderDrawData(static_cast<ImDrawData*>(a_userData), currentCmdBuf);
@@ -114,11 +111,8 @@ void ImGuiRender::OnSwapchainChanged(const VulkanSwapChain &a_swapchain)
 {
   // If swapchain size changed, we are doomed, but that generaly does not happen. I think.
   m_swapchain = &a_swapchain;
-  if(!m_framebuffers.empty())
-  {
-    for(auto& fbuf: m_framebuffers)
-      vkDestroyFramebuffer(m_device, fbuf, VK_NULL_HANDLE);
-  }
+
+  ClearFrameBuffers();
   m_framebuffers = vk_utils::createFrameBuffers(m_device, *m_swapchain, m_renderpass);
 }
 
@@ -127,25 +121,37 @@ void ImGuiRender::CleanupImGui()
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplGlfw_Shutdown();
 
-  if(m_renderpass)
-    vkDestroyRenderPass(m_device, m_renderpass, VK_NULL_HANDLE);
+  ClearFrameBuffers();
 
-  if(!m_framebuffers.empty())
+  if(m_renderpass)
   {
-    for(auto& fbuf: m_framebuffers)
-      vkDestroyFramebuffer(m_device, fbuf, VK_NULL_HANDLE);
+    vkDestroyRenderPass(m_device, m_renderpass, VK_NULL_HANDLE);
+    m_renderpass = VK_NULL_HANDLE;
+  }
+  
+  if(m_commandPool)
+  {
+    vkDestroyCommandPool(m_device, m_commandPool, VK_NULL_HANDLE);
+    m_commandPool = VK_NULL_HANDLE;  
   }
 
-  if(m_commandPool)
-    vkDestroyCommandPool(m_device, m_commandPool, VK_NULL_HANDLE);
-
   if(m_descriptorPool)
+  {
     vkDestroyDescriptorPool(m_device, m_descriptorPool, VK_NULL_HANDLE);
+    m_descriptorPool = VK_NULL_HANDLE;   
+  }
 }
 
 ImGuiRender::~ImGuiRender()
 {
   CleanupImGui();
+}
+
+void ImGuiRender::ClearFrameBuffers()
+{
+  for(auto fbuf : m_framebuffers)
+    vkDestroyFramebuffer(m_device, fbuf, VK_NULL_HANDLE);
+  m_framebuffers.clear();
 }
 
 
