@@ -133,7 +133,7 @@ void SimpleRender::SetupSimplePipeline()
   if(m_pBindings == nullptr)
     m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_device, dtypes, 1);
 
-  m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
+  m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_GEOMETRY_BIT);
   m_pBindings->BindBuffer(0, m_ubo, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
   m_pBindings->BindEnd(&m_dSet, &m_dSetLayout);
 
@@ -155,6 +155,7 @@ void SimpleRender::SetupSimplePipeline()
   std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
   shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = FRAGMENT_SHADER_PATH + ".spv";
   shader_paths[VK_SHADER_STAGE_VERTEX_BIT]   = VERTEX_SHADER_PATH + ".spv";
+  shader_paths[VK_SHADER_STAGE_GEOMETRY_BIT] = GEOMETRY_SHADER_PATH + ".spv";
 
   maker.LoadShaders(m_device, shader_paths);
 
@@ -233,7 +234,7 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
     vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.layout, 0, 1,
                             &m_dSet, 0, VK_NULL_HANDLE);
 
-    VkShaderStageFlags stageFlags = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+    VkShaderStageFlags stageFlags = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_GEOMETRY_BIT);
 
     VkDeviceSize zero_offset = 0u;
     VkBuffer vertexBuf = m_pScnMgr->GetVertexBuffer();
@@ -566,6 +567,7 @@ void SimpleRender::SetupGUIElements()
     ImGui::Text("Changing bindings is not supported.");
     ImGui::Text("Vertex shader path: %s", VERTEX_SHADER_PATH.c_str());
     ImGui::Text("Fragment shader path: %s", FRAGMENT_SHADER_PATH.c_str());
+    ImGui::Text("Geometry shader path: %s", GEOMETRY_SHADER_PATH.c_str());
     ImGui::End();
   }
 
