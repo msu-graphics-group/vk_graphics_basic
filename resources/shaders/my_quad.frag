@@ -38,8 +38,8 @@ void main()
 	vec4 totalMain = vec4(0);
 
 
-	for (int i = -filterSize;i<filterSize;i++)
-		for (int j = -filterSize;j<filterSize;j++)
+	for (int i = -filterSize;i<=filterSize;i++)
+		for (int j = -filterSize;j<=filterSize;j++)
 		{
 			
 
