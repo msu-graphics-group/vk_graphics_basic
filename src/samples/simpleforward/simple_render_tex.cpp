@@ -66,12 +66,13 @@ void SimpleRenderTexture::LoadTexture()
 void SimpleRenderTexture::SetupSimplePipeline()
 {
   std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
-    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
+    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 128},  // overallocate descriptors to allow recreation when texture is updated
+                                                       // one alternative would be to recreate descriptor pool when we get VK_OUT_OF_POOL_MEMORY error
     {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         1}
   };
 
   if(m_pBindings == nullptr)
-    m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_device, dtypes, 1000); // high max sets to allow recreation when texture is updated
+    m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_device, dtypes, 128); // new texture -> new set, so need to set this also to a higher value
 
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
   m_pBindings->BindBuffer(0, m_ubo, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
