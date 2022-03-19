@@ -64,7 +64,7 @@ void SimpleRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_inst
                                              m_queueFamilyIDXs.graphics, false);
 }
 
-void SimpleRender::InitPresentation(VkSurfaceKHR &a_surface)
+void SimpleRender::InitPresentation(VkSurfaceKHR &a_surface, bool initGUI)
 {
   m_surface = a_surface;
 
@@ -89,7 +89,8 @@ void SimpleRender::InitPresentation(VkSurfaceKHR &a_surface)
   m_depthBuffer  = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
   m_frameBuffers = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
 
-  m_pGUIRender = std::make_shared<ImGuiRender>(m_instance, m_device, m_physicalDevice, m_queueFamilyIDXs.graphics, m_graphicsQueue, m_swapchain);
+  if(initGUI)
+    m_pGUIRender = std::make_shared<ImGuiRender>(m_instance, m_device, m_physicalDevice, m_queueFamilyIDXs.graphics, m_graphicsQueue, m_swapchain);
 }
 
 void SimpleRender::CreateInstance()
@@ -342,8 +343,11 @@ void SimpleRender::RecreateSwapChain()
 
 void SimpleRender::Cleanup()
 {
-  m_pGUIRender = nullptr;
-  ImGui::DestroyContext();
+  if(m_pGUIRender)
+  {
+    m_pGUIRender = nullptr;
+    ImGui::DestroyContext();
+  }
   CleanupPipelineAndSwapchain();
   if(m_surface != VK_NULL_HANDLE)
   {
