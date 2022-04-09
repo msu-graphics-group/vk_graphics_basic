@@ -62,7 +62,7 @@ void SimpleShadowmapRender::InitVulkan(const char** a_instanceExtensions, uint32
   m_pScnMgr = std::make_shared<SceneManager>(m_device, m_physicalDevice, m_queueFamilyIDXs.transfer, m_queueFamilyIDXs.graphics, false);
 }
 
-void SimpleShadowmapRender::InitPresentation(VkSurfaceKHR &a_surface)
+void SimpleShadowmapRender::InitPresentation(VkSurfaceKHR &a_surface, bool)
 {
   m_surface = a_surface;
 
