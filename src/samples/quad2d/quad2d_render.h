@@ -25,7 +25,7 @@ public:
   inline VkInstance   GetVkInstance() const override { return m_instance; }
   void InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId) override;
 
-  void InitPresentation(VkSurfaceKHR& a_surface) override;
+  void InitPresentation(VkSurfaceKHR &a_surface, bool initGUI) override;
 
   void ProcessInput(const AppInput& input) override;
   void UpdateCamera(const Camera* cams, uint32_t a_camsNumber) override;
