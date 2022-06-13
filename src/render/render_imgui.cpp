@@ -39,7 +39,7 @@ void ImGuiRender::InitImGui()
   init_info.PipelineCache  = VK_NULL_HANDLE;
   init_info.DescriptorPool = m_descriptorPool;
   init_info.Allocator      = VK_NULL_HANDLE;
-  init_info.MinImageCount  = m_swapchain->GetMinImageCount();
+  init_info.MinImageCount  = m_swapchain->GetMinImageCount() > 1 ? m_swapchain->GetMinImageCount() : m_swapchain->GetMinImageCount() + 1;
   init_info.ImageCount     = m_swapchain->GetImageCount();
   init_info.CheckVkResultFn = nullptr;
 
