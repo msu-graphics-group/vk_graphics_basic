@@ -19,7 +19,7 @@ class SimpleShadowmapRender : public IRender
 {
 public:
   SimpleShadowmapRender(uint32_t a_width, uint32_t a_height);
-  ~SimpleShadowmapRender()  { Cleanup(); };
+  ~SimpleShadowmapRender() = default;
 
   inline uint32_t     GetWidth()      const override { return m_width; }
   inline uint32_t     GetHeight()     const override { return m_height; }
@@ -176,17 +176,23 @@ private:
   void DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4x4& a_wvp);
 
   void SetupSimplePipeline();
-  void CleanupPipelineAndSwapchain();
   void RecreateSwapChain();
 
   void CreateUniformBuffer();
   void UpdateUniformBuffer(float a_time);
 
-  void Cleanup();
 
-  void SetupDeviceFeatures();
   void SetupDeviceExtensions();
   void SetupValidationLayers();
+
+  void AllocateResources();
+  void PreparePipelines();
+
+  void DestroyPipelines();
+  void DeallocateResources();
+
+  void InitPresentStuff();
+  void ResetPresentStuff();
 };
 
 
