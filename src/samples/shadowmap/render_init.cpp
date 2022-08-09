@@ -1,5 +1,9 @@
 #include "shadowmap_render.h"
 
+#include <vulkan/vulkan.hpp>
+//storage for vulkan.hpp dispatcher
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+
 SimpleShadowmapRender::SimpleShadowmapRender(uint32_t a_width, uint32_t a_height) : m_width(a_width), m_height(a_height)
 {
 #ifdef NDEBUG
@@ -7,6 +11,7 @@ SimpleShadowmapRender::SimpleShadowmapRender(uint32_t a_width, uint32_t a_height
 #else
   m_enableValidation = true;
 #endif
+  m_enableValidation = true;
 }
 
 void SimpleShadowmapRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId)
@@ -18,13 +23,21 @@ void SimpleShadowmapRender::InitVulkan(const char** a_instanceExtensions, uint32
 
   SetupValidationLayers();
   VK_CHECK_RESULT(volkInitialize());
+
+  vk::DynamicLoader dl;
+  PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+  VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
+
   CreateInstance();
   volkLoadInstance(m_instance);
+  VULKAN_HPP_DEFAULT_DISPATCHER.init(m_instance);
 
   CreateDevice(a_deviceId);
   volkLoadDevice(m_device);
-
+  VULKAN_HPP_DEFAULT_DISPATCHER.init(m_device);
+  
   m_pScnMgr = std::make_shared<SceneManager>(m_device, m_physicalDevice, m_queueFamilyIDXs.transfer, m_queueFamilyIDXs.graphics, false);
+  m_pShaderPrograms.reset(new etna::ShaderProgramManager {m_device});
 }
 
 void SimpleShadowmapRender::CreateInstance()
@@ -82,6 +95,9 @@ void SimpleShadowmapRender::RecreateSwapChain()
          oldImgNum, m_vsync);
 
   InitPresentStuff();
+
+  m_pShaderPrograms->reloadPrograms();
+
   AllocateResources();
 
   PreparePipelines();

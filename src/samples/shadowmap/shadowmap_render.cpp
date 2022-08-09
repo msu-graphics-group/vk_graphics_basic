@@ -3,7 +3,7 @@
 #include <geom/vk_mesh.h>
 #include <vk_pipeline.h>
 #include <vk_buffers.h>
-
+#include <iostream>
 
 /// RESOURCE ALLOCATION
 
@@ -71,6 +71,7 @@ void SimpleShadowmapRender::LoadScene(const char* path, bool transpose_inst_matr
   m_pScnMgr->LoadSceneXML(path, transpose_inst_matrices);
 
   // TODO: Make a separate stage
+  loadShaders();
   PreparePipelines();
 
   auto loadedCam = m_pScnMgr->GetCamera(0);
@@ -123,6 +124,144 @@ void SimpleShadowmapRender::PreparePipelines()
   SetupSimplePipeline();
 }
 
+static void print_prog_info(const etna::ShaderProgramManager &mgr, const std::string &name)
+{
+  auto info = mgr.getProgramInfo(name);
+  std::cout << "Program Info " << name << "\n";
+
+  for (uint32_t set = 0u; set < etna::MAX_PROGRAM_DESCRIPTORS; set++)
+  {
+    if (!info.isDescriptorSetUsed(set))
+      continue;
+    auto setInfo = info.getDescriptorSetInfo(set);
+    for (uint32_t binding = 0; binding < etna::MAX_DESCRIPTOR_BINDINGS; binding++)
+    {
+      if (!setInfo.isBindingUsed(binding))
+        continue;
+      auto &vkBinding = setInfo.getBinding(binding);
+
+      std::cout << "Binding " << binding << " " << vk::to_string(vkBinding.descriptorType) << ", count = " << vkBinding.descriptorCount << " ";
+      std::cout << " " << vk::to_string(vkBinding.stageFlags) << "\n"; 
+    }
+  }
+
+  auto pc = info.getPushConst();
+  if (pc.size)
+  {
+    std::cout << "PushConst " << " size = " << pc.size << " stages = " << vk::to_string(pc.stageFlags) << "\n";
+  }
+}
+
+void SimpleShadowmapRender::loadShaders()
+{
+  m_pShaderPrograms->loadProgram("simple_material", {"../../resources/shaders/simple_shadow.frag.spv", "../../resources/shaders/simple.vert.spv"});
+  m_pShaderPrograms->loadProgram("simple_shadow", {"../../resources/shaders/simple.vert.spv"});
+}
+
+void SimpleShadowmapRender::createDescriptorSets()
+{
+
+}
+
+vk::Pipeline SimpleShadowmapRender::createGraphicsPipeline(const std::string &prog_name, uint32_t width, uint32_t height, 
+                                                           const VkPipelineVertexInputStateCreateInfo &vinput,
+                                                           VkRenderPass renderpass)
+{
+  std::vector<vk::VertexInputAttributeDescription> vertexAttribures;
+  std::vector<vk::VertexInputBindingDescription> vertexBindings;
+  
+  vertexAttribures.reserve(vinput.vertexAttributeDescriptionCount);
+  vertexBindings.reserve(vinput.vertexBindingDescriptionCount);
+
+  for (uint32_t i = 0; i < vinput.vertexAttributeDescriptionCount; i++)
+  {
+    vertexAttribures.push_back(vinput.pVertexAttributeDescriptions[i]);
+  }
+
+  for (uint32_t i = 0; i < vinput.vertexBindingDescriptionCount; i++)
+  {
+    vertexBindings.push_back(vinput.pVertexBindingDescriptions[i]);
+  }
+
+  vk::PipelineVertexInputStateCreateInfo vertexInput {};
+  vertexInput.flags = static_cast<vk::PipelineVertexInputStateCreateFlags>(vinput.flags);
+  vertexInput.setVertexAttributeDescriptions(vertexAttribures);
+  vertexInput.setVertexBindingDescriptions(vertexBindings);
+
+  vk::PipelineInputAssemblyStateCreateInfo inputAssembly {};
+  inputAssembly.setTopology(vk::PrimitiveTopology::eTriangleList);
+  inputAssembly.setPrimitiveRestartEnable(false);
+
+  vk::Viewport viewport {};
+  viewport.setWidth(float(width));
+  viewport.setHeight(float(height));
+  viewport.setX(0.f);
+  viewport.setY(0.f);
+  viewport.setMinDepth(0.f);
+  viewport.setMaxDepth(1.f);
+
+  vk::Rect2D scissors {};
+  scissors.offset = vk::Offset2D {0, 0};
+  scissors.extent = vk::Extent2D {width, height};
+
+  vk::PipelineViewportStateCreateInfo viewportState {};
+  viewportState.setViewportCount(1);
+  viewportState.setPViewports(&viewport);
+  viewportState.setScissorCount(1);
+  viewportState.setPScissors(&scissors);
+
+  vk::PipelineRasterizationStateCreateInfo rasterization {};
+  rasterization.depthClampEnable = false;
+  rasterization.rasterizerDiscardEnable = false;
+  rasterization.polygonMode = vk::PolygonMode::eFill;
+  rasterization.lineWidth = 1.f;
+  rasterization.cullMode = vk::CullModeFlagBits::eNone;
+  rasterization.frontFace = vk::FrontFace::eClockwise;
+  rasterization.depthBiasEnable = false;
+
+  vk::PipelineMultisampleStateCreateInfo multisampleState {};
+  multisampleState.setSampleShadingEnable(false);
+  multisampleState.setRasterizationSamples(vk::SampleCountFlagBits::e1);
+
+  std::vector<vk::PipelineColorBlendAttachmentState> blendAttachments;
+  blendAttachments.resize(1);
+  blendAttachments[0] = vk::PipelineColorBlendAttachmentState {};
+  blendAttachments[0].colorWriteMask = vk::ColorComponentFlagBits::eR|vk::ColorComponentFlagBits::eG|vk::ColorComponentFlagBits::eB|vk::ColorComponentFlagBits::eA;
+  blendAttachments[0].blendEnable = false;
+
+  vk::PipelineColorBlendStateCreateInfo blendState {};
+  blendState.setAttachments(blendAttachments);
+  blendState.setLogicOpEnable(false);
+  blendState.setLogicOp(vk::LogicOp::eClear);
+
+  vk::PipelineDepthStencilStateCreateInfo depthState {};
+  depthState.setDepthTestEnable(true);
+  depthState.setDepthWriteEnable(true);
+  depthState.setDepthCompareOp(vk::CompareOp::eLessOrEqual);
+  depthState.setMaxDepthBounds(1.f);
+
+  auto progId = m_pShaderPrograms->getProgram(prog_name);
+  auto stages = m_pShaderPrograms->getShaderStages(progId);
+
+  vk::GraphicsPipelineCreateInfo pipelineInfo {};
+  pipelineInfo.setPVertexInputState(&vertexInput);
+  pipelineInfo.setPInputAssemblyState(&inputAssembly);
+  pipelineInfo.setPViewportState(&viewportState);
+  pipelineInfo.setPRasterizationState(&rasterization);
+  pipelineInfo.setPMultisampleState(&multisampleState);
+  pipelineInfo.setPColorBlendState(&blendState);
+  pipelineInfo.setPDepthStencilState(&depthState);
+  pipelineInfo.setStages(stages);
+  pipelineInfo.setLayout(m_pShaderPrograms->getProgramLayout(progId));
+  pipelineInfo.setRenderPass(renderpass);
+  
+  auto vkdevice = vk::Device {m_device};
+  auto res = vkdevice.createGraphicsPipeline(nullptr, pipelineInfo);
+  if (res.result != vk::Result::eSuccess)
+    ETNA_RUNTIME_ERROR("Pipeline creation error");
+  return res.value;
+}
+
 void SimpleShadowmapRender::SetupSimplePipeline()
 {
   std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
@@ -133,48 +272,64 @@ void SimpleShadowmapRender::SetupSimplePipeline()
   m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_device, dtypes, 2);
   
   auto shadowMap = m_pShadowMap2->m_attachments[m_shadowMapId];
+  
+  auto simpleMaterialInfo = m_pShaderPrograms->getProgramInfo("simple_material");
+  auto simpleLayout = simpleMaterialInfo.getDescriptorSetLayout(0);
+  m_dSetLayout = simpleLayout;
 
-  m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
-  m_pBindings->BindBuffer(0, m_ubo, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-  m_pBindings->BindImage (1, shadowMap.view, m_pShadowMap2->m_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-  m_pBindings->BindEnd(&m_dSet, &m_dSetLayout);
+  vk::DescriptorPool pool {m_pBindings->GetPool()};
+  vk::Device device {m_device};
+  
+  vk::DescriptorSetAllocateInfo allocateInfo {};
+  allocateInfo.setDescriptorPool(pool);
+  allocateInfo.setDescriptorSetCount(1);
+  allocateInfo.setPSetLayouts(&simpleLayout);
+  auto sets = device.allocateDescriptorSets(allocateInfo);
+  m_dSet = sets.at(0);
+
+  vk::DescriptorBufferInfo descriptorBuffer[1] {};
+  descriptorBuffer[0].setBuffer(m_ubo);
+  descriptorBuffer[0].setOffset(0);
+  descriptorBuffer[0].setRange(VK_WHOLE_SIZE);
+
+  vk::DescriptorImageInfo descriptorImage[1] {};
+  descriptorImage[0].setImageView(shadowMap.view);
+  descriptorImage[0].setSampler(m_pShadowMap2->m_sampler);
+  descriptorImage[0].setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+  vk::WriteDescriptorSet descriptorWrites[2] {{}, {}};
+  descriptorWrites[0].setDstSet(m_dSet);
+  descriptorWrites[0].setDescriptorType(vk::DescriptorType::eUniformBuffer);
+  descriptorWrites[0].setDstBinding(0);
+  descriptorWrites[0].setPBufferInfo(descriptorBuffer);
+  descriptorWrites[0].setDescriptorCount(1);
+
+  descriptorWrites[1].setDstSet(m_dSet);
+  descriptorWrites[1].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+  descriptorWrites[1].setDstBinding(1);
+  descriptorWrites[1].setPImageInfo(descriptorImage);
+  descriptorWrites[1].setDescriptorCount(1);
+  
+  auto writes = {descriptorWrites[0], descriptorWrites[1]};
+  device.updateDescriptorSets(writes, {});
 
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
   m_pBindings->BindImage(0, shadowMap.view, m_pShadowMap2->m_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   m_pBindings->BindEnd(&m_quadDS, &m_quadDSLayout);
 
-  vk_utils::GraphicsPipelineMaker maker;
+  auto forwardProgInfo = m_pShaderPrograms->getProgramInfo("simple_material");
+  auto shadowProgInfo = m_pShaderPrograms->getProgramInfo("simple_shadow");
   
-  // pipeline for drawing objects
-  //
-  std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
-  {
-    shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../../resources/shaders/simple_shadow.frag.spv";
-    shader_paths[VK_SHADER_STAGE_VERTEX_BIT]   = "../../resources/shaders/simple.vert.spv";
-  }
-  maker.LoadShaders(m_device, shader_paths);
-
-  m_basicForwardPipeline.layout = maker.MakeLayout(m_device, {m_dSetLayout}, sizeof(pushConst2M));
-  maker.SetDefaultState(m_width, m_height);
-
-  m_basicForwardPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(),
-                                                       m_screenRenderPass);
-                                                       //, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}
+  m_basicForwardPipeline.layout = forwardProgInfo.getPipelineLayout();
+  m_basicForwardPipeline.pipeline = createGraphicsPipeline("simple_material", m_width, m_height,
+    m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), m_screenRenderPass);
   
-  // pipeline for rendering objects to shadowmap
-  //
-  // maker.SetDefaultState(m_width, m_height);
-  shader_paths.clear();
-  shader_paths[VK_SHADER_STAGE_VERTEX_BIT] = "../../resources/shaders/simple.vert.spv";
-  maker.LoadShaders(m_device, shader_paths);
+  m_shadowPipeline.layout = shadowProgInfo.getPipelineLayout();
+  m_shadowPipeline.pipeline = createGraphicsPipeline("simple_shadow", uint32_t(m_pShadowMap2->m_resolution.width), uint32_t(m_pShadowMap2->m_resolution.height),
+    m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), m_pShadowMap2->m_renderPass);
 
-  maker.viewport.width  = float(m_pShadowMap2->m_resolution.width);
-  maker.viewport.height = float(m_pShadowMap2->m_resolution.height);
-  maker.scissor.extent  = VkExtent2D{ uint32_t(m_pShadowMap2->m_resolution.width), uint32_t(m_pShadowMap2->m_resolution.height) };
-
-  m_shadowPipeline.layout   = m_basicForwardPipeline.layout;
-  m_shadowPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), 
-                                                 m_pShadowMap2->m_renderPass);                                                       
+  print_prog_info(*m_pShaderPrograms, "simple_material");
+  print_prog_info(*m_pShaderPrograms, "simple_shadow");
 }
 
 void SimpleShadowmapRender::DestroyPipelines()
@@ -188,11 +343,6 @@ void SimpleShadowmapRender::DestroyPipelines()
 
   vkDestroyRenderPass(m_device, m_screenRenderPass, nullptr);
 
-  if(m_basicForwardPipeline.layout != VK_NULL_HANDLE)
-  {
-    vkDestroyPipelineLayout(m_device, m_basicForwardPipeline.layout, nullptr);
-    m_basicForwardPipeline.layout = VK_NULL_HANDLE;
-  }
   if(m_basicForwardPipeline.pipeline != VK_NULL_HANDLE)
   {
     vkDestroyPipeline(m_device, m_basicForwardPipeline.pipeline, nullptr);
@@ -212,7 +362,7 @@ void SimpleShadowmapRender::DestroyPipelines()
 
 void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4x4& a_wvp)
 {
-  VkShaderStageFlags stageFlags = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+  VkShaderStageFlags stageFlags = (VK_SHADER_STAGE_VERTEX_BIT);
 
   VkDeviceSize zero_offset = 0u;
   VkBuffer vertexBuf = m_pScnMgr->GetVertexBuffer();

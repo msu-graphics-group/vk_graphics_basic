@@ -15,6 +15,8 @@
 #include <string>
 #include <iostream>
 
+#include <etna/ShaderProgram.hpp>
+
 class SimpleShadowmapRender : public IRender
 {
 public:
@@ -105,7 +107,8 @@ private:
   VkRenderPass m_screenRenderPass = VK_NULL_HANDLE; // main renderpass
 
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
-
+  std::unique_ptr<etna::ShaderProgramManager> m_pShaderPrograms = nullptr;
+  
   VkSurfaceKHR m_surface = VK_NULL_HANDLE;
   VulkanSwapChain m_swapchain;
   std::vector<VkFramebuffer> m_frameBuffers;
@@ -174,6 +177,13 @@ private:
                                 VkImageView a_targetImageView, VkPipeline a_pipeline);
 
   void DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4x4& a_wvp);
+
+  void loadShaders();
+  void createDescriptorSets();
+
+  /*todo: move pipeline creation to etna*/
+  vk::Pipeline createGraphicsPipeline(const std::string &prog_name, uint32_t width, uint32_t height,
+    const VkPipelineVertexInputStateCreateInfo &vinput, VkRenderPass renderpass);
 
   void SetupSimplePipeline();
   void RecreateSwapChain();

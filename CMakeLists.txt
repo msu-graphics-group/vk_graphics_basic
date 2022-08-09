@@ -26,7 +26,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 endif()
 
 add_compile_definitions(IMGUI_USER_CONFIG="${CMAKE_CURRENT_SOURCE_DIR}/src/render/my_imgui_config.h")
-
+add_compile_definitions("VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1")
 add_compile_definitions(USE_VOLK)
 ##############################################
 # common sources used by all samples
@@ -66,12 +66,14 @@ include_directories(${CMAKE_SOURCE_DIR}/external/volk)
 include_directories(${CMAKE_SOURCE_DIR}/external/vkutils)
 include_directories(${CMAKE_SOURCE_DIR}/external)
 include_directories(${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_SOURCE_DIR}/external/etna/include)
 ##############################################
 
+
+
 add_subdirectory(external/volk)
+add_subdirectory(external/etna external/etna/build)
 add_subdirectory(src/samples/quad2d)
 add_subdirectory(src/samples/shadowmap)
 add_subdirectory(src/samples/simpleforward)
 add_subdirectory(src/samples/simple_compute)
-
-
