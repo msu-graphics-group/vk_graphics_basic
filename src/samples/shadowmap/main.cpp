@@ -44,5 +44,8 @@ int main()
 
   mainLoop(app, window);
 
+  if (etna::is_initilized())
+    etna::shutdown();
+
   return 0;
 }

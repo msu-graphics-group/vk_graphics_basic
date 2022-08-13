@@ -15,7 +15,7 @@
 #include <string>
 #include <iostream>
 
-#include <etna/ShaderProgram.hpp>
+#include <etna/Etna.hpp>
 
 class SimpleShadowmapRender : public IRender
 {
@@ -107,7 +107,6 @@ private:
   VkRenderPass m_screenRenderPass = VK_NULL_HANDLE; // main renderpass
 
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
-  std::unique_ptr<etna::ShaderProgramManager> m_pShaderPrograms = nullptr;
   
   VkSurfaceKHR m_surface = VK_NULL_HANDLE;
   VulkanSwapChain m_swapchain;

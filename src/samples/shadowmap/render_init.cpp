@@ -36,8 +36,9 @@ void SimpleShadowmapRender::InitVulkan(const char** a_instanceExtensions, uint32
   volkLoadDevice(m_device);
   VULKAN_HPP_DEFAULT_DISPATCHER.init(m_device);
   
+  etna::initialize(etna::InitParams{m_instance, m_device, 2});
+
   m_pScnMgr = std::make_shared<SceneManager>(m_device, m_physicalDevice, m_queueFamilyIDXs.transfer, m_queueFamilyIDXs.graphics, false);
-  m_pShaderPrograms.reset(new etna::ShaderProgramManager {m_device});
 }
 
 void SimpleShadowmapRender::CreateInstance()
@@ -95,8 +96,6 @@ void SimpleShadowmapRender::RecreateSwapChain()
          oldImgNum, m_vsync);
 
   InitPresentStuff();
-
-  m_pShaderPrograms->reloadPrograms();
 
   AllocateResources();
 

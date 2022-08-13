@@ -5,6 +5,8 @@
 #include <vk_buffers.h>
 #include <iostream>
 
+#include <etna/Context.hpp>
+
 /// RESOURCE ALLOCATION
 
 void SimpleShadowmapRender::AllocateResources()
@@ -124,9 +126,9 @@ void SimpleShadowmapRender::PreparePipelines()
   SetupSimplePipeline();
 }
 
-static void print_prog_info(const etna::ShaderProgramManager &mgr, const std::string &name)
+static void print_prog_info(const std::string &name)
 {
-  auto info = mgr.getProgramInfo(name);
+  auto info = etna::get_shader_program(name);
   std::cout << "Program Info " << name << "\n";
 
   for (uint32_t set = 0u; set < etna::MAX_PROGRAM_DESCRIPTORS; set++)
@@ -154,8 +156,8 @@ static void print_prog_info(const etna::ShaderProgramManager &mgr, const std::st
 
 void SimpleShadowmapRender::loadShaders()
 {
-  m_pShaderPrograms->loadProgram("simple_material", {"../../resources/shaders/simple_shadow.frag.spv", "../../resources/shaders/simple.vert.spv"});
-  m_pShaderPrograms->loadProgram("simple_shadow", {"../../resources/shaders/simple.vert.spv"});
+  etna::create_program("simple_material", {"../../resources/shaders/simple_shadow.frag.spv", "../../resources/shaders/simple.vert.spv"});
+  etna::create_program("simple_shadow", {"../../resources/shaders/simple.vert.spv"});
 }
 
 void SimpleShadowmapRender::createDescriptorSets()
@@ -240,8 +242,9 @@ vk::Pipeline SimpleShadowmapRender::createGraphicsPipeline(const std::string &pr
   depthState.setDepthCompareOp(vk::CompareOp::eLessOrEqual);
   depthState.setMaxDepthBounds(1.f);
 
-  auto progId = m_pShaderPrograms->getProgram(prog_name);
-  auto stages = m_pShaderPrograms->getShaderStages(progId);
+  auto &m_pShaderPrograms = etna::get_context().getShaderManager();
+  auto progId = m_pShaderPrograms.getProgram(prog_name);
+  auto stages = m_pShaderPrograms.getShaderStages(progId);
 
   vk::GraphicsPipelineCreateInfo pipelineInfo {};
   pipelineInfo.setPVertexInputState(&vertexInput);
@@ -252,7 +255,7 @@ vk::Pipeline SimpleShadowmapRender::createGraphicsPipeline(const std::string &pr
   pipelineInfo.setPColorBlendState(&blendState);
   pipelineInfo.setPDepthStencilState(&depthState);
   pipelineInfo.setStages(stages);
-  pipelineInfo.setLayout(m_pShaderPrograms->getProgramLayout(progId));
+  pipelineInfo.setLayout(m_pShaderPrograms.getProgramLayout(progId));
   pipelineInfo.setRenderPass(renderpass);
   
   auto vkdevice = vk::Device {m_device};
@@ -273,7 +276,7 @@ void SimpleShadowmapRender::SetupSimplePipeline()
   
   auto shadowMap = m_pShadowMap2->m_attachments[m_shadowMapId];
   
-  auto simpleMaterialInfo = m_pShaderPrograms->getProgramInfo("simple_material");
+  auto simpleMaterialInfo = etna::get_shader_program("simple_material");
   auto simpleLayout = simpleMaterialInfo.getDescriptorSetLayout(0);
   m_dSetLayout = simpleLayout;
 
@@ -317,8 +320,8 @@ void SimpleShadowmapRender::SetupSimplePipeline()
   m_pBindings->BindImage(0, shadowMap.view, m_pShadowMap2->m_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   m_pBindings->BindEnd(&m_quadDS, &m_quadDSLayout);
 
-  auto forwardProgInfo = m_pShaderPrograms->getProgramInfo("simple_material");
-  auto shadowProgInfo = m_pShaderPrograms->getProgramInfo("simple_shadow");
+  auto forwardProgInfo = etna::get_shader_program("simple_material");
+  auto shadowProgInfo = etna::get_shader_program("simple_shadow");
   
   m_basicForwardPipeline.layout = forwardProgInfo.getPipelineLayout();
   m_basicForwardPipeline.pipeline = createGraphicsPipeline("simple_material", m_width, m_height,
@@ -328,8 +331,8 @@ void SimpleShadowmapRender::SetupSimplePipeline()
   m_shadowPipeline.pipeline = createGraphicsPipeline("simple_shadow", uint32_t(m_pShadowMap2->m_resolution.width), uint32_t(m_pShadowMap2->m_resolution.height),
     m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), m_pShadowMap2->m_renderPass);
 
-  print_prog_info(*m_pShaderPrograms, "simple_material");
-  print_prog_info(*m_pShaderPrograms, "simple_shadow");
+  print_prog_info("simple_material");
+  print_prog_info("simple_shadow");
 }
 
 void SimpleShadowmapRender::DestroyPipelines()

@@ -45,6 +45,8 @@ void SimpleShadowmapRender::DrawFrameSimple()
   m_presentationResources.currentFrame = (m_presentationResources.currentFrame + 1) % m_framesInFlight;
 
   vkQueueWaitIdle(m_presentationResources.queue);
+  
+  etna::submit();
 }
 
 void SimpleShadowmapRender::DrawFrame(float a_time, DrawMode a_mode)
