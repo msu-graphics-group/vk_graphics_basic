@@ -273,49 +273,8 @@ void SimpleShadowmapRender::SetupSimplePipeline()
   };
 
   m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_device, dtypes, 2);
-  
   auto shadowMap = m_pShadowMap2->m_attachments[m_shadowMapId];
   
-  auto simpleMaterialInfo = etna::get_shader_program("simple_material");
-  auto simpleLayout = simpleMaterialInfo.getDescriptorSetLayout(0);
-  m_dSetLayout = simpleLayout;
-
-  vk::DescriptorPool pool {m_pBindings->GetPool()};
-  vk::Device device {m_device};
-  
-  vk::DescriptorSetAllocateInfo allocateInfo {};
-  allocateInfo.setDescriptorPool(pool);
-  allocateInfo.setDescriptorSetCount(1);
-  allocateInfo.setPSetLayouts(&simpleLayout);
-  auto sets = device.allocateDescriptorSets(allocateInfo);
-  m_dSet = sets.at(0);
-
-  vk::DescriptorBufferInfo descriptorBuffer[1] {};
-  descriptorBuffer[0].setBuffer(m_ubo);
-  descriptorBuffer[0].setOffset(0);
-  descriptorBuffer[0].setRange(VK_WHOLE_SIZE);
-
-  vk::DescriptorImageInfo descriptorImage[1] {};
-  descriptorImage[0].setImageView(shadowMap.view);
-  descriptorImage[0].setSampler(m_pShadowMap2->m_sampler);
-  descriptorImage[0].setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-
-  vk::WriteDescriptorSet descriptorWrites[2] {{}, {}};
-  descriptorWrites[0].setDstSet(m_dSet);
-  descriptorWrites[0].setDescriptorType(vk::DescriptorType::eUniformBuffer);
-  descriptorWrites[0].setDstBinding(0);
-  descriptorWrites[0].setPBufferInfo(descriptorBuffer);
-  descriptorWrites[0].setDescriptorCount(1);
-
-  descriptorWrites[1].setDstSet(m_dSet);
-  descriptorWrites[1].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
-  descriptorWrites[1].setDstBinding(1);
-  descriptorWrites[1].setPImageInfo(descriptorImage);
-  descriptorWrites[1].setDescriptorCount(1);
-  
-  auto writes = {descriptorWrites[0], descriptorWrites[1]};
-  device.updateDescriptorSets(writes, {});
-
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
   m_pBindings->BindImage(0, shadowMap.view, m_pShadowMap2->m_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   m_pBindings->BindEnd(&m_quadDS, &m_quadDSLayout);
@@ -433,6 +392,16 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
   //// draw final scene to screen
   //
   {
+    auto simpleMaterialInfo = etna::get_shader_program("simple_material");
+    auto shadowMap = m_pShadowMap2->m_attachments[m_shadowMapId];
+
+    auto set = etna::create_descriptor_set(simpleMaterialInfo.getDescriptorLayoutId(0), {
+      etna::Binding {0, vk::DescriptorBufferInfo {m_ubo, 0, VK_WHOLE_SIZE}},
+      etna::Binding {1, vk::DescriptorImageInfo {m_pShadowMap2->m_sampler, shadowMap.view, vk::ImageLayout::eShaderReadOnlyOptimal}}
+    });
+    
+    VkDescriptorSet vkSet = set.getVkSet();
+
     VkRenderPassBeginInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = m_screenRenderPass;
@@ -449,7 +418,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
     vkCmdBeginRenderPass(a_cmdBuff, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, a_pipeline);
-    vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.layout, 0, 1, &m_dSet, 0, VK_NULL_HANDLE);
+    vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.layout, 0, 1, &vkSet, 0, VK_NULL_HANDLE);
 
     DrawSceneCmd(a_cmdBuff, m_worldViewProj);
 
