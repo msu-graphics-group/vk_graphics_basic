@@ -1,7 +1,7 @@
 #ifndef VK_GRAPHICS_BASIC_RENDER_GUI_H
 #define VK_GRAPHICS_BASIC_RENDER_GUI_H
 
-#include "volk.h"
+#include <etna/Vulkan.hpp>
 #include "imgui/backends/imgui_impl_vulkan.h"
 #include "imgui/backends/imgui_impl_glfw.h"
 #include "GLFW/glfw3.h"

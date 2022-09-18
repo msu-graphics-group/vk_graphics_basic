@@ -1,7 +1,6 @@
 #ifndef SIMPLE_SHADOWMAP_RENDER_H
 #define SIMPLE_SHADOWMAP_RENDER_H
 
-#define VK_NO_PROTOTYPES
 #include "../../render/scene_mgr.h"
 #include "../../render/render_common.h"
 #include "../../../resources/shaders/common.h"
@@ -15,7 +14,8 @@
 #include <string>
 #include <iostream>
 
-#include <etna/Etna.hpp>
+#include <etna/GlobalContext.hpp>
+
 
 class SimpleShadowmapRender : public IRender
 {
@@ -25,7 +25,8 @@ public:
 
   inline uint32_t     GetWidth()      const override { return m_width; }
   inline uint32_t     GetHeight()     const override { return m_height; }
-  inline VkInstance   GetVkInstance() const override { return m_instance; }
+  VkInstance   GetVkInstance() const override { return m_context->getInstance(); }
+
   void InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId) override;
 
   void InitPresentation(VkSurfaceKHR &a_surface, bool initGUI) override;
@@ -38,41 +39,10 @@ public:
   void LoadScene(const char *path, bool transpose_inst_matrices) override;
   void DrawFrame(float a_time, DrawMode a_mode) override;
 
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  // debugging utils
-  //
-  static VKAPI_ATTR VkBool32 VKAPI_CALL debugReportCallbackFn(
-    VkDebugReportFlagsEXT                       flags,
-    VkDebugReportObjectTypeEXT                  objectType,
-    uint64_t                                    object,
-    size_t                                      location,
-    int32_t                                     messageCode,
-    const char* pLayerPrefix,
-    const char* pMessage,
-    void* pUserData)
-  {
-    (void)flags;
-    (void)objectType;
-    (void)object;
-    (void)location;
-    (void)messageCode;
-    (void)pUserData;
-    std::cout << pLayerPrefix << ": " << pMessage << std::endl;
-    return VK_FALSE;
-  }
-
-  VkDebugReportCallbackEXT m_debugReportCallback = nullptr;
 private:
+  etna::GlobalContext* m_context;
 
-  VkInstance       m_instance       = VK_NULL_HANDLE;
   VkCommandPool    m_commandPool    = VK_NULL_HANDLE;
-  VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
-  VkDevice         m_device         = VK_NULL_HANDLE;
-  VkQueue          m_graphicsQueue  = VK_NULL_HANDLE;
-  VkQueue          m_transferQueue  = VK_NULL_HANDLE;
-
-  vk_utils::QueueFID_T m_queueFamilyIDXs {UINT32_MAX, UINT32_MAX, UINT32_MAX};
 
   struct
   {
@@ -117,12 +87,9 @@ private:
   uint32_t m_framesInFlight = 2u;
   bool m_vsync = false;
 
-  VkPhysicalDeviceFeatures m_enabledDeviceFeatures = {};
-  std::vector<const char*> m_deviceExtensions      = {};
-  std::vector<const char*> m_instanceExtensions    = {};
-
-  bool m_enableValidation;
-  std::vector<const char*> m_validationLayers;
+  vk::PhysicalDeviceFeatures m_enabledDeviceFeatures = {};
+  std::vector<const char*> m_deviceExtensions;
+  std::vector<const char*> m_instanceExtensions;
 
   std::shared_ptr<SceneManager>     m_pScnMgr;
   
@@ -190,7 +157,6 @@ private:
 
 
   void SetupDeviceExtensions();
-  void SetupValidationLayers();
 
   void AllocateResources();
   void PreparePipelines();
