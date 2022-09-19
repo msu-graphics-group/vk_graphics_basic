@@ -3,6 +3,10 @@
 #include <geom/vk_mesh.h>
 #include <vk_pipeline.h>
 #include <vk_buffers.h>
+#include <iostream>
+
+#include <etna/GlobalContext.hpp>
+#include <etna/Etna.hpp>
 
 
 /// RESOURCE ALLOCATION
@@ -16,12 +20,12 @@ void SimpleShadowmapRender::AllocateResources()
       VK_FORMAT_D16_UNORM_S8_UINT,
       VK_FORMAT_D16_UNORM
   };
-  vk_utils::getSupportedDepthFormat(m_physicalDevice, depthFormats, &m_depthBuffer.format);
-  m_depthBuffer  = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
+  vk_utils::getSupportedDepthFormat(m_context->getPhysicalDevice(), depthFormats, &m_depthBuffer.format);
+  m_depthBuffer  = vk_utils::createDepthTexture(m_context->getDevice(), m_context->getPhysicalDevice(), m_width, m_height, m_depthBuffer.format);
 
   // create shadow map
   //
-  m_pShadowMap2 = std::make_shared<vk_utils::RenderTarget>(m_device, VkExtent2D{2048, 2048});
+  m_pShadowMap2 = std::make_shared<vk_utils::RenderTarget>(m_context->getDevice(), VkExtent2D{2048, 2048});
 
   vk_utils::AttachmentInfo infoDepth;
   infoDepth.format           = VK_FORMAT_D16_UNORM;
@@ -36,9 +40,9 @@ void SimpleShadowmapRender::AllocateResources()
     allocateInfo.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocateInfo.pNext           = nullptr;
     allocateInfo.allocationSize  = memReq.size;
-    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_physicalDevice);
+    allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_context->getPhysicalDevice());
 
-    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, NULL, &m_memShadowMap));
+    VK_CHECK_RESULT(vkAllocateMemory(m_context->getDevice(), &allocateInfo, NULL, &m_memShadowMap));
   }
 
   m_pShadowMap2->CreateViewAndBindMemory(m_memShadowMap, {0});
@@ -50,7 +54,7 @@ void SimpleShadowmapRender::AllocateResources()
 void SimpleShadowmapRender::CreateUniformBuffer()
 {
   VkMemoryRequirements memReq;
-  m_ubo = vk_utils::createBuffer(m_device, sizeof(UniformParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &memReq);
+  m_ubo = vk_utils::createBuffer(m_context->getDevice(), sizeof(UniformParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &memReq);
 
   VkMemoryAllocateInfo allocateInfo = {};
   allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -59,11 +63,11 @@ void SimpleShadowmapRender::CreateUniformBuffer()
   allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
                                                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                          m_physicalDevice);
-  VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocateInfo, nullptr, &m_uboAlloc));
-  VK_CHECK_RESULT(vkBindBufferMemory(m_device, m_ubo, m_uboAlloc, 0));
+                                                          m_context->getPhysicalDevice());
+  VK_CHECK_RESULT(vkAllocateMemory(m_context->getDevice(), &allocateInfo, nullptr, &m_uboAlloc));
+  VK_CHECK_RESULT(vkBindBufferMemory(m_context->getDevice(), m_ubo, m_uboAlloc, 0));
 
-  vkMapMemory(m_device, m_uboAlloc, 0, sizeof(m_uniforms), 0, &m_uboMappedMem);
+  vkMapMemory(m_context->getDevice(), m_uboAlloc, 0, sizeof(m_uniforms), 0, &m_uboMappedMem);
 }
 
 void SimpleShadowmapRender::LoadScene(const char* path, bool transpose_inst_matrices)
@@ -71,6 +75,7 @@ void SimpleShadowmapRender::LoadScene(const char* path, bool transpose_inst_matr
   m_pScnMgr->LoadSceneXML(path, transpose_inst_matrices);
 
   // TODO: Make a separate stage
+  loadShaders();
   PreparePipelines();
 
   auto loadedCam = m_pScnMgr->GetCamera(0);
@@ -83,20 +88,20 @@ void SimpleShadowmapRender::LoadScene(const char* path, bool transpose_inst_matr
 
 void SimpleShadowmapRender::DeallocateResources()
 {
-  vkDestroyImageView(m_device, m_depthBuffer.view, nullptr);
-  vkDestroyImage(m_device, m_depthBuffer.image, nullptr);
+  vkDestroyImageView(m_context->getDevice(), m_depthBuffer.view, nullptr);
+  vkDestroyImage(m_context->getDevice(), m_depthBuffer.image, nullptr);
 
   m_pShadowMap2 = nullptr;
   
   if(m_memShadowMap != VK_NULL_HANDLE)
   {
-    vkFreeMemory(m_device, m_memShadowMap, VK_NULL_HANDLE);
+    vkFreeMemory(m_context->getDevice(), m_memShadowMap, VK_NULL_HANDLE);
     m_memShadowMap = VK_NULL_HANDLE;
   }
 
-  vkUnmapMemory(m_device, m_uboAlloc);
-  vkFreeMemory(m_device, m_uboAlloc, nullptr);
-  vkDestroyBuffer(m_device, m_ubo, nullptr);
+  vkUnmapMemory(m_context->getDevice(), m_uboAlloc);
+  vkFreeMemory(m_context->getDevice(), m_uboAlloc, nullptr);
+  vkDestroyBuffer(m_context->getDevice(), m_ubo, nullptr);
 }
 
 
@@ -107,20 +112,162 @@ void SimpleShadowmapRender::DeallocateResources()
 
 void SimpleShadowmapRender::PreparePipelines()
 {
-  m_screenRenderPass = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat());
+  m_screenRenderPass = vk_utils::createDefaultRenderPass(m_context->getDevice(), m_swapchain.GetFormat());
 
-  m_frameBuffers = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
+  m_frameBuffers = vk_utils::createFrameBuffers(m_context->getDevice(), m_swapchain, m_screenRenderPass, m_depthBuffer.view);
   
   // create full screen quad for debug purposes
   // 
   m_pFSQuad = std::make_shared<vk_utils::QuadRenderer>(0,0, 512, 512);
-  m_pFSQuad->Create(m_device, "../../resources/shaders/quad3_vert.vert.spv", "../../resources/shaders/quad.frag.spv", 
-                    vk_utils::RenderTargetInfo2D{ VkExtent2D{ m_width, m_height }, m_swapchain.GetFormat(),                                        // this is debug full scree quad
+  m_pFSQuad->Create(m_context->getDevice(), 
+    VK_GRAPHICS_BASIC_ROOT "/resources/shaders/quad3_vert.vert.spv",
+    VK_GRAPHICS_BASIC_ROOT "/resources/shaders/quad.frag.spv", 
+    vk_utils::RenderTargetInfo2D{ VkExtent2D{ m_width, m_height }, m_swapchain.GetFormat(),                                        // this is debug full scree quad
                                                   VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR }); // seems we need LOAD_OP_LOAD if we want to draw quad to part of screen
 
   m_pShadowMap2->CreateDefaultRenderPass();
 
   SetupSimplePipeline();
+}
+
+static void print_prog_info(const std::string &name)
+{
+  auto info = etna::get_shader_program(name);
+  std::cout << "Program Info " << name << "\n";
+
+  for (uint32_t set = 0u; set < etna::MAX_PROGRAM_DESCRIPTORS; set++)
+  {
+    if (!info.isDescriptorSetUsed(set))
+      continue;
+    auto setInfo = info.getDescriptorSetInfo(set);
+    for (uint32_t binding = 0; binding < etna::MAX_DESCRIPTOR_BINDINGS; binding++)
+    {
+      if (!setInfo.isBindingUsed(binding))
+        continue;
+      auto &vkBinding = setInfo.getBinding(binding);
+
+      std::cout << "Binding " << binding << " " << vk::to_string(vkBinding.descriptorType) << ", count = " << vkBinding.descriptorCount << " ";
+      std::cout << " " << vk::to_string(vkBinding.stageFlags) << "\n"; 
+    }
+  }
+
+  auto pc = info.getPushConst();
+  if (pc.size)
+  {
+    std::cout << "PushConst " << " size = " << pc.size << " stages = " << vk::to_string(pc.stageFlags) << "\n";
+  }
+}
+
+void SimpleShadowmapRender::loadShaders()
+{
+  etna::create_program("simple_material",
+    {VK_GRAPHICS_BASIC_ROOT"/resources/shaders/simple_shadow.frag.spv", VK_GRAPHICS_BASIC_ROOT"/resources/shaders/simple.vert.spv"});
+  etna::create_program("simple_shadow", {VK_GRAPHICS_BASIC_ROOT"/resources/shaders/simple.vert.spv"});
+}
+
+void SimpleShadowmapRender::createDescriptorSets()
+{
+
+}
+
+vk::Pipeline SimpleShadowmapRender::createGraphicsPipeline(const std::string &prog_name, uint32_t width, uint32_t height, 
+                                                           const VkPipelineVertexInputStateCreateInfo &vinput,
+                                                           VkRenderPass renderpass)
+{
+  std::vector<vk::VertexInputAttributeDescription> vertexAttribures;
+  std::vector<vk::VertexInputBindingDescription> vertexBindings;
+  
+  vertexAttribures.reserve(vinput.vertexAttributeDescriptionCount);
+  vertexBindings.reserve(vinput.vertexBindingDescriptionCount);
+
+  for (uint32_t i = 0; i < vinput.vertexAttributeDescriptionCount; i++)
+  {
+    vertexAttribures.emplace_back() = vinput.pVertexAttributeDescriptions[i];
+  }
+
+  for (uint32_t i = 0; i < vinput.vertexBindingDescriptionCount; i++)
+  {
+    vertexBindings.emplace_back() = vinput.pVertexBindingDescriptions[i];
+  }
+
+  vk::PipelineVertexInputStateCreateInfo vertexInput {};
+  vertexInput.flags = static_cast<vk::PipelineVertexInputStateCreateFlags>(vinput.flags);
+  vertexInput.setVertexAttributeDescriptions(vertexAttribures);
+  vertexInput.setVertexBindingDescriptions(vertexBindings);
+
+  vk::PipelineInputAssemblyStateCreateInfo inputAssembly {};
+  inputAssembly.setTopology(vk::PrimitiveTopology::eTriangleList);
+  inputAssembly.setPrimitiveRestartEnable(false);
+
+  vk::Viewport viewport {};
+  viewport.setWidth(float(width));
+  viewport.setHeight(float(height));
+  viewport.setX(0.f);
+  viewport.setY(0.f);
+  viewport.setMinDepth(0.f);
+  viewport.setMaxDepth(1.f);
+
+  vk::Rect2D scissors {};
+  scissors.offset = vk::Offset2D {0, 0};
+  scissors.extent = vk::Extent2D {width, height};
+
+  vk::PipelineViewportStateCreateInfo viewportState {};
+  viewportState.setViewportCount(1);
+  viewportState.setPViewports(&viewport);
+  viewportState.setScissorCount(1);
+  viewportState.setPScissors(&scissors);
+
+  vk::PipelineRasterizationStateCreateInfo rasterization {};
+  rasterization.depthClampEnable = false;
+  rasterization.rasterizerDiscardEnable = false;
+  rasterization.polygonMode = vk::PolygonMode::eFill;
+  rasterization.lineWidth = 1.f;
+  rasterization.cullMode = vk::CullModeFlagBits::eNone;
+  rasterization.frontFace = vk::FrontFace::eClockwise;
+  rasterization.depthBiasEnable = false;
+
+  vk::PipelineMultisampleStateCreateInfo multisampleState {};
+  multisampleState.setSampleShadingEnable(false);
+  multisampleState.setRasterizationSamples(vk::SampleCountFlagBits::e1);
+
+  std::vector<vk::PipelineColorBlendAttachmentState> blendAttachments;
+  blendAttachments.resize(1);
+  blendAttachments[0] = vk::PipelineColorBlendAttachmentState {};
+  blendAttachments[0].colorWriteMask = vk::ColorComponentFlagBits::eR|vk::ColorComponentFlagBits::eG|vk::ColorComponentFlagBits::eB|vk::ColorComponentFlagBits::eA;
+  blendAttachments[0].blendEnable = false;
+
+  vk::PipelineColorBlendStateCreateInfo blendState {};
+  blendState.setAttachments(blendAttachments);
+  blendState.setLogicOpEnable(false);
+  blendState.setLogicOp(vk::LogicOp::eClear);
+
+  vk::PipelineDepthStencilStateCreateInfo depthState {};
+  depthState.setDepthTestEnable(true);
+  depthState.setDepthWriteEnable(true);
+  depthState.setDepthCompareOp(vk::CompareOp::eLessOrEqual);
+  depthState.setMaxDepthBounds(1.f);
+
+  auto &m_pShaderPrograms = etna::get_context().getShaderManager();
+  auto progId = m_pShaderPrograms.getProgram(prog_name);
+  auto stages = m_pShaderPrograms.getShaderStages(progId);
+
+  vk::GraphicsPipelineCreateInfo pipelineInfo {};
+  pipelineInfo.setPVertexInputState(&vertexInput);
+  pipelineInfo.setPInputAssemblyState(&inputAssembly);
+  pipelineInfo.setPViewportState(&viewportState);
+  pipelineInfo.setPRasterizationState(&rasterization);
+  pipelineInfo.setPMultisampleState(&multisampleState);
+  pipelineInfo.setPColorBlendState(&blendState);
+  pipelineInfo.setPDepthStencilState(&depthState);
+  pipelineInfo.setStages(stages);
+  pipelineInfo.setLayout(m_pShaderPrograms.getProgramLayout(progId));
+  pipelineInfo.setRenderPass(renderpass);
+  
+  auto vkdevice = vk::Device {m_context->getDevice()};
+  auto res = vkdevice.createGraphicsPipeline(nullptr, pipelineInfo);
+  if (res.result != vk::Result::eSuccess)
+    ETNA_PANIC("Pipeline creation error");
+  return res.value;
 }
 
 void SimpleShadowmapRender::SetupSimplePipeline()
@@ -130,51 +277,27 @@ void SimpleShadowmapRender::SetupSimplePipeline()
       {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,     2}
   };
 
-  m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_device, dtypes, 2);
+  m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_context->getDevice(), dtypes, 2);
   
   auto shadowMap = m_pShadowMap2->m_attachments[m_shadowMapId];
-
-  m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
-  m_pBindings->BindBuffer(0, m_ubo, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-  m_pBindings->BindImage (1, shadowMap.view, m_pShadowMap2->m_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-  m_pBindings->BindEnd(&m_dSet, &m_dSetLayout);
-
+  
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
   m_pBindings->BindImage(0, shadowMap.view, m_pShadowMap2->m_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   m_pBindings->BindEnd(&m_quadDS, &m_quadDSLayout);
 
-  vk_utils::GraphicsPipelineMaker maker;
+  auto forwardProgInfo = etna::get_shader_program("simple_material");
+  auto shadowProgInfo = etna::get_shader_program("simple_shadow");
   
-  // pipeline for drawing objects
-  //
-  std::unordered_map<VkShaderStageFlagBits, std::string> shader_paths;
-  {
-    shader_paths[VK_SHADER_STAGE_FRAGMENT_BIT] = "../../resources/shaders/simple_shadow.frag.spv";
-    shader_paths[VK_SHADER_STAGE_VERTEX_BIT]   = "../../resources/shaders/simple.vert.spv";
-  }
-  maker.LoadShaders(m_device, shader_paths);
-
-  m_basicForwardPipeline.layout = maker.MakeLayout(m_device, {m_dSetLayout}, sizeof(pushConst2M));
-  maker.SetDefaultState(m_width, m_height);
-
-  m_basicForwardPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(),
-                                                       m_screenRenderPass);
-                                                       //, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}
+  m_basicForwardPipeline.layout = forwardProgInfo.getPipelineLayout();
+  m_basicForwardPipeline.pipeline = createGraphicsPipeline("simple_material", m_width, m_height,
+    m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), m_screenRenderPass);
   
-  // pipeline for rendering objects to shadowmap
-  //
-  // maker.SetDefaultState(m_width, m_height);
-  shader_paths.clear();
-  shader_paths[VK_SHADER_STAGE_VERTEX_BIT] = "../../resources/shaders/simple.vert.spv";
-  maker.LoadShaders(m_device, shader_paths);
+  m_shadowPipeline.layout = shadowProgInfo.getPipelineLayout();
+  m_shadowPipeline.pipeline = createGraphicsPipeline("simple_shadow", uint32_t(m_pShadowMap2->m_resolution.width), uint32_t(m_pShadowMap2->m_resolution.height),
+    m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), m_pShadowMap2->m_renderPass);
 
-  maker.viewport.width  = float(m_pShadowMap2->m_resolution.width);
-  maker.viewport.height = float(m_pShadowMap2->m_resolution.height);
-  maker.scissor.extent  = VkExtent2D{ uint32_t(m_pShadowMap2->m_resolution.width), uint32_t(m_pShadowMap2->m_resolution.height) };
-
-  m_shadowPipeline.layout   = m_basicForwardPipeline.layout;
-  m_shadowPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), 
-                                                 m_pShadowMap2->m_renderPass);                                                       
+  print_prog_info("simple_material");
+  print_prog_info("simple_shadow");
 }
 
 void SimpleShadowmapRender::DestroyPipelines()
@@ -183,25 +306,20 @@ void SimpleShadowmapRender::DestroyPipelines()
 
   for (size_t i = 0; i < m_frameBuffers.size(); i++)
   {
-    vkDestroyFramebuffer(m_device, m_frameBuffers[i], nullptr);
+    vkDestroyFramebuffer(m_context->getDevice(), m_frameBuffers[i], nullptr);
   }
 
-  vkDestroyRenderPass(m_device, m_screenRenderPass, nullptr);
+  vkDestroyRenderPass(m_context->getDevice(), m_screenRenderPass, nullptr);
 
-  if(m_basicForwardPipeline.layout != VK_NULL_HANDLE)
-  {
-    vkDestroyPipelineLayout(m_device, m_basicForwardPipeline.layout, nullptr);
-    m_basicForwardPipeline.layout = VK_NULL_HANDLE;
-  }
   if(m_basicForwardPipeline.pipeline != VK_NULL_HANDLE)
   {
-    vkDestroyPipeline(m_device, m_basicForwardPipeline.pipeline, nullptr);
+    vkDestroyPipeline(m_context->getDevice(), m_basicForwardPipeline.pipeline, nullptr);
     m_basicForwardPipeline.pipeline = VK_NULL_HANDLE;
   }
 
   if(m_shadowPipeline.pipeline != VK_NULL_HANDLE)
   {
-    vkDestroyPipeline(m_device, m_shadowPipeline.pipeline, nullptr);
+    vkDestroyPipeline(m_context->getDevice(), m_shadowPipeline.pipeline, nullptr);
     m_shadowPipeline.pipeline = VK_NULL_HANDLE;
   }
 }
@@ -212,7 +330,7 @@ void SimpleShadowmapRender::DestroyPipelines()
 
 void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4x4& a_wvp)
 {
-  VkShaderStageFlags stageFlags = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+  VkShaderStageFlags stageFlags = (VK_SHADER_STAGE_VERTEX_BIT);
 
   VkDeviceSize zero_offset = 0u;
   VkBuffer vertexBuf = m_pScnMgr->GetVertexBuffer();
@@ -280,6 +398,16 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
   //// draw final scene to screen
   //
   {
+    auto simpleMaterialInfo = etna::get_shader_program("simple_material");
+    auto shadowMap = m_pShadowMap2->m_attachments[m_shadowMapId];
+
+    auto set = etna::create_descriptor_set(simpleMaterialInfo.getDescriptorLayoutId(0), {
+      etna::Binding {0, vk::DescriptorBufferInfo {m_ubo, 0, VK_WHOLE_SIZE}},
+      etna::Binding {1, vk::DescriptorImageInfo {m_pShadowMap2->m_sampler, shadowMap.view, vk::ImageLayout::eShaderReadOnlyOptimal}}
+    });
+    
+    VkDescriptorSet vkSet = set.getVkSet();
+
     VkRenderPassBeginInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = m_screenRenderPass;
@@ -296,7 +424,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
     vkCmdBeginRenderPass(a_cmdBuff, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, a_pipeline);
-    vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.layout, 0, 1, &m_dSet, 0, VK_NULL_HANDLE);
+    vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.layout, 0, 1, &vkSet, 0, VK_NULL_HANDLE);
 
     DrawSceneCmd(a_cmdBuff, m_worldViewProj);
 

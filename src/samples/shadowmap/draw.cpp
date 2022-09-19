@@ -1,9 +1,11 @@
 #include "shadowmap_render.h"
+#include <etna/Etna.hpp>
+
 
 void SimpleShadowmapRender::DrawFrameSimple()
 {
-  vkWaitForFences(m_device, 1, &m_frameFences[m_presentationResources.currentFrame], VK_TRUE, UINT64_MAX);
-  vkResetFences(m_device, 1, &m_frameFences[m_presentationResources.currentFrame]);
+  vkWaitForFences(m_context->getDevice(), 1, &m_frameFences[m_presentationResources.currentFrame], VK_TRUE, UINT64_MAX);
+  vkResetFences(m_context->getDevice(), 1, &m_frameFences[m_presentationResources.currentFrame]);
 
   uint32_t imageIdx;
   m_swapchain.AcquireNextImage(m_presentationResources.imageAvailable, &imageIdx);
@@ -28,7 +30,8 @@ void SimpleShadowmapRender::DrawFrameSimple()
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
 
-  VK_CHECK_RESULT(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_frameFences[m_presentationResources.currentFrame]));
+  VK_CHECK_RESULT(vkQueueSubmit(m_context->getQueue(),
+    1, &submitInfo, m_frameFences[m_presentationResources.currentFrame]));
 
   VkResult presentRes = m_swapchain.QueuePresent(m_presentationResources.queue, imageIdx,
                                                  m_presentationResources.renderingFinished);
@@ -45,6 +48,8 @@ void SimpleShadowmapRender::DrawFrameSimple()
   m_presentationResources.currentFrame = (m_presentationResources.currentFrame + 1) % m_framesInFlight;
 
   vkQueueWaitIdle(m_presentationResources.queue);
+  
+  etna::submit();
 }
 
 void SimpleShadowmapRender::DrawFrame(float a_time, DrawMode a_mode)

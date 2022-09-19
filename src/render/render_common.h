@@ -1,7 +1,7 @@
 #ifndef CHIMERA_RENDER_COMMON_H
 #define CHIMERA_RENDER_COMMON_H
 
-#include "volk.h"
+#include <etna/Vulkan.hpp>
 #include "vk_utils.h"
 #include "utils/Camera.h"
 #include <cstring>

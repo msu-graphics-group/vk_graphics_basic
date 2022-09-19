@@ -23,8 +23,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows)
     set_target_properties(shadowmap_renderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
     target_link_libraries(shadowmap_renderer PRIVATE project_options
-                          volk glfw3 project_warnings)
+                          glfw3 project_warnings etna ${CMAKE_DL_LIBS})
 else()
     target_link_libraries(shadowmap_renderer PRIVATE project_options
-                          volk glfw project_warnings) #
+                          glfw project_warnings etna ${CMAKE_DL_LIBS}) #
 endif()

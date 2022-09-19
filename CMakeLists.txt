@@ -8,7 +8,7 @@ project(vk_graphics_basic CXX)
 include(cmake/StandardProjectSettings.cmake)
 
 add_library(project_options INTERFACE)
-target_compile_features(project_options INTERFACE cxx_std_17)
+target_compile_features(project_options INTERFACE cxx_std_20)
 
 # Link this 'library' to use the warnings specified in CompilerWarnings.cmake
 add_library(project_warnings INTERFACE)
@@ -17,17 +17,7 @@ add_library(project_warnings INTERFACE)
 include(cmake/CompilerWarnings.cmake)
 set_project_warnings(project_warnings)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Windows)
-  set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
-elseif(CMAKE_SYSTEM_NAME STREQUAL Linux)
-  set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_XLIB_KHR)
-elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_MACOS_MVK)
-endif()
-
 add_compile_definitions(IMGUI_USER_CONFIG="${CMAKE_CURRENT_SOURCE_DIR}/src/render/my_imgui_config.h")
-
-add_compile_definitions(USE_VOLK)
 ##############################################
 # common sources used by all samples
 
@@ -62,16 +52,17 @@ set(IMGUI_SRC
         ${CMAKE_SOURCE_DIR}/external/imgui/misc/cpp/imgui_stdlib.cpp)
 
 include_directories(${CMAKE_SOURCE_DIR}/external/imgui)
-include_directories(${CMAKE_SOURCE_DIR}/external/volk)
 include_directories(${CMAKE_SOURCE_DIR}/external/vkutils)
 include_directories(${CMAKE_SOURCE_DIR}/external)
 include_directories(${CMAKE_SOURCE_DIR}/src)
+#include_directories(${CMAKE_SOURCE_DIR}/external/volk)
 ##############################################
 
-add_subdirectory(external/volk)
-add_subdirectory(src/samples/quad2d)
+add_compile_definitions(USE_ETNA VK_GRAPHICS_BASIC_ROOT="${PROJECT_SOURCE_DIR}")
+
+add_subdirectory(external/etna)
+#add_subdirectory(external/volk)
+#add_subdirectory(src/samples/quad2d)
 add_subdirectory(src/samples/shadowmap)
-add_subdirectory(src/samples/simpleforward)
-add_subdirectory(src/samples/simple_compute)
-
-
+#add_subdirectory(src/samples/simpleforward)
+#add_subdirectory(src/samples/simple_compute)

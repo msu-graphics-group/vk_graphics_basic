@@ -1,5 +1,6 @@
 #include "shadowmap_render.h"
 #include "utils/glfw_window.h"
+#include <etna/Etna.hpp>
 
 void initVulkanGLFW(std::shared_ptr<IRender> &app, GLFWwindow* window, int deviceID)
 {
@@ -40,9 +41,13 @@ int main()
 
   initVulkanGLFW(app, window, VULKAN_DEVICE_ID);
 
-  app->LoadScene("../../resources/scenes/043_cornell_normals/statex_00001.xml", false);
+  app->LoadScene(VK_GRAPHICS_BASIC_ROOT "/resources/scenes/043_cornell_normals/statex_00001.xml", false);
 
   mainLoop(app, window);
+
+  app = {};
+  if (etna::is_initilized())
+    etna::shutdown();
 
   return 0;
 }
