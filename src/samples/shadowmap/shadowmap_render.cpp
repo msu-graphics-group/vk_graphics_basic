@@ -13,15 +13,12 @@
 
 void SimpleShadowmapRender::AllocateResources()
 {
-  std::vector<VkFormat> depthFormats = {
-      VK_FORMAT_D32_SFLOAT,
-      VK_FORMAT_D32_SFLOAT_S8_UINT,
-      VK_FORMAT_D24_UNORM_S8_UINT,
-      VK_FORMAT_D16_UNORM_S8_UINT,
-      VK_FORMAT_D16_UNORM
-  };
-  vk_utils::getSupportedDepthFormat(m_context->getPhysicalDevice(), depthFormats, &m_depthBuffer.format);
-  m_depthBuffer  = vk_utils::createDepthTexture(m_context->getDevice(), m_context->getPhysicalDevice(), m_width, m_height, m_depthBuffer.format);
+  mainViewDepth = etna::get_context().createImage(etna::Image::CreateInfo
+  {
+    .extent = vk::Extent3D(m_width, m_height, 1),
+    .format = vk::Format::eD32Sfloat,
+    .imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment
+  });
 
   // create shadow map
   //
@@ -88,9 +85,7 @@ void SimpleShadowmapRender::LoadScene(const char* path, bool transpose_inst_matr
 
 void SimpleShadowmapRender::DeallocateResources()
 {
-  vkDestroyImageView(m_context->getDevice(), m_depthBuffer.view, nullptr);
-  vkDestroyImage(m_context->getDevice(), m_depthBuffer.image, nullptr);
-
+  mainViewDepth.reset(); // TODO: Make an etna method to reset all the resources
   m_pShadowMap2 = nullptr;
   
   if(m_memShadowMap != VK_NULL_HANDLE)
@@ -114,7 +109,7 @@ void SimpleShadowmapRender::PreparePipelines()
 {
   m_screenRenderPass = vk_utils::createDefaultRenderPass(m_context->getDevice(), m_swapchain.GetFormat());
 
-  m_frameBuffers = vk_utils::createFrameBuffers(m_context->getDevice(), m_swapchain, m_screenRenderPass, m_depthBuffer.view);
+  m_frameBuffers = vk_utils::createFrameBuffers(m_context->getDevice(), m_swapchain, m_screenRenderPass, mainViewDepth.getView(etna::Image::ViewParams{}));
   
   // create full screen quad for debug purposes
   // 

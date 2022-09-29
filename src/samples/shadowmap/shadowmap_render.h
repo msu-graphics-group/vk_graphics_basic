@@ -41,6 +41,7 @@ public:
 
 private:
   etna::GlobalContext* m_context;
+  etna::Image mainViewDepth;
 
   VkCommandPool    m_commandPool    = VK_NULL_HANDLE;
 
@@ -79,7 +80,6 @@ private:
   VkSurfaceKHR m_surface = VK_NULL_HANDLE;
   VulkanSwapChain m_swapchain;
   std::vector<VkFramebuffer> m_frameBuffers;
-  vk_utils::VulkanImageMem m_depthBuffer{}; // screen depthbuffer
 
   Camera   m_cam;
   uint32_t m_width  = 1024u;
