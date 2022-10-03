@@ -61,3 +61,10 @@ void SimpleShadowmapRender::RecreateSwapChain()
 
   PreparePipelines();
 }
+
+SimpleShadowmapRender::~SimpleShadowmapRender()
+{
+  DeallocateResources();
+  DestroyPipelines();
+  ResetPresentStuff();
+}

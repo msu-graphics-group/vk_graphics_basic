@@ -21,7 +21,7 @@ class SimpleShadowmapRender : public IRender
 {
 public:
   SimpleShadowmapRender(uint32_t a_width, uint32_t a_height);
-  ~SimpleShadowmapRender() = default;
+  ~SimpleShadowmapRender();
 
   inline uint32_t     GetWidth()      const override { return m_width; }
   inline uint32_t     GetHeight()     const override { return m_height; }
