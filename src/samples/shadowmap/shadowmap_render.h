@@ -147,7 +147,7 @@ private:
 
   /*todo: move pipeline creation to etna*/
   vk::Pipeline createGraphicsPipeline(const std::string &prog_name, uint32_t width, uint32_t height,
-    const VkPipelineVertexInputStateCreateInfo &vinput, VkRenderPass renderpass);
+    const VkPipelineVertexInputStateCreateInfo &vinput, VkRenderPass *renderpass = nullptr);
 
   void SetupSimplePipeline();
   void RecreateSwapChain();

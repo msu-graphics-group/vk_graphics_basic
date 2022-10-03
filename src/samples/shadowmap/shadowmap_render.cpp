@@ -167,7 +167,7 @@ void SimpleShadowmapRender::createDescriptorSets()
 
 vk::Pipeline SimpleShadowmapRender::createGraphicsPipeline(const std::string &prog_name, uint32_t width, uint32_t height, 
                                                            const VkPipelineVertexInputStateCreateInfo &vinput,
-                                                           VkRenderPass renderpass)
+                                                           VkRenderPass *renderpass)
 {
   std::vector<vk::VertexInputAttributeDescription> vertexAttribures;
   std::vector<vk::VertexInputBindingDescription> vertexBindings;
@@ -242,6 +242,9 @@ vk::Pipeline SimpleShadowmapRender::createGraphicsPipeline(const std::string &pr
   depthState.setDepthCompareOp(vk::CompareOp::eLessOrEqual);
   depthState.setMaxDepthBounds(1.f);
 
+  vk::PipelineRenderingCreateInfo rendering {}; // TODO: Fix this hardcoded dynamic rendering
+  rendering.setDepthAttachmentFormat(vk::Format::eD16Unorm);
+
   auto &m_pShaderPrograms = etna::get_context().getShaderManager();
   auto progId = m_pShaderPrograms.getProgram(prog_name);
   auto stages = m_pShaderPrograms.getShaderStages(progId);
@@ -256,7 +259,10 @@ vk::Pipeline SimpleShadowmapRender::createGraphicsPipeline(const std::string &pr
   pipelineInfo.setPDepthStencilState(&depthState);
   pipelineInfo.setStages(stages);
   pipelineInfo.setLayout(m_pShaderPrograms.getProgramLayout(progId));
-  pipelineInfo.setRenderPass(renderpass);
+  if (renderpass)
+    pipelineInfo.setRenderPass(*renderpass);
+  else
+    pipelineInfo.setPNext(&rendering);
   
   auto vkdevice = vk::Device {m_context->getDevice()};
   auto res = vkdevice.createGraphicsPipeline(nullptr, pipelineInfo);
@@ -285,11 +291,11 @@ void SimpleShadowmapRender::SetupSimplePipeline()
   
   m_basicForwardPipeline.layout = forwardProgInfo.getPipelineLayout();
   m_basicForwardPipeline.pipeline = createGraphicsPipeline("simple_material", m_width, m_height,
-    m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), m_screenRenderPass);
+    m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), &m_screenRenderPass);
   
   m_shadowPipeline.layout = shadowProgInfo.getPipelineLayout();
   m_shadowPipeline.pipeline = createGraphicsPipeline("simple_shadow", uint32_t(m_pShadowMap2->m_resolution.width), uint32_t(m_pShadowMap2->m_resolution.height),
-    m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), m_pShadowMap2->m_renderPass);
+    m_pScnMgr->GetPipelineVertexInputStateCreateInfo());
 
   print_prog_info("simple_material");
   print_prog_info("simple_shadow");
@@ -378,17 +384,56 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
 
   //// draw scene to shadowmap
   //
-  VkClearValue clearDepth = {};
-  clearDepth.depthStencil.depth   = 1.0f;
-  clearDepth.depthStencil.stencil = 0;
-  std::vector<VkClearValue> clear =  {clearDepth};
-  VkRenderPassBeginInfo renderToShadowMap = m_pShadowMap2->GetRenderPassBeginInfo(0, clear);
-  vkCmdBeginRenderPass(a_cmdBuff, &renderToShadowMap, VK_SUBPASS_CONTENTS_INLINE);
+  vk::ClearValue clearVal;
+  clearVal.setDepthStencil(vk::ClearDepthStencilValue {
+    .depth = 1.0f,
+    .stencil = 0
+  });
+  vk::RenderingAttachmentInfo shadowMapAttInfo {
+    .imageView = m_pShadowMap2->m_attachments[0].view,
+    .imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal,
+    .loadOp = vk::AttachmentLoadOp::eClear,
+    .storeOp = vk::AttachmentStoreOp::eStore,
+    .clearValue = clearVal
+  };
+  vk::Rect2D renderArea;
+  renderArea = scissor;
+  vk::RenderingInfo renderInfo {
+    .renderArea = renderArea,
+    .layerCount = 1,
+    .pDepthAttachment = &shadowMapAttInfo
+  };
+  VkRenderingInfo rInf = (VkRenderingInfo)renderInfo;
+  vkCmdBeginRendering(a_cmdBuff, &rInf);
+
   {
     vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_shadowPipeline.pipeline);
     DrawSceneCmd(a_cmdBuff, m_lightMatrix);
   }
-  vkCmdEndRenderPass(a_cmdBuff);
+  vkCmdEndRendering(a_cmdBuff);
+
+  {
+    VkImageMemoryBarrier dstBarrier = {};
+    dstBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    dstBarrier.image = m_pShadowMap2->m_attachments[0].image;
+    dstBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    dstBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    dstBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    dstBarrier.subresourceRange.baseArrayLayer = 0;
+    dstBarrier.subresourceRange.layerCount = 1;
+    dstBarrier.subresourceRange.levelCount = 1;
+    dstBarrier.subresourceRange.baseMipLevel = 0;
+    dstBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    dstBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    dstBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dstBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(a_cmdBuff,
+      VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+      0, nullptr,
+      0, nullptr,
+      1, &dstBarrier);
+  }
 
   //// draw final scene to screen
   //
