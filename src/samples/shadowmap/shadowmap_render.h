@@ -73,13 +73,10 @@ private:
   pipeline_data_t m_basicForwardPipeline {};
   pipeline_data_t m_shadowPipeline {};
 
-  VkRenderPass m_screenRenderPass = VK_NULL_HANDLE; // main renderpass
-
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
   
   VkSurfaceKHR m_surface = VK_NULL_HANDLE;
   VulkanSwapChain m_swapchain;
-  std::vector<VkFramebuffer> m_frameBuffers;
 
   Camera   m_cam;
   uint32_t m_width  = 1024u;
@@ -137,8 +134,7 @@ private:
   void CreateInstance();
   void CreateDevice(uint32_t a_deviceId);
 
-  void BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff,
-                                VkImageView a_targetImageView, VkPipeline a_pipeline);
+  void BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkImage a_targetImage, VkImageView a_targetImageView);
 
   void DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4x4& a_wvp);
 
@@ -147,7 +143,7 @@ private:
 
   /*todo: move pipeline creation to etna*/
   vk::Pipeline createGraphicsPipeline(const std::string &prog_name, uint32_t width, uint32_t height,
-    const VkPipelineVertexInputStateCreateInfo &vinput, VkRenderPass *renderpass = nullptr);
+    const VkPipelineVertexInputStateCreateInfo &vinput, vk::PipelineRenderingCreateInfo rendering);
 
   void SetupSimplePipeline();
   void RecreateSwapChain();

@@ -107,10 +107,6 @@ void SimpleShadowmapRender::DeallocateResources()
 
 void SimpleShadowmapRender::PreparePipelines()
 {
-  m_screenRenderPass = vk_utils::createDefaultRenderPass(m_context->getDevice(), m_swapchain.GetFormat());
-
-  m_frameBuffers = vk_utils::createFrameBuffers(m_context->getDevice(), m_swapchain, m_screenRenderPass, mainViewDepth.getView(etna::Image::ViewParams{}));
-  
   // create full screen quad for debug purposes
   // 
   m_pFSQuad = std::make_shared<vk_utils::QuadRenderer>(0,0, 512, 512);
@@ -119,8 +115,6 @@ void SimpleShadowmapRender::PreparePipelines()
     VK_GRAPHICS_BASIC_ROOT "/resources/shaders/quad.frag.spv", 
     vk_utils::RenderTargetInfo2D{ VkExtent2D{ m_width, m_height }, m_swapchain.GetFormat(),                                        // this is debug full scree quad
                                                   VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR }); // seems we need LOAD_OP_LOAD if we want to draw quad to part of screen
-
-  m_pShadowMap2->CreateDefaultRenderPass();
 
   SetupSimplePipeline();
 }
@@ -167,7 +161,7 @@ void SimpleShadowmapRender::createDescriptorSets()
 
 vk::Pipeline SimpleShadowmapRender::createGraphicsPipeline(const std::string &prog_name, uint32_t width, uint32_t height, 
                                                            const VkPipelineVertexInputStateCreateInfo &vinput,
-                                                           VkRenderPass *renderpass)
+                                                           vk::PipelineRenderingCreateInfo rendering)
 {
   std::vector<vk::VertexInputAttributeDescription> vertexAttribures;
   std::vector<vk::VertexInputBindingDescription> vertexBindings;
@@ -242,9 +236,6 @@ vk::Pipeline SimpleShadowmapRender::createGraphicsPipeline(const std::string &pr
   depthState.setDepthCompareOp(vk::CompareOp::eLessOrEqual);
   depthState.setMaxDepthBounds(1.f);
 
-  vk::PipelineRenderingCreateInfo rendering {}; // TODO: Fix this hardcoded dynamic rendering
-  rendering.setDepthAttachmentFormat(vk::Format::eD16Unorm);
-
   auto &m_pShaderPrograms = etna::get_context().getShaderManager();
   auto progId = m_pShaderPrograms.getProgram(prog_name);
   auto stages = m_pShaderPrograms.getShaderStages(progId);
@@ -259,10 +250,7 @@ vk::Pipeline SimpleShadowmapRender::createGraphicsPipeline(const std::string &pr
   pipelineInfo.setPDepthStencilState(&depthState);
   pipelineInfo.setStages(stages);
   pipelineInfo.setLayout(m_pShaderPrograms.getProgramLayout(progId));
-  if (renderpass)
-    pipelineInfo.setRenderPass(*renderpass);
-  else
-    pipelineInfo.setPNext(&rendering);
+  pipelineInfo.setPNext(&rendering);
   
   auto vkdevice = vk::Device {m_context->getDevice()};
   auto res = vkdevice.createGraphicsPipeline(nullptr, pipelineInfo);
@@ -289,13 +277,20 @@ void SimpleShadowmapRender::SetupSimplePipeline()
   auto forwardProgInfo = etna::get_shader_program("simple_material");
   auto shadowProgInfo = etna::get_shader_program("simple_shadow");
   
+  vk::PipelineRenderingCreateInfo forwardRendering {};
+  forwardRendering.setDepthAttachmentFormat(vk::Format::eD32Sfloat);
+  forwardRendering.setColorAttachmentCount(1);
+  std::array<vk::Format, 1> formats = {(vk::Format)m_swapchain.GetFormat()};
+  forwardRendering.setColorAttachmentFormats(formats);
   m_basicForwardPipeline.layout = forwardProgInfo.getPipelineLayout();
   m_basicForwardPipeline.pipeline = createGraphicsPipeline("simple_material", m_width, m_height,
-    m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), &m_screenRenderPass);
+    m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), forwardRendering);
   
+  vk::PipelineRenderingCreateInfo shadowmapRendering {};
+  shadowmapRendering.setDepthAttachmentFormat(vk::Format::eD16Unorm);
   m_shadowPipeline.layout = shadowProgInfo.getPipelineLayout();
   m_shadowPipeline.pipeline = createGraphicsPipeline("simple_shadow", uint32_t(m_pShadowMap2->m_resolution.width), uint32_t(m_pShadowMap2->m_resolution.height),
-    m_pScnMgr->GetPipelineVertexInputStateCreateInfo());
+    m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), shadowmapRendering);
 
   print_prog_info("simple_material");
   print_prog_info("simple_shadow");
@@ -304,13 +299,6 @@ void SimpleShadowmapRender::SetupSimplePipeline()
 void SimpleShadowmapRender::DestroyPipelines()
 {
   m_pFSQuad     = nullptr; // smartptr delete it's resources
-
-  for (size_t i = 0; i < m_frameBuffers.size(); i++)
-  {
-    vkDestroyFramebuffer(m_context->getDevice(), m_frameBuffers[i], nullptr);
-  }
-
-  vkDestroyRenderPass(m_context->getDevice(), m_screenRenderPass, nullptr);
 
   if(m_basicForwardPipeline.pipeline != VK_NULL_HANDLE)
   {
@@ -352,8 +340,7 @@ void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4
   }
 }
 
-void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff,
-                                                     VkImageView a_targetImageView, VkPipeline a_pipeline)
+void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkImage a_targetImage, VkImageView a_targetImageView)
 {
   vkResetCommandBuffer(a_cmdBuff, 0);
 
@@ -384,33 +371,35 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
 
   //// draw scene to shadowmap
   //
-  vk::ClearValue clearVal;
-  clearVal.setDepthStencil(vk::ClearDepthStencilValue {
-    .depth = 1.0f,
-    .stencil = 0
-  });
-  vk::RenderingAttachmentInfo shadowMapAttInfo {
-    .imageView = m_pShadowMap2->m_attachments[0].view,
-    .imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal,
-    .loadOp = vk::AttachmentLoadOp::eClear,
-    .storeOp = vk::AttachmentStoreOp::eStore,
-    .clearValue = clearVal
-  };
-  vk::Rect2D renderArea;
-  renderArea = scissor;
-  vk::RenderingInfo renderInfo {
-    .renderArea = renderArea,
-    .layerCount = 1,
-    .pDepthAttachment = &shadowMapAttInfo
-  };
-  VkRenderingInfo rInf = (VkRenderingInfo)renderInfo;
-  vkCmdBeginRendering(a_cmdBuff, &rInf);
-
   {
-    vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_shadowPipeline.pipeline);
-    DrawSceneCmd(a_cmdBuff, m_lightMatrix);
+    vk::ClearValue clearVal;
+    clearVal.setDepthStencil(vk::ClearDepthStencilValue {
+      .depth = 1.0f,
+      .stencil = 0
+    });
+    vk::RenderingAttachmentInfo shadowMapAttInfo {
+      .imageView = m_pShadowMap2->m_attachments[0].view,
+      .imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal,
+      .loadOp = vk::AttachmentLoadOp::eClear,
+      .storeOp = vk::AttachmentStoreOp::eStore,
+      .clearValue = clearVal
+    };
+    vk::Rect2D renderArea;
+    renderArea = scissor;
+    vk::RenderingInfo renderInfo {
+      .renderArea = renderArea,
+      .layerCount = 1,
+      .pDepthAttachment = &shadowMapAttInfo
+    };
+    VkRenderingInfo rInf = (VkRenderingInfo)renderInfo;
+    vkCmdBeginRendering(a_cmdBuff, &rInf);
+
+    {
+      vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_shadowPipeline.pipeline);
+      DrawSceneCmd(a_cmdBuff, m_lightMatrix);
+    }
+    vkCmdEndRendering(a_cmdBuff);
   }
-  vkCmdEndRendering(a_cmdBuff);
 
   {
     VkImageMemoryBarrier dstBarrier = {};
@@ -448,27 +437,63 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
     
     VkDescriptorSet vkSet = set.getVkSet();
 
-    VkRenderPassBeginInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_screenRenderPass;
-    renderPassInfo.framebuffer = a_frameBuff;
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = m_swapchain.GetExtent();
+    vk::RenderingAttachmentInfo depthBufferAttInfo = {
+      .imageView = mainViewDepth.getView(etna::Image::ViewParams{}),
+      .imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal,
+      .loadOp = vk::AttachmentLoadOp::eClear,
+      .storeOp = vk::AttachmentStoreOp::eStore,
+      .clearValue = vk::ClearDepthStencilValue{1.0f, 0}
+    };
+    vk::RenderingAttachmentInfo swapchainImageAttInfo = {
+      .imageView = a_targetImageView,
+      .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+      .loadOp = vk::AttachmentLoadOp::eClear,
+      .storeOp = vk::AttachmentStoreOp::eStore,
+      .clearValue = vk::ClearColorValue{std::array<float, 4>({0.0f, 0.0f, 0.0f, 1.0f})}
+    };
 
-    VkClearValue clearValues[2] = {};
-    clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-    clearValues[1].depthStencil = {1.0f, 0};
-    renderPassInfo.clearValueCount = 2;
-    renderPassInfo.pClearValues    = &clearValues[0];
+    vk::Rect2D renderArea;
+    renderArea.setOffset({0, 0});
+    renderArea.setExtent(vk::Extent2D(m_swapchain.GetExtent().width, m_swapchain.GetExtent().height));
+    vk::RenderingInfo renderInfo {
+      .renderArea = renderArea,
+      .layerCount = 1,
+      .colorAttachmentCount = 1,
+      .pColorAttachments = &swapchainImageAttInfo,
+      .pDepthAttachment = &depthBufferAttInfo
+    };
+    VkRenderingInfo rInf = (VkRenderingInfo)renderInfo;
+    vkCmdBeginRendering(a_cmdBuff, &rInf);
 
-    vkCmdBeginRenderPass(a_cmdBuff, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, a_pipeline);
+    vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.pipeline);
     vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.layout, 0, 1, &vkSet, 0, VK_NULL_HANDLE);
 
     DrawSceneCmd(a_cmdBuff, m_worldViewProj);
 
-    vkCmdEndRenderPass(a_cmdBuff);
+    vkCmdEndRendering(a_cmdBuff);
+  }
+
+  {
+    VkImageMemoryBarrier dstBarrier = {};
+    dstBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    dstBarrier.image = a_targetImage;
+    dstBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    dstBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    dstBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    dstBarrier.subresourceRange.baseArrayLayer = 0;
+    dstBarrier.subresourceRange.layerCount = 1;
+    dstBarrier.subresourceRange.levelCount = 1;
+    dstBarrier.subresourceRange.baseMipLevel = 0;
+    dstBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    dstBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    dstBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dstBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+
+    vkCmdPipelineBarrier(a_cmdBuff,
+      VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+      0, nullptr,
+      0, nullptr,
+      1, &dstBarrier);
   }
 
   if(m_input.drawFSQuad)
