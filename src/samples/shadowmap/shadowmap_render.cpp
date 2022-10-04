@@ -163,26 +163,8 @@ vk::Pipeline SimpleShadowmapRender::createGraphicsPipeline(const std::string &pr
                                                            const VkPipelineVertexInputStateCreateInfo &vinput,
                                                            vk::PipelineRenderingCreateInfo rendering)
 {
-  std::vector<vk::VertexInputAttributeDescription> vertexAttribures;
-  std::vector<vk::VertexInputBindingDescription> vertexBindings;
-  
-  vertexAttribures.reserve(vinput.vertexAttributeDescriptionCount);
-  vertexBindings.reserve(vinput.vertexBindingDescriptionCount);
-
-  for (uint32_t i = 0; i < vinput.vertexAttributeDescriptionCount; i++)
-  {
-    vertexAttribures.emplace_back() = vinput.pVertexAttributeDescriptions[i];
-  }
-
-  for (uint32_t i = 0; i < vinput.vertexBindingDescriptionCount; i++)
-  {
-    vertexBindings.emplace_back() = vinput.pVertexBindingDescriptions[i];
-  }
-
-  vk::PipelineVertexInputStateCreateInfo vertexInput {};
-  vertexInput.flags = static_cast<vk::PipelineVertexInputStateCreateFlags>(vinput.flags);
-  vertexInput.setVertexAttributeDescriptions(vertexAttribures);
-  vertexInput.setVertexBindingDescriptions(vertexBindings);
+  vk::PipelineVertexInputStateCreateInfo vertexInput = {};
+  vertexInput = vinput;
 
   vk::PipelineInputAssemblyStateCreateInfo inputAssembly {};
   inputAssembly.setTopology(vk::PrimitiveTopology::eTriangleList);
@@ -408,7 +390,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
       etna::Binding {0, vk::DescriptorBufferInfo {m_ubo, 0, VK_WHOLE_SIZE}},
       etna::Binding {1, vk::DescriptorImageInfo {m_pShadowMap2->m_sampler, shadowMap.view, vk::ImageLayout::eShaderReadOnlyOptimal}}
     });
-    
+
     VkDescriptorSet vkSet = set.getVkSet();
 
     vk::RenderingAttachmentInfo depthBufferAttInfo = {
