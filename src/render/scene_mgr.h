@@ -6,6 +6,7 @@
 #include <geom/vk_mesh.h>
 #include "LiteMath.h"
 #include <vk_copy.h>
+#include <etna/VertexInput.hpp>
 
 #include "../loader_utils/hydraxml.h"
 #include "../resources/shaders/common.h"
@@ -39,7 +40,7 @@ struct SceneManager
 
   void DestroyScene();
 
-  VkPipelineVertexInputStateCreateInfo GetPipelineVertexInputStateCreateInfo() { return m_pMeshData->VertexInputLayout();}
+  etna::VertexByteStreamFormatDescription GetVertexStreamDescription();
 
   VkBuffer GetVertexBuffer() const { return m_geoVertBuf; }
   VkBuffer GetIndexBuffer()  const { return m_geoIdxBuf; }
