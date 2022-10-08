@@ -281,3 +281,28 @@ void SceneManager::DestroyScene()
   m_instanceInfos.clear();
   m_instanceMatrices.clear();
 }
+
+etna::VertexByteStreamFormatDescription SceneManager::GetVertexStreamDescription()
+{
+  // legacy vk-utils code always returns a single binding
+  // reimplement meshes in etna ASAP
+  auto legacyDescription = m_pMeshData->VertexInputLayout();
+  etna::VertexByteStreamFormatDescription result;
+  result.stride = legacyDescription.pVertexBindingDescriptions->stride;
+  result.attributes.reserve(legacyDescription.vertexAttributeDescriptionCount);
+  for (uint32_t i = 0; i < legacyDescription.vertexAttributeDescriptionCount; ++i)
+  {
+    // NOTE: fragile code, we rely on the fact that vk-utils places attributes for
+    // location i in ith slot.
+    auto& legacyAttr = legacyDescription.pVertexAttributeDescriptions[i];
+    result.attributes.push_back(
+      etna::VertexByteStreamFormatDescription::Attribute
+      {
+        .format = static_cast<vk::Format>(legacyAttr.format),
+        .offset = legacyAttr.offset
+      });
+  }
+
+  return result;
+}
+

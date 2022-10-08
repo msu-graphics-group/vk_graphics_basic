@@ -4,6 +4,7 @@
 #include "../../render/scene_mgr.h"
 #include "../../render/render_common.h"
 #include "../../../resources/shaders/common.h"
+#include "etna/GraphicsPipeline.hpp"
 #include <geom/vk_mesh.h>
 #include <vk_descriptor_sets.h>
 #include <vk_fbuf_attachment.h>
@@ -70,8 +71,8 @@ private:
   VkDeviceMemory m_uboAlloc = VK_NULL_HANDLE;
   void* m_uboMappedMem = nullptr;
 
-  pipeline_data_t m_basicForwardPipeline {};
-  pipeline_data_t m_shadowPipeline {};
+  etna::GraphicsPipeline m_basicForwardPipeline {};
+  etna::GraphicsPipeline m_shadowPipeline {};
 
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
   
@@ -140,10 +141,6 @@ private:
 
   void loadShaders();
   void createDescriptorSets();
-
-  /*todo: move pipeline creation to etna*/
-  vk::Pipeline createGraphicsPipeline(const std::string &prog_name, uint32_t width, uint32_t height,
-    const VkPipelineVertexInputStateCreateInfo &vinput, vk::PipelineRenderingCreateInfo rendering);
 
   void SetupSimplePipeline();
   void RecreateSwapChain();

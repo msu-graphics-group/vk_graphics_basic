@@ -1,5 +1,6 @@
 #include "../../utils/input_definitions.h"
 
+#include "etna/Etna.hpp"
 #include "shadowmap_render.h"
 
 void SimpleShadowmapRender::UpdateCamera(const Camera* cams, uint32_t a_camsNumber)
@@ -68,7 +69,7 @@ void SimpleShadowmapRender::ProcessInput(const AppInput &input)
     std::system("cd ../resources/shaders && python3 compile_shadowmap_shaders.py");
 #endif
 
-    SetupSimplePipeline();
+    etna::reload_shaders();
 
     for (uint32_t i = 0; i < m_framesInFlight; ++i)
     {

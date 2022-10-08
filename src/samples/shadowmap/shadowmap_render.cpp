@@ -7,6 +7,7 @@
 
 #include <etna/GlobalContext.hpp>
 #include <etna/Etna.hpp>
+#include <vulkan/vulkan_core.h>
 
 
 /// RESOURCE ALLOCATION
@@ -15,7 +16,7 @@ void SimpleShadowmapRender::AllocateResources()
 {
   mainViewDepth = etna::get_context().createImage(etna::Image::CreateInfo
   {
-    .extent = vk::Extent3D(m_width, m_height, 1),
+    .extent = vk::Extent3D{m_width, m_height, 1},
     .format = vk::Format::eD32Sfloat,
     .imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment
   });
@@ -159,88 +160,6 @@ void SimpleShadowmapRender::createDescriptorSets()
 
 }
 
-vk::Pipeline SimpleShadowmapRender::createGraphicsPipeline(const std::string &prog_name, uint32_t width, uint32_t height, 
-                                                           const VkPipelineVertexInputStateCreateInfo &vinput,
-                                                           vk::PipelineRenderingCreateInfo rendering)
-{
-  vk::PipelineVertexInputStateCreateInfo vertexInput = {};
-  vertexInput = vinput;
-
-  vk::PipelineInputAssemblyStateCreateInfo inputAssembly {};
-  inputAssembly.setTopology(vk::PrimitiveTopology::eTriangleList);
-  inputAssembly.setPrimitiveRestartEnable(false);
-
-  vk::Viewport viewport {};
-  viewport.setWidth(float(width));
-  viewport.setHeight(float(height));
-  viewport.setX(0.f);
-  viewport.setY(0.f);
-  viewport.setMinDepth(0.f);
-  viewport.setMaxDepth(1.f);
-
-  vk::Rect2D scissors {};
-  scissors.offset = vk::Offset2D {0, 0};
-  scissors.extent = vk::Extent2D {width, height};
-
-  vk::PipelineViewportStateCreateInfo viewportState {};
-  viewportState.setViewportCount(1);
-  viewportState.setPViewports(&viewport);
-  viewportState.setScissorCount(1);
-  viewportState.setPScissors(&scissors);
-
-  vk::PipelineRasterizationStateCreateInfo rasterization {};
-  rasterization.depthClampEnable = false;
-  rasterization.rasterizerDiscardEnable = false;
-  rasterization.polygonMode = vk::PolygonMode::eFill;
-  rasterization.lineWidth = 1.f;
-  rasterization.cullMode = vk::CullModeFlagBits::eNone;
-  rasterization.frontFace = vk::FrontFace::eClockwise;
-  rasterization.depthBiasEnable = false;
-
-  vk::PipelineMultisampleStateCreateInfo multisampleState {};
-  multisampleState.setSampleShadingEnable(false);
-  multisampleState.setRasterizationSamples(vk::SampleCountFlagBits::e1);
-
-  std::vector<vk::PipelineColorBlendAttachmentState> blendAttachments;
-  blendAttachments.resize(1);
-  blendAttachments[0] = vk::PipelineColorBlendAttachmentState {};
-  blendAttachments[0].colorWriteMask = vk::ColorComponentFlagBits::eR|vk::ColorComponentFlagBits::eG|vk::ColorComponentFlagBits::eB|vk::ColorComponentFlagBits::eA;
-  blendAttachments[0].blendEnable = false;
-
-  vk::PipelineColorBlendStateCreateInfo blendState {};
-  blendState.setAttachments(blendAttachments);
-  blendState.setLogicOpEnable(false);
-  blendState.setLogicOp(vk::LogicOp::eClear);
-
-  vk::PipelineDepthStencilStateCreateInfo depthState {};
-  depthState.setDepthTestEnable(true);
-  depthState.setDepthWriteEnable(true);
-  depthState.setDepthCompareOp(vk::CompareOp::eLessOrEqual);
-  depthState.setMaxDepthBounds(1.f);
-
-  auto &m_pShaderPrograms = etna::get_context().getShaderManager();
-  auto progId = m_pShaderPrograms.getProgram(prog_name);
-  auto stages = m_pShaderPrograms.getShaderStages(progId);
-
-  vk::GraphicsPipelineCreateInfo pipelineInfo {};
-  pipelineInfo.setPVertexInputState(&vertexInput);
-  pipelineInfo.setPInputAssemblyState(&inputAssembly);
-  pipelineInfo.setPViewportState(&viewportState);
-  pipelineInfo.setPRasterizationState(&rasterization);
-  pipelineInfo.setPMultisampleState(&multisampleState);
-  pipelineInfo.setPColorBlendState(&blendState);
-  pipelineInfo.setPDepthStencilState(&depthState);
-  pipelineInfo.setStages(stages);
-  pipelineInfo.setLayout(m_pShaderPrograms.getProgramLayout(progId));
-  pipelineInfo.setPNext(&rendering);
-  
-  auto vkdevice = vk::Device {m_context->getDevice()};
-  auto res = vkdevice.createGraphicsPipeline(nullptr, pipelineInfo);
-  if (res.result != vk::Result::eSuccess)
-    ETNA_PANIC("Pipeline creation error");
-  return res.value;
-}
-
 void SimpleShadowmapRender::SetupSimplePipeline()
 {
   std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
@@ -256,23 +175,32 @@ void SimpleShadowmapRender::SetupSimplePipeline()
   m_pBindings->BindImage(0, shadowMap.view, m_pShadowMap2->m_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   m_pBindings->BindEnd(&m_quadDS, &m_quadDSLayout);
 
-  auto forwardProgInfo = etna::get_shader_program("simple_material");
-  auto shadowProgInfo = etna::get_shader_program("simple_shadow");
-  
-  vk::PipelineRenderingCreateInfo forwardRendering {};
-  forwardRendering.setDepthAttachmentFormat(vk::Format::eD32Sfloat);
-  forwardRendering.setColorAttachmentCount(1);
-  std::array<vk::Format, 1> formats = {(vk::Format)m_swapchain.GetFormat()};
-  forwardRendering.setColorAttachmentFormats(formats);
-  m_basicForwardPipeline.layout = forwardProgInfo.getPipelineLayout();
-  m_basicForwardPipeline.pipeline = createGraphicsPipeline("simple_material", m_width, m_height,
-    m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), forwardRendering);
-  
-  vk::PipelineRenderingCreateInfo shadowmapRendering {};
-  shadowmapRendering.setDepthAttachmentFormat(vk::Format::eD16Unorm);
-  m_shadowPipeline.layout = shadowProgInfo.getPipelineLayout();
-  m_shadowPipeline.pipeline = createGraphicsPipeline("simple_shadow", uint32_t(m_pShadowMap2->m_resolution.width), uint32_t(m_pShadowMap2->m_resolution.height),
-    m_pScnMgr->GetPipelineVertexInputStateCreateInfo(), shadowmapRendering);
+  etna::VertexShaderInputDescription sceneVertexInputDesc
+    {
+      .bindings = {etna::VertexShaderInputDescription::Binding
+        {
+          .byteStreamDescription = m_pScnMgr->GetVertexStreamDescription()
+        }}
+    };
+
+  auto& pipelineManager = etna::get_context().getPipelineManager();
+  m_basicForwardPipeline = pipelineManager.createGraphicsPipeline("simple_material",
+    {
+      .vertexShaderInput = sceneVertexInputDesc,
+      .fragmentShaderOutput =
+        {
+          .colorAttachmentFormats = {static_cast<vk::Format>(m_swapchain.GetFormat())},
+          .depthAttachmentFormat = vk::Format::eD32Sfloat
+        }
+    });
+  m_shadowPipeline = pipelineManager.createGraphicsPipeline("simple_shadow",
+    {
+      .vertexShaderInput = sceneVertexInputDesc,
+      .fragmentShaderOutput =
+        {
+          .depthAttachmentFormat = vk::Format::eD16Unorm
+        }
+    });
 
   print_prog_info("simple_material");
   print_prog_info("simple_shadow");
@@ -281,18 +209,6 @@ void SimpleShadowmapRender::SetupSimplePipeline()
 void SimpleShadowmapRender::DestroyPipelines()
 {
   m_pFSQuad     = nullptr; // smartptr delete it's resources
-
-  if(m_basicForwardPipeline.pipeline != VK_NULL_HANDLE)
-  {
-    vkDestroyPipeline(m_context->getDevice(), m_basicForwardPipeline.pipeline, nullptr);
-    m_basicForwardPipeline.pipeline = VK_NULL_HANDLE;
-  }
-
-  if(m_shadowPipeline.pipeline != VK_NULL_HANDLE)
-  {
-    vkDestroyPipeline(m_context->getDevice(), m_shadowPipeline.pipeline, nullptr);
-    m_shadowPipeline.pipeline = VK_NULL_HANDLE;
-  }
 }
 
 
@@ -315,7 +231,8 @@ void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4
   {
     auto inst         = m_pScnMgr->GetInstanceInfo(i);
     pushConst2M.model = m_pScnMgr->GetInstanceMatrix(i);
-    vkCmdPushConstants(a_cmdBuff, m_basicForwardPipeline.layout, stageFlags, 0, sizeof(pushConst2M), &pushConst2M);
+    vkCmdPushConstants(a_cmdBuff, m_basicForwardPipeline.getVkPipelineLayout(),
+      stageFlags, 0, sizeof(pushConst2M), &pushConst2M);
 
     auto mesh_info = m_pScnMgr->GetMeshInfo(inst.mesh_id);
     vkCmdDrawIndexed(a_cmdBuff, mesh_info.m_indNum, 1, mesh_info.m_indexOffset, mesh_info.m_vertexOffset, 0);
@@ -335,6 +252,27 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
   //// draw scene to shadowmap
   //
   {
+    vk::Extent2D ext{2048, 2048};
+    vk::Viewport viewport
+      {
+        .x = 0.0f,
+        .y = 0.0f,
+        .width  = static_cast<float>(ext.width),
+        .height = static_cast<float>(ext.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f
+      };
+    vk::Rect2D scissor
+      {
+        .offset = {0, 0},
+        .extent = ext
+      };
+
+    VkViewport vp = viewport;
+    VkRect2D scis = scissor;
+    vkCmdSetViewport(a_cmdBuff, 0, 1, &vp);
+    vkCmdSetScissor(a_cmdBuff, 0, 1, &scis);
+
     vk::RenderingAttachmentInfo shadowMapAttInfo {
       .imageView = m_pShadowMap2->m_attachments[0].view,
       .imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal,
@@ -343,20 +281,24 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
       .clearValue = vk::ClearDepthStencilValue{1.0f, 0}
     };
     vk::RenderingInfo renderInfo {
-      .renderArea = vk::Rect2D { vk::Offset2D(0, 0), vk::Extent2D(m_width, m_height) },
+      .renderArea = scissor,
       .layerCount = 1,
       .pDepthAttachment = &shadowMapAttInfo
     };
-    VkRenderingInfo rInf = (VkRenderingInfo)renderInfo;
+    VkRenderingInfo rInf = renderInfo;
     vkCmdBeginRendering(a_cmdBuff, &rInf);
 
     {
-      vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_shadowPipeline.pipeline);
+      vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_shadowPipeline.getVkPipeline());
       DrawSceneCmd(a_cmdBuff, m_lightMatrix);
     }
     vkCmdEndRendering(a_cmdBuff);
   }
 
+  // NOTE: this barrier stalls the pipeline waiting for an asynchronous
+  // swapchain image acquire operation to finish, trigger a fence, which in turn
+  // lets us go through this barrier. It's placed here because we only need
+  // the swapchain image when rendering the main scene, shadowmaps don't need it.
   {
     VkImageMemoryBarrier dstBarrier = {};
     dstBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -383,6 +325,27 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
   //// draw final scene to screen
   //
   {
+    vk::Extent2D ext{m_width, m_height};
+    vk::Viewport viewport
+      {
+        .x = 0.0f,
+        .y = 0.0f,
+        .width  = static_cast<float>(ext.width),
+        .height = static_cast<float>(ext.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f
+      };
+    vk::Rect2D scissor
+      {
+        .offset = {0, 0},
+        .extent = ext
+      };
+
+    VkViewport vp = viewport;
+    VkRect2D scis = scissor;
+    vkCmdSetViewport(a_cmdBuff, 0, 1, &vp);
+    vkCmdSetScissor(a_cmdBuff, 0, 1, &scis);
+
     auto simpleMaterialInfo = etna::get_shader_program("simple_material");
     auto shadowMap = m_pShadowMap2->m_attachments[m_shadowMapId];
 
@@ -409,17 +372,18 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
     };
 
     vk::RenderingInfo renderInfo {
-      .renderArea = vk::Rect2D { vk::Offset2D(0, 0), vk::Extent2D(m_width, m_height) },
+      .renderArea = scissor,
       .layerCount = 1,
       .colorAttachmentCount = 1,
       .pColorAttachments = &swapchainImageAttInfo,
       .pDepthAttachment = &depthBufferAttInfo
     };
-    VkRenderingInfo rInf = (VkRenderingInfo)renderInfo;
+    VkRenderingInfo rInf = renderInfo;
     vkCmdBeginRendering(a_cmdBuff, &rInf);
 
-    vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.pipeline);
-    vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.layout, 0, 1, &vkSet, 0, VK_NULL_HANDLE);
+    vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.getVkPipeline());
+    vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS,
+      m_basicForwardPipeline.getVkPipelineLayout(), 0, 1, &vkSet, 0, VK_NULL_HANDLE);
 
     DrawSceneCmd(a_cmdBuff, m_worldViewProj);
 
