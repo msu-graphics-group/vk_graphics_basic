@@ -360,8 +360,9 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
         VkImageMemoryBarrier2
         {
           .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-          .srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-          .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+          // Our semo signals this stage
+          .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+          .srcAccessMask = 0,
           .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
           .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
           .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
