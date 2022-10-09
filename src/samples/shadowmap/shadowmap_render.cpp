@@ -249,6 +249,42 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
 
   VK_CHECK_RESULT(vkBeginCommandBuffer(a_cmdBuff, &beginInfo));
 
+  {
+    std::array barriers
+      {
+        // Transfer the shadowmap to depth write layout
+        VkImageMemoryBarrier2
+        {
+          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+          .srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+          .srcAccessMask = VK_ACCESS_SHADER_READ_BIT,
+          .dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+          .dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+          .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+          .newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+          .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .image = m_pShadowMap2->m_attachments[0].image,
+          .subresourceRange =
+            {
+              .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+              .baseMipLevel = 0,
+              .levelCount = 1,
+              .baseArrayLayer = 0,
+              .layerCount = 1,
+            }
+        },
+      };
+    VkDependencyInfo depInfo
+      {
+        .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
+        .imageMemoryBarrierCount = static_cast<uint32_t>(barriers.size()),
+        .pImageMemoryBarriers = barriers.data(),
+      };
+    vkCmdPipelineBarrier2(a_cmdBuff, &depInfo);
+  }
+
+
   //// draw scene to shadowmap
   //
   {
@@ -295,31 +331,61 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
     vkCmdEndRendering(a_cmdBuff);
   }
 
-  // NOTE: this barrier stalls the pipeline waiting for an asynchronous
-  // swapchain image acquire operation to finish, trigger a fence, which in turn
-  // lets us go through this barrier. It's placed here because we only need
-  // the swapchain image when rendering the main scene, shadowmaps don't need it.
   {
-    VkImageMemoryBarrier dstBarrier = {};
-    dstBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    dstBarrier.image = m_pShadowMap2->m_attachments[0].image;
-    dstBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    dstBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    dstBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    dstBarrier.subresourceRange.baseArrayLayer = 0;
-    dstBarrier.subresourceRange.layerCount = 1;
-    dstBarrier.subresourceRange.levelCount = 1;
-    dstBarrier.subresourceRange.baseMipLevel = 0;
-    dstBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    dstBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    dstBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    dstBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-    vkCmdPipelineBarrier(a_cmdBuff,
-      VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-      0, nullptr,
-      0, nullptr,
-      1, &dstBarrier);
+    std::array barriers
+      {
+        // Transfer the shadowmap from depth write to shader read 
+        VkImageMemoryBarrier2
+        {
+          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+          .srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+          .srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+          .dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+          .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+          .oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+          .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+          .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .image = m_pShadowMap2->m_attachments[0].image,
+          .subresourceRange =
+            {
+              .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+              .baseMipLevel = 0,
+              .levelCount = 1,
+              .baseArrayLayer = 0,
+              .layerCount = 1,
+            }
+        },
+        // Wait for the semaphore to signal that the swapchain image is available
+        VkImageMemoryBarrier2
+        {
+          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+          .srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+          .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+          .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+          .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+          .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+          .newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+          .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .image = a_targetImage,
+          .subresourceRange =
+            {
+              .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+              .baseMipLevel = 0,
+              .levelCount = 1,
+              .baseArrayLayer = 0,
+              .layerCount = 1,
+            }
+        },
+      };
+    VkDependencyInfo depInfo
+      {
+        .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
+        .imageMemoryBarrierCount = static_cast<uint32_t>(barriers.size()),
+        .pImageMemoryBarriers = barriers.data(),
+      };
+    vkCmdPipelineBarrier2(a_cmdBuff, &depInfo);
   }
 
   //// draw final scene to screen
@@ -390,34 +456,46 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
     vkCmdEndRendering(a_cmdBuff);
   }
 
-  {
-    VkImageMemoryBarrier dstBarrier = {};
-    dstBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    dstBarrier.image = a_targetImage;
-    dstBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    dstBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    dstBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    dstBarrier.subresourceRange.baseArrayLayer = 0;
-    dstBarrier.subresourceRange.layerCount = 1;
-    dstBarrier.subresourceRange.levelCount = 1;
-    dstBarrier.subresourceRange.baseMipLevel = 0;
-    dstBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    dstBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    dstBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dstBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-
-    vkCmdPipelineBarrier(a_cmdBuff,
-      VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-      0, nullptr,
-      0, nullptr,
-      1, &dstBarrier);
-  }
-
   if(m_input.drawFSQuad)
   {
     float scaleAndOffset[4] = {0.5f, 0.5f, -0.5f, +0.5f};
     m_pFSQuad->SetRenderTarget(a_targetImageView);
     m_pFSQuad->DrawCmd(a_cmdBuff, m_quadDS, scaleAndOffset);
+  }
+  
+  {
+    std::array barriers
+      {
+        // Transfer swapchain to present layout
+        VkImageMemoryBarrier2
+        {
+          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+          .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+          .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+          .dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+          .dstAccessMask = 0,
+          .oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+          .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+          .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+          .image = a_targetImage,
+          .subresourceRange =
+            {
+              .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+              .baseMipLevel = 0,
+              .levelCount = 1,
+              .baseArrayLayer = 0,
+              .layerCount = 1,
+            }
+        },
+      };
+    VkDependencyInfo depInfo
+      {
+        .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
+        .imageMemoryBarrierCount = static_cast<uint32_t>(barriers.size()),
+        .pImageMemoryBarriers = barriers.data(),
+      };
+    vkCmdPipelineBarrier2(a_cmdBuff, &depInfo);
   }
 
   VK_CHECK_RESULT(vkEndCommandBuffer(a_cmdBuff));
