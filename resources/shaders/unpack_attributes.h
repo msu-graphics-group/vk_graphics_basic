@@ -1,6 +1,7 @@
 #ifndef CHIMERA_UNPACK_ATTRIBUTES_H
 #define CHIMERA_UNPACK_ATTRIBUTES_H
 
+
 vec3 DecodeNormal(uint a_data)
 {
   const uint a_enc_x = (a_data  & 0x0000FFFFu);
@@ -20,6 +21,4 @@ vec3 DecodeNormal(uint a_data)
   return vec3(x, y, z);
 }
 
-
-
-#endif// CHIMERA_UNPACK_ATTRIBUTES_H
+#endif // CHIMERA_UNPACK_ATTRIBUTES_H
