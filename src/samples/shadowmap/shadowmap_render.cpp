@@ -155,11 +155,6 @@ void SimpleShadowmapRender::loadShaders()
   etna::create_program("simple_shadow", {VK_GRAPHICS_BASIC_ROOT"/resources/shaders/simple.vert.spv"});
 }
 
-void SimpleShadowmapRender::createDescriptorSets()
-{
-
-}
-
 void SimpleShadowmapRender::SetupSimplePipeline()
 {
   std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
@@ -305,8 +300,8 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
         .extent = ext
       };
 
-    VkViewport vp = viewport;
-    VkRect2D scis = scissor;
+    VkViewport vp = (VkViewport)viewport;
+    VkRect2D scis = (VkRect2D)scissor;
     vkCmdSetViewport(a_cmdBuff, 0, 1, &vp);
     vkCmdSetScissor(a_cmdBuff, 0, 1, &scis);
 
@@ -322,7 +317,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
       .layerCount = 1,
       .pDepthAttachment = &shadowMapAttInfo
     };
-    VkRenderingInfo rInf = renderInfo;
+    VkRenderingInfo rInf = (VkRenderingInfo)renderInfo;
     vkCmdBeginRendering(a_cmdBuff, &rInf);
 
     {
@@ -410,8 +405,8 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
         .extent = ext
       };
 
-    VkViewport vp = viewport;
-    VkRect2D scis = scissor;
+    VkViewport vp = (VkViewport)viewport;
+    VkRect2D scis = (VkRect2D)scissor;
     vkCmdSetViewport(a_cmdBuff, 0, 1, &vp);
     vkCmdSetScissor(a_cmdBuff, 0, 1, &scis);
 
@@ -447,7 +442,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
       .pColorAttachments = &swapchainImageAttInfo,
       .pDepthAttachment = &depthBufferAttInfo
     };
-    VkRenderingInfo rInf = renderInfo;
+    VkRenderingInfo rInf = (VkRenderingInfo)renderInfo;
     vkCmdBeginRendering(a_cmdBuff, &rInf);
 
     vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.getVkPipeline());

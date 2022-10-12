@@ -140,7 +140,6 @@ private:
   void DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4x4& a_wvp);
 
   void loadShaders();
-  void createDescriptorSets();
 
   void SetupSimplePipeline();
   void RecreateSwapChain();
