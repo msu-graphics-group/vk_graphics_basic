@@ -24,8 +24,8 @@ public:
   SimpleShadowmapRender(uint32_t a_width, uint32_t a_height);
   ~SimpleShadowmapRender();
 
-  inline uint32_t     GetWidth()      const override { return m_width; }
-  inline uint32_t     GetHeight()     const override { return m_height; }
+  uint32_t     GetWidth()      const override { return m_width; }
+  uint32_t     GetHeight()     const override { return m_height; }
   VkInstance   GetVkInstance() const override { return m_context->getInstance(); }
 
   void InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId) override;
