@@ -255,7 +255,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
         // Transfer the shadowmap to depth write layout
         VkImageMemoryBarrier2
         {
-          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
           .srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
           .srcAccessMask = VK_ACCESS_SHADER_READ_BIT,
           .dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
@@ -267,7 +267,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
           .image = m_pShadowMap2->m_attachments[0].image,
           .subresourceRange =
             {
-              .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+              .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
               .baseMipLevel = 0,
               .levelCount = 1,
               .baseArrayLayer = 0,
@@ -338,7 +338,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
         // Transfer the shadowmap from depth write to shader read 
         VkImageMemoryBarrier2
         {
-          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
           .srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
           .srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
           .dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -350,7 +350,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
           .image = m_pShadowMap2->m_attachments[0].image,
           .subresourceRange =
             {
-              .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+              .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
               .baseMipLevel = 0,
               .levelCount = 1,
               .baseArrayLayer = 0,
@@ -360,7 +360,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
         // Wait for the semaphore to signal that the swapchain image is available
         VkImageMemoryBarrier2
         {
-          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
           // Our semo signals this stage
           .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
           .srcAccessMask = 0,
@@ -472,7 +472,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
         // Transfer swapchain to present layout
         VkImageMemoryBarrier2
         {
-          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
           .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
           .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
           .dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
