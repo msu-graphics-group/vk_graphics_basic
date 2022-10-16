@@ -44,7 +44,7 @@ void SimpleShadowmapRender::AllocateResources()
   }
 
   m_pShadowMap2->CreateViewAndBindMemory(m_memShadowMap, {0});
-  m_pShadowMap2->CreateDefaultSampler();
+  defaultSampler = etna::Sampler(etna::Sampler::CreateInfo{});
 
   CreateUniformBuffer();
 }
@@ -167,7 +167,7 @@ void SimpleShadowmapRender::SetupSimplePipeline()
   auto shadowMap = m_pShadowMap2->m_attachments[m_shadowMapId];
   
   m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
-  m_pBindings->BindImage(0, shadowMap.view, m_pShadowMap2->m_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+  m_pBindings->BindImage(0, shadowMap.view, defaultSampler.get(), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   m_pBindings->BindEnd(&m_quadDS, &m_quadDSLayout);
 
   etna::VertexShaderInputDescription sceneVertexInputDesc
@@ -415,7 +415,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
 
     auto set = etna::create_descriptor_set(simpleMaterialInfo.getDescriptorLayoutId(0), {
       etna::Binding {0, vk::DescriptorBufferInfo {m_ubo, 0, VK_WHOLE_SIZE}},
-      etna::Binding {1, vk::DescriptorImageInfo {m_pShadowMap2->m_sampler, shadowMap.view, vk::ImageLayout::eShaderReadOnlyOptimal}}
+      etna::Binding {1, vk::DescriptorImageInfo {defaultSampler.get(), shadowMap.view, vk::ImageLayout::eShaderReadOnlyOptimal}}
     });
 
     VkDescriptorSet vkSet = set.getVkSet();

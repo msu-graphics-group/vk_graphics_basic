@@ -16,6 +16,7 @@
 #include <iostream>
 
 #include <etna/GlobalContext.hpp>
+#include <etna/Sampler.hpp>
 
 
 class SimpleShadowmapRender : public IRender
@@ -43,6 +44,7 @@ public:
 private:
   etna::GlobalContext* m_context;
   etna::Image mainViewDepth;
+  etna::Sampler defaultSampler;
 
   VkCommandPool    m_commandPool    = VK_NULL_HANDLE;
 
