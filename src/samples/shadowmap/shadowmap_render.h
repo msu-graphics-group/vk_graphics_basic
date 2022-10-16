@@ -46,6 +46,7 @@ private:
   etna::Image mainViewDepth;
   etna::Image shadowMap;
   etna::Sampler defaultSampler;
+  etna::Buffer constants;
 
   VkCommandPool    m_commandPool    = VK_NULL_HANDLE;
 
@@ -70,8 +71,6 @@ private:
   float4x4 m_lightMatrix;    
 
   UniformParams m_uniforms {};
-  VkBuffer m_ubo = VK_NULL_HANDLE;
-  VkDeviceMemory m_uboAlloc = VK_NULL_HANDLE;
   void* m_uboMappedMem = nullptr;
 
   etna::GraphicsPipeline m_basicForwardPipeline {};
@@ -140,7 +139,6 @@ private:
   void SetupSimplePipeline();
   void RecreateSwapChain();
 
-  void CreateUniformBuffer();
   void UpdateUniformBuffer(float a_time);
 
 

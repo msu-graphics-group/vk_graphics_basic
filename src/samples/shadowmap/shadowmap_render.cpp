@@ -29,27 +29,14 @@ void SimpleShadowmapRender::AllocateResources()
   });
 
   defaultSampler = etna::Sampler(etna::Sampler::CreateInfo{});
+  constants = m_context->createBuffer(etna::Buffer::CreateInfo
+  {
+    .size = sizeof(UniformParams),
+    .bufferUsage = vk::BufferUsageFlagBits::eUniformBuffer,
+    .memoryUsage = VMA_MEMORY_USAGE_CPU_ONLY
+  });
 
-  CreateUniformBuffer();
-}
-
-void SimpleShadowmapRender::CreateUniformBuffer()
-{
-  VkMemoryRequirements memReq;
-  m_ubo = vk_utils::createBuffer(m_context->getDevice(), sizeof(UniformParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &memReq);
-
-  VkMemoryAllocateInfo allocateInfo = {};
-  allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  allocateInfo.pNext = nullptr;
-  allocateInfo.allocationSize = memReq.size;
-  allocateInfo.memoryTypeIndex = vk_utils::findMemoryType(memReq.memoryTypeBits,
-                                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                          m_context->getPhysicalDevice());
-  VK_CHECK_RESULT(vkAllocateMemory(m_context->getDevice(), &allocateInfo, nullptr, &m_uboAlloc));
-  VK_CHECK_RESULT(vkBindBufferMemory(m_context->getDevice(), m_ubo, m_uboAlloc, 0));
-
-  vkMapMemory(m_context->getDevice(), m_uboAlloc, 0, sizeof(m_uniforms), 0, &m_uboMappedMem);
+  m_uboMappedMem = constants.map();
 }
 
 void SimpleShadowmapRender::LoadScene(const char* path, bool transpose_inst_matrices)
@@ -73,9 +60,7 @@ void SimpleShadowmapRender::DeallocateResources()
   mainViewDepth.reset(); // TODO: Make an etna method to reset all the resources
   shadowMap.reset();
 
-  vkUnmapMemory(m_context->getDevice(), m_uboAlloc);
-  vkFreeMemory(m_context->getDevice(), m_uboAlloc, nullptr);
-  vkDestroyBuffer(m_context->getDevice(), m_ubo, nullptr);
+  constants = etna::Buffer();
 }
 
 
@@ -389,7 +374,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
     auto simpleMaterialInfo = etna::get_shader_program("simple_material");
 
     auto set = etna::create_descriptor_set(simpleMaterialInfo.getDescriptorLayoutId(0), {
-      etna::Binding {0, vk::DescriptorBufferInfo {m_ubo, 0, VK_WHOLE_SIZE}},
+      etna::Binding {0, vk::DescriptorBufferInfo {constants.get(), 0, VK_WHOLE_SIZE}},
       etna::Binding {1, vk::DescriptorImageInfo {defaultSampler.get(), shadowMap.getView({}), vk::ImageLayout::eShaderReadOnlyOptimal}}
     });
 
