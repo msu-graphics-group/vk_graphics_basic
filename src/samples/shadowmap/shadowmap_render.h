@@ -44,6 +44,7 @@ public:
 private:
   etna::GlobalContext* m_context;
   etna::Image mainViewDepth;
+  etna::Image shadowMap;
   etna::Sampler defaultSampler;
 
   VkCommandPool    m_commandPool    = VK_NULL_HANDLE;
@@ -93,14 +94,7 @@ private:
 
   std::shared_ptr<SceneManager>     m_pScnMgr;
   
-  // objects and data for shadow map
-  //
   std::shared_ptr<vk_utils::IQuad>               m_pFSQuad;
-  //std::shared_ptr<vk_utils::RenderableTexture2D> m_pShadowMap;
-  std::shared_ptr<vk_utils::RenderTarget>        m_pShadowMap2;
-  uint32_t                                       m_shadowMapId = 0;
-  
-  VkDeviceMemory        m_memShadowMap = VK_NULL_HANDLE;
   VkDescriptorSet       m_quadDS; 
   VkDescriptorSetLayout m_quadDSLayout = nullptr;
 
