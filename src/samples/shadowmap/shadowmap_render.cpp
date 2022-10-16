@@ -14,14 +14,14 @@
 
 void SimpleShadowmapRender::AllocateResources()
 {
-  mainViewDepth = etna::get_context().createImage(etna::Image::CreateInfo
+  mainViewDepth = m_context->createImage(etna::Image::CreateInfo
   {
     .extent = vk::Extent3D{m_width, m_height, 1},
     .format = vk::Format::eD32Sfloat,
     .imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment
   });
 
-  shadowMap = etna::get_context().createImage(etna::Image::CreateInfo
+  shadowMap = m_context->createImage(etna::Image::CreateInfo
   {
     .extent = vk::Extent3D{2048, 2048, 1},
     .format = vk::Format::eD16Unorm,
