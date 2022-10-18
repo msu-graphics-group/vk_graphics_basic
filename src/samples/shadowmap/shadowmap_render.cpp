@@ -7,6 +7,7 @@
 
 #include <etna/GlobalContext.hpp>
 #include <etna/Etna.hpp>
+#include <etna/RenderTargetStates.hpp>
 #include <vulkan/vulkan_core.h>
 
 
@@ -245,47 +246,11 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
   //// draw scene to shadowmap
   //
   {
-    vk::Extent2D ext{2048, 2048};
-    vk::Viewport viewport
-      {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width  = static_cast<float>(ext.width),
-        .height = static_cast<float>(ext.height),
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f
-      };
-    vk::Rect2D scissor
-      {
-        .offset = {0, 0},
-        .extent = ext
-      };
-
-    VkViewport vp = (VkViewport)viewport;
-    VkRect2D scis = (VkRect2D)scissor;
-    vkCmdSetViewport(a_cmdBuff, 0, 1, &vp);
-    vkCmdSetScissor(a_cmdBuff, 0, 1, &scis);
-
-    vk::RenderingAttachmentInfo shadowMapAttInfo {
-      .imageView = shadowMap.getView({}),
-      .imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal,
-      .loadOp = vk::AttachmentLoadOp::eClear,
-      .storeOp = vk::AttachmentStoreOp::eStore,
-      .clearValue = vk::ClearDepthStencilValue{1.0f, 0}
-    };
-    vk::RenderingInfo renderInfo {
-      .renderArea = scissor,
-      .layerCount = 1,
-      .pDepthAttachment = &shadowMapAttInfo
-    };
-    VkRenderingInfo rInf = (VkRenderingInfo)renderInfo;
-    vkCmdBeginRendering(a_cmdBuff, &rInf);
-
+    etna::RenderTargetState renderTargets(a_cmdBuff, {2048, 2048}, {}, shadowMap.getView({}));
     {
       vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_shadowPipeline.getVkPipeline());
       DrawSceneCmd(a_cmdBuff, m_lightMatrix);
     }
-    vkCmdEndRendering(a_cmdBuff);
   }
 
   {
@@ -350,27 +315,6 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
   //// draw final scene to screen
   //
   {
-    vk::Extent2D ext{m_width, m_height};
-    vk::Viewport viewport
-      {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width  = static_cast<float>(ext.width),
-        .height = static_cast<float>(ext.height),
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f
-      };
-    vk::Rect2D scissor
-      {
-        .offset = {0, 0},
-        .extent = ext
-      };
-
-    VkViewport vp = (VkViewport)viewport;
-    VkRect2D scis = (VkRect2D)scissor;
-    vkCmdSetViewport(a_cmdBuff, 0, 1, &vp);
-    vkCmdSetScissor(a_cmdBuff, 0, 1, &scis);
-
     auto simpleMaterialInfo = etna::get_shader_program("simple_material");
 
     auto set = etna::create_descriptor_set(simpleMaterialInfo.getDescriptorLayoutId(0), {
@@ -380,38 +324,13 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
 
     VkDescriptorSet vkSet = set.getVkSet();
 
-    vk::RenderingAttachmentInfo depthBufferAttInfo = {
-      .imageView = mainViewDepth.getView({}),
-      .imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal,
-      .loadOp = vk::AttachmentLoadOp::eClear,
-      .storeOp = vk::AttachmentStoreOp::eStore,
-      .clearValue = vk::ClearDepthStencilValue{1.0f, 0}
-    };
-    vk::RenderingAttachmentInfo swapchainImageAttInfo = {
-      .imageView = a_targetImageView,
-      .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-      .loadOp = vk::AttachmentLoadOp::eClear,
-      .storeOp = vk::AttachmentStoreOp::eStore,
-      .clearValue = vk::ClearColorValue{std::array<float, 4>({0.0f, 0.0f, 0.0f, 1.0f})}
-    };
-
-    vk::RenderingInfo renderInfo {
-      .renderArea = scissor,
-      .layerCount = 1,
-      .colorAttachmentCount = 1,
-      .pColorAttachments = &swapchainImageAttInfo,
-      .pDepthAttachment = &depthBufferAttInfo
-    };
-    VkRenderingInfo rInf = (VkRenderingInfo)renderInfo;
-    vkCmdBeginRendering(a_cmdBuff, &rInf);
+    etna::RenderTargetState renderTargets(a_cmdBuff, {m_width, m_height}, {{a_targetImageView}}, mainViewDepth.getView({}));
 
     vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.getVkPipeline());
     vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS,
       m_basicForwardPipeline.getVkPipelineLayout(), 0, 1, &vkSet, 0, VK_NULL_HANDLE);
 
     DrawSceneCmd(a_cmdBuff, m_worldViewProj);
-
-    vkCmdEndRendering(a_cmdBuff);
   }
 
   if(m_input.drawFSQuad)
