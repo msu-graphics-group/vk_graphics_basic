@@ -210,70 +210,14 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
   //
   {
     etna::RenderTargetState renderTargets(a_cmdBuff, {2048, 2048}, {}, shadowMap);
-    {
-      vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_shadowPipeline.getVkPipeline());
-      DrawSceneCmd(a_cmdBuff, m_lightMatrix);
-    }
+
+    vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_shadowPipeline.getVkPipeline());
+    DrawSceneCmd(a_cmdBuff, m_lightMatrix);
   }
 
-  {
-    std::array barriers
-      {
-        // Transfer the shadowmap from depth write to shader read 
-        VkImageMemoryBarrier2
-        {
-          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-          .srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-          .srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-          .dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-          .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-          .oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-          .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-          .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-          .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-          .image = shadowMap.get(),
-          .subresourceRange =
-            {
-              .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
-              .baseMipLevel = 0,
-              .levelCount = 1,
-              .baseArrayLayer = 0,
-              .layerCount = 1,
-            }
-        },
-        // Wait for the semaphore to signal that the swapchain image is available
-        VkImageMemoryBarrier2
-        {
-          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-          // Our semo signals this stage
-          .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-          .srcAccessMask = 0,
-          .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-          .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-          .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-          .newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-          .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-          .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-          .image = a_targetImage,
-          .subresourceRange =
-            {
-              .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-              .baseMipLevel = 0,
-              .levelCount = 1,
-              .baseArrayLayer = 0,
-              .layerCount = 1,
-            }
-        },
-      };
-    VkDependencyInfo depInfo
-      {
-        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
-        .imageMemoryBarrierCount = static_cast<uint32_t>(barriers.size()),
-        .pImageMemoryBarriers = barriers.data(),
-      };
-    vkCmdPipelineBarrier2(a_cmdBuff, &depInfo);
-  }
+  etna::set_state(a_cmdBuff, shadowMap.get(), vk::PipelineStageFlagBits2::eFragmentShader,
+    vk::AccessFlagBits2::eShaderRead, vk::ImageLayout::eShaderReadOnlyOptimal,
+    vk::ImageAspectFlagBits::eDepth);
 
   //// draw final scene to screen
   //
@@ -302,42 +246,12 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
     m_pFSQuad->SetRenderTarget(a_targetImageView);
     m_pFSQuad->DrawCmd(a_cmdBuff, m_quadDS, scaleAndOffset);
   }
-  
-  {
-    std::array barriers
-      {
-        // Transfer swapchain to present layout
-        VkImageMemoryBarrier2
-        {
-          .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-          .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-          .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-          .dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-          .dstAccessMask = 0,
-          .oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-          .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-          .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-          .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-          .image = a_targetImage,
-          .subresourceRange =
-            {
-              .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-              .baseMipLevel = 0,
-              .levelCount = 1,
-              .baseArrayLayer = 0,
-              .layerCount = 1,
-            }
-        },
-      };
-    VkDependencyInfo depInfo
-      {
-        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
-        .imageMemoryBarrierCount = static_cast<uint32_t>(barriers.size()),
-        .pImageMemoryBarriers = barriers.data(),
-      };
-    vkCmdPipelineBarrier2(a_cmdBuff, &depInfo);
-  }
+
+  etna::set_state(a_cmdBuff, a_targetImage, vk::PipelineStageFlagBits2::eBottomOfPipe,
+    vk::AccessFlags2(), vk::ImageLayout::ePresentSrcKHR,
+    vk::ImageAspectFlagBits::eColor);
+
+  etna::finish_frame(a_cmdBuff);
 
   VK_CHECK_RESULT(vkEndCommandBuffer(a_cmdBuff));
 }
