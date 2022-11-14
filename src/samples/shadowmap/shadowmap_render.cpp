@@ -74,7 +74,6 @@ void SimpleShadowmapRender::InitPresentation(VkSurfaceKHR &a_surface, bool)
   semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
   VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_presentationResources.imageAvailable));
   VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_presentationResources.renderingFinished));
-  m_screenRenderPass = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat());
 
   std::vector<VkFormat> depthFormats = {
       VK_FORMAT_D32_SFLOAT,
@@ -85,6 +84,7 @@ void SimpleShadowmapRender::InitPresentation(VkSurfaceKHR &a_surface, bool)
   };
   vk_utils::getSupportedDepthFormat(m_physicalDevice, depthFormats, &m_depthBuffer.format);
   m_depthBuffer  = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
+  m_screenRenderPass = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat(), m_depthBuffer.format);
   m_frameBuffers = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
   
   // create full screen quad for debug purposes
@@ -96,7 +96,7 @@ void SimpleShadowmapRender::InitPresentation(VkSurfaceKHR &a_surface, bool)
 
   // create shadow map
   //
-  m_pShadowMap2 = std::make_shared<vk_utils::RenderTarget>(m_device, VkExtent2D{2048, 2048});
+  m_pShadowMap2 = std::make_shared<vk_utils::RenderTarget>(m_device, VkExtent2D{8192, 8192});
 
   vk_utils::AttachmentInfo infoDepth;
   infoDepth.format           = VK_FORMAT_D16_UNORM;
@@ -280,6 +280,17 @@ void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4
     auto mesh_info = m_pScnMgr->GetMeshInfo(inst.mesh_id);
     vkCmdDrawIndexed(a_cmdBuff, mesh_info.m_indNum, 1, mesh_info.m_indexOffset, mesh_info.m_vertexOffset, 0);
   }
+  for (int i = 0; i < 10000; ++i)
+  {
+    auto inst         = m_pScnMgr->GetInstanceInfo(1);
+    pushConst2M.model = m_pScnMgr->GetInstanceMatrix(1);
+    pushConst2M.model.col(3).x += (i / 100 - 50) * 2;
+    pushConst2M.model.col(3).y += (i % 100 - 50) * 2;
+    vkCmdPushConstants(a_cmdBuff, m_basicForwardPipeline.layout, stageFlags, 0, sizeof(pushConst2M), &pushConst2M);
+
+    auto mesh_info = m_pScnMgr->GetMeshInfo(inst.mesh_id);
+    vkCmdDrawIndexed(a_cmdBuff, mesh_info.m_indNum, 1, mesh_info.m_indexOffset, mesh_info.m_vertexOffset, 0);
+  }
 }
 
 void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff,
@@ -407,7 +418,7 @@ void SimpleShadowmapRender::RecreateSwapChain()
   };                                                            
   vk_utils::getSupportedDepthFormat(m_physicalDevice, depthFormats, &m_depthBuffer.format);
 
-  m_screenRenderPass = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat());
+  m_screenRenderPass = vk_utils::createDefaultRenderPass(m_device, m_swapchain.GetFormat(), m_depthBuffer.format);
   m_depthBuffer      = vk_utils::createDepthTexture(m_device, m_physicalDevice, m_width, m_height, m_depthBuffer.format);
   m_frameBuffers     = vk_utils::createFrameBuffers(m_device, m_swapchain, m_screenRenderPass, m_depthBuffer.view);
 
@@ -511,7 +522,7 @@ void SimpleShadowmapRender::UpdateView()
   const float aspect = float(m_width) / float(m_height);
   auto mProjFix = OpenglToVulkanProjectionMatrixFix();
   auto mProj = projectionMatrix(m_cam.fov, aspect, 0.1f, 1000.0f);
-  auto mLookAt = LiteMath::lookAt(m_cam.pos, m_cam.lookAt, m_cam.up);
+  auto mLookAt = LiteMath::lookAt(m_cam.pos + float3(0, 0, 50), m_cam.lookAt, m_cam.up);
   auto mWorldViewProj = mProjFix * mProj * mLookAt;
   
   m_worldViewProj = mWorldViewProj;

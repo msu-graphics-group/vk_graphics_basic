@@ -21,6 +21,19 @@ layout(binding = 0, set = 0) uniform AppData
 
 layout (binding = 1) uniform sampler2D shadowMap;
 
+float mainLight(vec3 pos)
+{
+  float mult = 1.0;
+  float q = 0;
+  // Tailor series for PBR specular.
+  for (int i = 0; i < 1000; ++i)
+  {
+    q += pos.x * mult;
+    mult *= 2.0;
+  }
+  return 1.0 / q;
+}
+
 void main()
 {
   const vec4 posLightClipSpace = Params.lightMatrix*vec4(surf.wPos, 1.0f); // 
@@ -38,5 +51,8 @@ void main()
    
   vec3 lightDir   = normalize(Params.lightPos - surf.wPos);
   vec4 lightColor = max(dot(surf.wNorm, lightDir), 0.0f) * lightColor1;
-  out_fragColor   = (lightColor*shadow + vec4(0.1f)) * vec4(Params.baseColor, 1.0f);
+  vec3 color = Params.baseColor;
+  color += vec3(0, 1, 0) * sin(surf.wPos);
+  color += vec3(1, 0, 0) * cos(surf.wPos) + mainLight(surf.wPos);
+  out_fragColor   = (lightColor*shadow + vec4(0.2f)) * vec4(color, 1.0f);
 }
