@@ -60,6 +60,8 @@ void SimpleShadowmapRender::DeallocateResources()
 {
   mainViewDepth.reset(); // TODO: Make an etna method to reset all the resources
   shadowMap.reset();
+  m_swapchain.Cleanup();
+  vkDestroySurfaceKHR(GetVkInstance(), m_surface, nullptr);  
 
   constants = etna::Buffer();
 }
