@@ -84,34 +84,6 @@ void SimpleShadowmapRender::PreparePipelines()
   SetupSimplePipeline();
 }
 
-static void print_prog_info(const std::string &name)
-{
-  auto info = etna::get_shader_program(name);
-  std::cout << "Program Info " << name << "\n";
-
-  for (uint32_t set = 0u; set < etna::MAX_PROGRAM_DESCRIPTORS; set++)
-  {
-    if (!info.isDescriptorSetUsed(set))
-      continue;
-    auto setInfo = info.getDescriptorSetInfo(set);
-    for (uint32_t binding = 0; binding < etna::MAX_DESCRIPTOR_BINDINGS; binding++)
-    {
-      if (!setInfo.isBindingUsed(binding))
-        continue;
-      auto &vkBinding = setInfo.getBinding(binding);
-
-      std::cout << "Binding " << binding << " " << vk::to_string(vkBinding.descriptorType) << ", count = " << vkBinding.descriptorCount << " ";
-      std::cout << " " << vk::to_string(vkBinding.stageFlags) << "\n"; 
-    }
-  }
-
-  auto pc = info.getPushConst();
-  if (pc.size)
-  {
-    std::cout << "PushConst " << " size = " << pc.size << " stages = " << vk::to_string(pc.stageFlags) << "\n";
-  }
-}
-
 void SimpleShadowmapRender::loadShaders()
 {
   etna::create_program("simple_material",
@@ -158,9 +130,6 @@ void SimpleShadowmapRender::SetupSimplePipeline()
           .depthAttachmentFormat = vk::Format::eD16Unorm
         }
     });
-
-  print_prog_info("simple_material");
-  print_prog_info("simple_shadow");
 }
 
 void SimpleShadowmapRender::DestroyPipelines()
