@@ -18,6 +18,7 @@ void SimpleShadowmapRender::AllocateResources()
   mainViewDepth = m_context->createImage(etna::Image::CreateInfo
   {
     .extent = vk::Extent3D{m_width, m_height, 1},
+    .name = "main_view_depth",
     .format = vk::Format::eD32Sfloat,
     .imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment
   });
