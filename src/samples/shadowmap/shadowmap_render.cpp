@@ -26,16 +26,18 @@ void SimpleShadowmapRender::AllocateResources()
   shadowMap = m_context->createImage(etna::Image::CreateInfo
   {
     .extent = vk::Extent3D{2048, 2048, 1},
+    .name = "shadow_map",
     .format = vk::Format::eD16Unorm,
     .imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled
   });
 
-  defaultSampler = etna::Sampler(etna::Sampler::CreateInfo{});
+  defaultSampler = etna::Sampler(etna::Sampler::CreateInfo{.name = "default_sampler"});
   constants = m_context->createBuffer(etna::Buffer::CreateInfo
   {
     .size = sizeof(UniformParams),
     .bufferUsage = vk::BufferUsageFlagBits::eUniformBuffer,
-    .memoryUsage = VMA_MEMORY_USAGE_CPU_ONLY
+    .memoryUsage = VMA_MEMORY_USAGE_CPU_ONLY,
+    .name = "constants"
   });
 
   m_uboMappedMem = constants.map();
