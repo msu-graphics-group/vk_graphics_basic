@@ -63,6 +63,8 @@ void SimpleShadowmapRender::DeallocateResources()
 {
   mainViewDepth.reset(); // TODO: Make an etna method to reset all the resources
   shadowMap.reset();
+  m_swapchain.Cleanup();
+  vkDestroySurfaceKHR(GetVkInstance(), m_surface, nullptr);  
 
   constants = etna::Buffer();
 }
@@ -78,12 +80,17 @@ void SimpleShadowmapRender::PreparePipelines()
   // create full screen quad for debug purposes
   // 
   m_pFSQuad = std::make_shared<vk_utils::QuadRenderer>(0,0, 512, 512);
-  m_pFSQuad->Create(m_context->getDevice(), 
+  m_pFSQuad->Create(m_context->getDevice(),
     VK_GRAPHICS_BASIC_ROOT "/resources/shaders/quad3_vert.vert.spv",
-    VK_GRAPHICS_BASIC_ROOT "/resources/shaders/quad.frag.spv", 
-    vk_utils::RenderTargetInfo2D{ VkExtent2D{ m_width, m_height }, m_swapchain.GetFormat(),                                        // this is debug full scree quad
-                                                  VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR }); // seems we need LOAD_OP_LOAD if we want to draw quad to part of screen
-
+    VK_GRAPHICS_BASIC_ROOT "/resources/shaders/quad.frag.spv",
+    vk_utils::RenderTargetInfo2D{
+      .size          = VkExtent2D{ m_width, m_height },// this is debug full screen quad
+      .format        = m_swapchain.GetFormat(),
+      .loadOp        = VK_ATTACHMENT_LOAD_OP_LOAD,// seems we need LOAD_OP_LOAD if we want to draw quad to part of screen
+      .initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+      .finalLayout   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL 
+    }
+  );
   SetupSimplePipeline();
 }
 
