@@ -187,18 +187,15 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
     DrawSceneCmd(a_cmdBuff, m_lightMatrix);
   }
 
-  etna::set_state(a_cmdBuff, shadowMap.get(), vk::PipelineStageFlagBits2::eFragmentShader,
-    vk::AccessFlagBits2::eShaderRead, vk::ImageLayout::eShaderReadOnlyOptimal,
-    vk::ImageAspectFlagBits::eDepth);
-
   //// draw final scene to screen
   //
   {
     auto simpleMaterialInfo = etna::get_shader_program("simple_material");
 
-    auto set = etna::create_descriptor_set(simpleMaterialInfo.getDescriptorLayoutId(0), {
-      etna::Binding {0, vk::DescriptorBufferInfo {constants.get(), 0, VK_WHOLE_SIZE}},
-      etna::Binding {1, vk::DescriptorImageInfo {defaultSampler.get(), shadowMap.getView({}), vk::ImageLayout::eShaderReadOnlyOptimal}}
+    auto set = etna::create_descriptor_set(simpleMaterialInfo.getDescriptorLayoutId(0), a_cmdBuff,
+    {
+      etna::Binding {0, constants.genBinding()},
+      etna::Binding {1, shadowMap.genBinding(defaultSampler.get(), vk::ImageLayout::eShaderReadOnlyOptimal)}
     });
 
     VkDescriptorSet vkSet = set.getVkSet();
