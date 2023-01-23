@@ -1,8 +1,11 @@
 #include "shadowmap_render.h"
 #include <etna/Etna.hpp>
 
+#include <imgui/imgui.h>
 
-void SimpleShadowmapRender::DrawFrameSimple()
+#include "../../render/render_gui.h"
+
+void SimpleShadowmapRender::DrawFrameSimple(bool draw_gui)
 {
   vkWaitForFences(m_context->getDevice(), 1, &m_frameFences[m_presentationResources.currentFrame], VK_TRUE, UINT64_MAX);
   vkResetFences(m_context->getDevice(), 1, &m_frameFences[m_presentationResources.currentFrame]);
@@ -17,13 +20,22 @@ void SimpleShadowmapRender::DrawFrameSimple()
 
   BuildCommandBufferSimple(currentCmdBuf, m_swapchain.GetAttachment(imageIdx).image, m_swapchain.GetAttachment(imageIdx).view);
 
+  std::vector<VkCommandBuffer> submitCmdBufs = { currentCmdBuf };
+
+  if (draw_gui)
+  {
+    ImDrawData* pDrawData = ImGui::GetDrawData();
+    auto currentGUICmdBuf = m_pGUIRender->BuildGUIRenderCommand(imageIdx, pDrawData);
+    submitCmdBufs.push_back(currentGUICmdBuf);
+  }
+
   VkSubmitInfo submitInfo = {};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submitInfo.waitSemaphoreCount = 1;
   submitInfo.pWaitSemaphores = waitSemaphores;
   submitInfo.pWaitDstStageMask = waitStages;
-  submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &currentCmdBuf;
+  submitInfo.commandBufferCount = submitCmdBufs.size();
+  submitInfo.pCommandBuffers = submitCmdBufs.data();
 
   VkSemaphore signalSemaphores[] = {m_presentationResources.renderingFinished};
   submitInfo.signalSemaphoreCount = 1;
@@ -57,13 +69,14 @@ void SimpleShadowmapRender::DrawFrame(float a_time, DrawMode a_mode)
   switch (a_mode)
   {
     case DrawMode::WITH_GUI:
-//      DrawFrameWithGUI();
-//      break;
+      SetupGUIElements();
+      DrawFrameSimple(true);
+      break;
     case DrawMode::NO_GUI:
-      DrawFrameSimple();
+      DrawFrameSimple(false);
       break;
     default:
-      DrawFrameSimple();
+      DrawFrameSimple(false);
   }
 
 }

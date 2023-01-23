@@ -1,5 +1,7 @@
 #include "shadowmap_render.h"
 
+#include "../../render/render_gui.h"
+
 void SimpleShadowmapRender::InitPresentStuff()
 {
   VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -21,6 +23,14 @@ void SimpleShadowmapRender::InitPresentStuff()
   {
     VK_CHECK_RESULT(vkCreateFence(m_context->getDevice(), &fenceInfo, nullptr, &m_frameFences[i]));
   }
+
+  m_pGUIRender = std::make_shared<ImGuiRender>(
+    m_context->getInstance(),
+    m_context->getDevice(),
+    m_context->getPhysicalDevice(),
+    m_context->getQueueFamilyIdx(),
+    m_context->getQueue(),
+    m_swapchain);
 }
 
 void SimpleShadowmapRender::ResetPresentStuff()

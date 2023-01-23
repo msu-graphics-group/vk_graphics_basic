@@ -19,7 +19,7 @@ void initVulkanGLFW(std::shared_ptr<IRender> &app, GLFWwindow* window)
   {
     VkSurfaceKHR surface;
     VK_CHECK_RESULT(glfwCreateWindowSurface(app->GetVkInstance(), window, nullptr, &surface));
-//    setupImGuiContext(window);
+    setupImGuiContext(window);
     app->InitPresentation(surface, false);
   }
 }
@@ -42,7 +42,7 @@ int main()
 
   app->LoadScene(VK_GRAPHICS_BASIC_ROOT "/resources/scenes/043_cornell_normals/statex_00001.xml", false);
 
-  mainLoop(app, window);
+  mainLoop(app, window, true);
 
   app = {};
   if (etna::is_initilized())

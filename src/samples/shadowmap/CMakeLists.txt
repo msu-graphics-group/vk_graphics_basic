@@ -9,12 +9,13 @@ endif()
 
 set(RENDER_SOURCE
         ../../render/scene_mgr.cpp
-#        ../../render/render_imgui.cpp
+        ../../render/render_imgui.cpp
         shadowmap_render.cpp
         render_init.cpp
         update.cpp
         draw.cpp
         present.cpp
+        gui.cpp
 )
 
 add_executable(shadowmap_renderer main.cpp ../../utils/glfw_window.cpp ${VK_UTILS_SRC} ${SCENE_LOADER_SRC} ${RENDER_SOURCE} ${IMGUI_SRC})

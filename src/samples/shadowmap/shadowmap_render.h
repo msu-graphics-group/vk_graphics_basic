@@ -19,6 +19,8 @@
 #include <etna/Sampler.hpp>
 
 
+class IRenderGUI;
+
 class SimpleShadowmapRender : public IRender
 {
 public:
@@ -92,6 +94,7 @@ private:
   std::vector<const char*> m_instanceExtensions;
 
   std::shared_ptr<SceneManager>     m_pScnMgr;
+  std::shared_ptr<IRenderGUI> m_pGUIRender;
   
   std::shared_ptr<vk_utils::IQuad>               m_pFSQuad;
   VkDescriptorSet       m_quadDS; 
@@ -125,7 +128,7 @@ private:
   
   } m_light;
  
-  void DrawFrameSimple();
+  void DrawFrameSimple(bool draw_gui);
 
   void CreateInstance();
   void CreateDevice(uint32_t a_deviceId);
@@ -152,6 +155,7 @@ private:
 
   void InitPresentStuff();
   void ResetPresentStuff();
+  void SetupGUIElements();
 };
 
 
