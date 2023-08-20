@@ -1,7 +1,8 @@
 #ifndef CHIMERA_COMPUTE_COMMON_H
 #define CHIMERA_COMPUTE_COMMON_H
 
-#include "volk.h"
+// #include "volk.h"
+#include <etna/Vulkan.hpp>
 #include "vk_utils.h"
 #include <cstring>
 //#include <memory>

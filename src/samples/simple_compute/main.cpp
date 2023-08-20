@@ -1,4 +1,5 @@
 #include "simple_compute.h"
+#include <etna/Etna.hpp>
 
 int main()
 {
@@ -15,6 +16,10 @@ int main()
   app->InitVulkan(nullptr, 0, VULKAN_DEVICE_ID);
 
   app->Execute();
+
+  app = {};
+  if (etna::is_initilized())
+    etna::shutdown();
 
   return 0;
 }
