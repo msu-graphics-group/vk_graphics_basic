@@ -63,7 +63,7 @@ private:
 
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
 
-  uint32_t m_length  = 16u;
+  uint32_t m_length = 1000000;
   
   VkPhysicalDeviceFeatures m_enabledDeviceFeatures = {};
   std::vector<const char*> m_deviceExtensions      = {};
@@ -79,7 +79,7 @@ private:
   VkPipeline m_pipeline;
   VkPipelineLayout m_layout;
 
-  VkBuffer m_A, m_B, m_sum;
+  VkBuffer m_source, m_target;
  
   void CreateInstance();
   void CreateDevice(uint32_t a_deviceId);
@@ -93,6 +93,9 @@ private:
   void Cleanup();
 
   void SetupValidationLayers();
+
+  float ExecuteOnGPU(const std::vector<float>& values, std::vector<float>& result);
+  float ExecuteOnCPU(const std::vector<float>& values, std::vector<float>& result);
 };
 
 

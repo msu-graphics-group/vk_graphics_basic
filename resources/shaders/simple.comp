@@ -1,30 +1,36 @@
 #version 430
 
-layout( local_size_x = 32 ) in;
-
-layout( push_constant ) uniform params {
-  uint len;
+layout(push_constant) uniform params {
+    uint len;
 } PushConstant;
 
-layout(std430, binding = 0) buffer a 
+layout(std430, binding = 0) buffer Source
 {
-    float A[];
+    float source[];
 };
 
-layout(std430, binding = 1) buffer b
+layout(std430, binding = 1) buffer Target
 {
-    float B[];
+    float target[];
 };
 
-layout(std430, binding = 2) buffer Sum
-{
-    float sum[];
-};
+const int KERNEL_SIZE = 7;
 
-void main() 
+void main()
 {
     uint idx = gl_GlobalInvocationID.x;
+
     if (idx < PushConstant.len) {
-        sum[idx] = A[idx] + B[idx];
+        float sum = 0.0f;
+
+        for (int offset = -KERNEL_SIZE / 2; offset <= KERNEL_SIZE / 2; offset++) {
+            int i = int(idx) + offset;
+
+            if (i >= 0 && i < PushConstant.len) {
+                sum += source[i];
+            }
+        }
+
+        target[idx] = sum / float(KERNEL_SIZE);
     }
 }
