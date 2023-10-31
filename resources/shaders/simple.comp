@@ -1,30 +1,31 @@
 #version 430
 
-layout( local_size_x = 32 ) in;
+layout( local_size_x = 256 ) in;
 
 layout( push_constant ) uniform params {
-  uint len;
+    uint len;
 } PushConstant;
 
-layout(std430, binding = 0) buffer a 
+layout(std430, binding = 0) buffer basic
 {
-    float A[];
+    float Basic[];
 };
 
-layout(std430, binding = 1) buffer b
+layout(std430, binding = 1) buffer updated
 {
-    float B[];
+    float Updated[];
 };
 
-layout(std430, binding = 2) buffer Sum
-{
-    float sum[];
-};
-
-void main() 
+void main()
 {
     uint idx = gl_GlobalInvocationID.x;
     if (idx < PushConstant.len) {
-        sum[idx] = A[idx] + B[idx];
+        int idx_min = max(0, int(idx)-3);
+        int idx_max = min(int(idx)+4, int(PushConstant.len));
+
+        Updated[idx] = Basic[idx];
+        for (int i = idx_min; i < idx_max; ++i) {
+            Updated[idx] -= (Basic[i] / 7.0);
+        }
     }
 }
