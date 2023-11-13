@@ -25,7 +25,7 @@ void main()
 
         Updated[idx] = Basic[idx];
         for (int i = idx_min; i < idx_max; ++i) {
-            Updated[idx] -= (Basic[i] / 7.0);
+            Updated[idx] -= (Basic[i] / float(7.0));
         }
     }
 }

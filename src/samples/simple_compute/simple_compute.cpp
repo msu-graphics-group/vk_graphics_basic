@@ -73,7 +73,7 @@ void SimpleCompute::CreateDevice(uint32_t a_deviceId)
 
 float randomFloat()
 {
-  return (float)(rand()) / (float)(rand() + 1);
+  return (float)(rand()) / (float)(RAND_MAX);
 }
 
 void SimpleCompute::SetupSimplePipeline()
@@ -84,7 +84,7 @@ void SimpleCompute::SetupSimplePipeline()
 
   // Создание и аллокация буферов
   m_Basic   = vk_utils::createBuffer(m_device, sizeof(float) * m_length, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-  m_Updated = vk_utils::createBuffer(m_device, sizeof(float) * m_length, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+  m_Updated = vk_utils::createBuffer(m_device, sizeof(float) * m_length, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
   vk_utils::allocateAndBindWithPadding(m_device, m_physicalDevice, { m_Basic, m_Updated }, 0);
 
@@ -241,19 +241,25 @@ void SimpleCompute::Execute()
   std::cout << "Time using shader(ms): " << timeShaderMilliseconds.count() << "\n";
 
   auto startCPU = std::chrono::high_resolution_clock::now();
-  res = 0.0;
 
-  for (int idx = 0; idx < (int)m_array.size(); idx++)
+  std::vector<float> new_values(m_length);
+
+  for (uint idx = 0; idx < m_array.size(); idx++)
   {
-    float tmp = 0;
-    int idx_min = std::max(0, idx - 3);
-    int idx_max = std::min(idx + 4, (int)m_array.size());
+    int idx_min = std::max(0, (int)idx - 3);
+    int idx_max = std::min((int)idx + 4, (int)m_array.size());
 
+    new_values[idx] = m_array[idx];
     for (int i = idx_min; i < idx_max; ++i)
     {
-      tmp += (m_array[i] / (float)7.0);
+      new_values[idx] -= (m_array[i] / (float)7.0);
     }
-    res += (m_array[idx] - tmp);
+  }
+
+  res = 0.0;
+  for (auto v : new_values)
+  {
+    res += v;
   }
 
   auto timeCPU             = std::chrono::high_resolution_clock::now() - startCPU;
