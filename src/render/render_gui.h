@@ -51,7 +51,7 @@ private:
 
   void InitImGui();
   void CleanupImGui();
-
+  void CreateDescriptorPool();
 };
 
 #endif// VK_GRAPHICS_BASIC_RENDER_GUI_H

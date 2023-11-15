@@ -11,10 +11,13 @@ SimpleCompute::SimpleCompute(uint32_t a_length) : m_length(a_length) {}
 
 void SimpleCompute::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId)
 {
-  m_instanceExtensions.clear();
   for (uint32_t i = 0; i < a_instanceExtensionsCount; ++i) {
     m_instanceExtensions.push_back(a_instanceExtensions[i]);
   }
+
+  #ifndef NDEBUG
+    m_instanceExtensions.push_back("VK_EXT_debug_report");
+  #endif
   
   etna::initialize(etna::InitParams
     {
@@ -22,7 +25,7 @@ void SimpleCompute::InitVulkan(const char** a_instanceExtensions, uint32_t a_ins
       .applicationVersion = VK_MAKE_VERSION(0, 1, 0),
       .instanceExtensions = m_instanceExtensions,
       .deviceExtensions = m_deviceExtensions,
-      // .physicalDeviceIndexOverride = 1,
+      // .physicalDeviceIndexOverride = 0,
     }
   );
 
@@ -31,16 +34,14 @@ void SimpleCompute::InitVulkan(const char** a_instanceExtensions, uint32_t a_ins
   
   m_cmdBufferCompute = vk_utils::createCommandBuffers(m_context->getDevice(), m_commandPool, 1)[0];
   
-  m_pCopyHelper = std::make_shared<vk_utils::SimpleCopyHelper>(m_context->getPhysicalDevice(), m_context->getDevice(), m_context->getQueue(), m_context->getQueueFamilyIdx(), 8*1024*1024);
+  m_pCopyHelper = std::make_shared<vk_utils::SimpleCopyHelper>(m_context->getPhysicalDevice(), 
+    m_context->getDevice(), m_context->getQueue(), m_context->getQueueFamilyIdx(), 8 * 1024 * 1024);
 }
 
 void SimpleCompute::SetupSimplePipeline()
 {
-  std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
-      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             3}
-  };
-
-  // Создание и аллокация буферов
+  //// Создание буферов
+  //
   m_A = m_context->createBuffer(etna::Buffer::CreateInfo
     {
       .size = sizeof(float) * m_length,
@@ -65,26 +66,20 @@ void SimpleCompute::SetupSimplePipeline()
     }
   );
   
-  m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_context->getDevice(), dtypes, 1);
-
-  // Создание descriptor set для передачи буферов в шейдер
-  m_pBindings->BindBegin(VK_SHADER_STAGE_COMPUTE_BIT);
-  m_pBindings->BindBuffer(0, m_A.get());
-  m_pBindings->BindBuffer(1, m_B.get());
-  m_pBindings->BindBuffer(2, m_sum.get());
-  m_pBindings->BindEnd(&m_sumDS, &m_sumDSLayout);
-
-  // Заполнение буферов
+  //// Заполнение буферов
+  // 
   std::vector<float> values(m_length);
   for (uint32_t i = 0; i < values.size(); ++i) {
     values[i] = (float)i;
   }
   m_pCopyHelper->UpdateBuffer(m_A.get(), 0, values.data(), sizeof(float) * values.size());
+
   for (uint32_t i = 0; i < values.size(); ++i) {
     values[i] = (float)i * i;
   }
   m_pCopyHelper->UpdateBuffer(m_B.get(), 0, values.data(), sizeof(float) * values.size());
 
+  //// создание вычислительного конвейера 
   auto &pipelineManager = etna::get_context().getPipelineManager();
   m_pipeline = pipelineManager.createComputePipeline("simple_compute", {});
 }
@@ -100,10 +95,24 @@ void SimpleCompute::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkPipeli
   // Заполняем буфер команд
   VK_CHECK_RESULT(vkBeginCommandBuffer(a_cmdBuff, &beginInfo));
 
+  auto simpleComputeInfo = etna::get_shader_program("simple_compute");
+
+  auto set = etna::create_descriptor_set(simpleComputeInfo.getDescriptorLayoutId(0), a_cmdBuff,
+    {
+      etna::Binding {0, m_A.genBinding()},
+      etna::Binding {1, m_B.genBinding()},
+      etna::Binding {2, m_sum.genBinding()},
+    }
+  );
+
+  VkDescriptorSet vkSet = set.getVkSet();
+
   vkCmdBindPipeline      (a_cmdBuff, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline.getVkPipeline());
-  vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline.getVkPipelineLayout(), 0, 1, &m_sumDS, 0, NULL);
+  vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline.getVkPipelineLayout(), 0, 1, &vkSet, 0, NULL);
 
   vkCmdPushConstants(a_cmdBuff, m_pipeline.getVkPipelineLayout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(m_length), &m_length);
+
+  etna::flush_barriers(a_cmdBuff);
 
   vkCmdDispatch(a_cmdBuff, 1, 1, 1);
 

@@ -4,7 +4,6 @@
 int main()
 {
   constexpr int LENGTH = 10;
-  constexpr int VULKAN_DEVICE_ID = 0;
 
   std::shared_ptr<ICompute> app = std::make_unique<SimpleCompute>(LENGTH);
   if(app == nullptr)
@@ -13,7 +12,7 @@ int main()
     return 1;
   }
 
-  app->InitVulkan(nullptr, 0, VULKAN_DEVICE_ID);
+  app->InitVulkan(nullptr, 0, /* useless, check etna::initialize for device override */ 0);
 
   app->Execute();
 

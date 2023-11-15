@@ -29,11 +29,9 @@ public:
 private:
   etna::GlobalContext *m_context;
 
-  VkCommandPool    m_commandPool    = VK_NULL_HANDLE;
-  VkCommandBuffer m_cmdBufferCompute;
+  VkCommandPool m_commandPool    = VK_NULL_HANDLE;
+  VkCommandBuffer m_cmdBufferCompute = VK_NULL_HANDLE;
   VkFence m_fence;
-
-  std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
 
   uint32_t m_length  = 16u;
   
@@ -42,17 +40,11 @@ private:
   std::vector<const char*> m_instanceExtensions    = {};
 
   std::shared_ptr<vk_utils::ICopyEngine> m_pCopyHelper;
-
-  VkDescriptorSet       m_sumDS; 
-  VkDescriptorSetLayout m_sumDSLayout = nullptr;
   
   etna::ComputePipeline m_pipeline;
 
   etna::Buffer m_A, m_B, m_sum;
  
-  void CreateInstance();
-  void CreateDevice(uint32_t a_deviceId);
-
   void BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkPipeline a_pipeline);
 
   void SetupSimplePipeline();
