@@ -7,8 +7,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows)
     set_target_properties(simple_compute PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
     target_link_libraries(simple_compute PRIVATE project_options
-                          volk project_warnings)
+                          etna project_warnings)
 else()
     target_link_libraries(simple_compute PRIVATE project_options
-                          volk project_warnings) #
+                          etna project_warnings) #
 endif()

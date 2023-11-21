@@ -7,13 +7,14 @@ ImGuiRender::ImGuiRender(VkInstance a_instance, VkDevice a_device, VkPhysicalDev
   const VulkanSwapChain &a_swapchain) : m_instance(a_instance), m_device(a_device), m_physDevice(a_physDevice),
                                         m_queue_FID(a_queueFID), m_queue(a_queue), m_swapchain(&a_swapchain)
 {
+  CreateDescriptorPool();
   InitImGui();
 }
 
 static VkInstance g_instance = VK_NULL_HANDLE;
 PFN_vkVoidFunction vulkanLoaderFunction(const char* function_name, void*) { return vkGetInstanceProcAddr(g_instance, function_name); }
 
-void ImGuiRender::InitImGui()
+void ImGuiRender::CreateDescriptorPool()
 {
   vk_utils::DescriptorTypesVec descrTypes = {{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
     { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
@@ -27,8 +28,28 @@ void ImGuiRender::InitImGui()
     { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
     { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }};
 
-  m_descriptorPool = vk_utils::createDescriptorPool(m_device, descrTypes, (uint32_t)descrTypes.size() * 1000);
+  std::vector<VkDescriptorPoolSize> poolSizes(descrTypes.size());
+  for(size_t i = 0; i < descrTypes.size(); ++i)
+  {
+    VkDescriptorPoolSize descriptorPoolSize = {};
+    descriptorPoolSize.type = descrTypes[i].first;
+    descriptorPoolSize.descriptorCount = descrTypes[i].second;
 
+    poolSizes[i] = descriptorPoolSize;
+  }
+
+  VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
+  descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+  descriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+  descriptorPoolCreateInfo.maxSets = (uint32_t)descrTypes.size() * 1000;
+  descriptorPoolCreateInfo.poolSizeCount = (uint32_t)poolSizes.size();
+  descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
+
+  VK_CHECK_RESULT(vkCreateDescriptorPool(m_device, &descriptorPoolCreateInfo, nullptr, &m_descriptorPool));
+}
+
+void ImGuiRender::InitImGui()
+{
   ImGui_ImplVulkan_InitInfo init_info {};
 
   init_info.Instance       = m_instance;
@@ -62,22 +83,7 @@ void ImGuiRender::InitImGui()
   ImGui_ImplVulkan_Init(&init_info, m_renderpass);
 
   // Upload GUI fonts texture
-  {
-    auto cmdBuf = vk_utils::createCommandBuffer(m_device, m_commandPool);
-
-    VkCommandBufferBeginInfo begin_info = {};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuf, &begin_info));
-
-    ImGui_ImplVulkan_CreateFontsTexture(cmdBuf);
-
-    vkEndCommandBuffer(cmdBuf);
-
-    vk_utils::executeCommandBufferNow(cmdBuf, m_queue, m_device);
-
-    ImGui_ImplVulkan_DestroyFontUploadObjects();
-  }
+  ImGui_ImplVulkan_CreateFontsTexture();
 }
 
 VkCommandBuffer ImGuiRender::BuildGUIRenderCommand(uint32_t a_swapchainFrameIdx, void* a_userData)
