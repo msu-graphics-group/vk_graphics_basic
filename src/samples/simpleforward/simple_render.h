@@ -21,6 +21,8 @@ public:
   const std::string VERTEX_SHADER_PATH = "../resources/shaders/simple.vert";
   const std::string FRAGMENT_SHADER_PATH = "../resources/shaders/simple.frag";
 
+  const std::string TRAJECTORY_SAVE_PATH = "trajectory.txt";
+
   SimpleRender(uint32_t a_width, uint32_t a_height);
   ~SimpleRender()  { Cleanup(); };
 
@@ -116,6 +118,12 @@ protected:
   std::shared_ptr<IRenderGUI> m_pGUIRender;
   virtual void SetupGUIElements();
   void DrawFrameWithGUI();
+
+  bool m_trackCameraTrajectory = false;
+  bool m_saveCameraTrajectory = false;
+  std::vector<float4x4> m_cameraTrajectory;
+  uint32_t m_updateCounter = 0;
+  int32_t m_saveFreq = 100;
   //
 
   Camera   m_cam;

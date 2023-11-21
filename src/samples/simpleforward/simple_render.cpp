@@ -4,6 +4,7 @@
 #include <geom/vk_mesh.h>
 #include <vk_pipeline.h>
 #include <vk_buffers.h>
+#include <fstream>
 
 SimpleRender::SimpleRender(uint32_t a_width, uint32_t a_height) : m_width(a_width), m_height(a_height)
 {
@@ -457,6 +458,19 @@ void SimpleRender::UpdateView()
   auto mLookAt         = LiteMath::lookAt(m_cam.pos, m_cam.lookAt, m_cam.up);
   auto mWorldViewProj  = mProjFix * mProj * mLookAt;
   pushConst2M.projView = mWorldViewProj;
+
+  if(m_trackCameraTrajectory)
+  {
+    m_updateCounter++;
+    if(m_updateCounter % m_saveFreq == 0)
+    {
+      m_cameraTrajectory.push_back(mLookAt);
+    }
+  }
+  else
+  {
+    m_updateCounter = 0;
+  }
 }
 
 void SimpleRender::LoadScene(const char* path, bool transpose_inst_matrices)
@@ -570,6 +584,41 @@ void SimpleRender::SetupGUIElements()
     ImGui::Text("Changing bindings is not supported.");
     ImGui::Text("Vertex shader path: %s", VERTEX_SHADER_PATH.c_str());
     ImGui::Text("Fragment shader path: %s", FRAGMENT_SHADER_PATH.c_str());
+
+    ImGui::NewLine();
+
+    ImGui::Text("Trajectory path: %s", TRAJECTORY_SAVE_PATH.c_str());
+    ImGui::InputInt("Save camera frequency", &m_saveFreq);
+    std::string button_text;
+    if(m_trackCameraTrajectory)
+      button_text = "Stop tracking";
+    else
+    {
+      button_text = "Track cam trajectory";
+    }
+    auto stateChanged = ImGui::Button(button_text.c_str());
+
+    if(stateChanged)
+    {
+      auto oldState = m_trackCameraTrajectory;
+      m_trackCameraTrajectory = !oldState;
+      if(!m_trackCameraTrajectory)
+      {
+        std::ofstream out(TRAJECTORY_SAVE_PATH, std::ios::trunc);
+        for(auto& look_at : m_cameraTrajectory)
+        {
+          for(int i = 0; i < 4; ++i)
+          {
+            out << look_at.m_col[i].x << " " << look_at.m_col[i].y << " "
+                << look_at.m_col[i].z << " " << look_at.m_col[i].w << " ";
+          }
+          out << '\n';
+        }
+        out.close();
+        m_cameraTrajectory.clear();
+      }
+    }
+
     ImGui::End();
   }
 
