@@ -60,24 +60,7 @@ void ImGuiRender::InitImGui()
 
   ImGui_ImplVulkan_LoadFunctions(vulkanLoaderFunction);
   ImGui_ImplVulkan_Init(&init_info, m_renderpass);
-
-  // Upload GUI fonts texture
-  {
-    auto cmdBuf = vk_utils::createCommandBuffer(m_device, m_commandPool);
-
-    VkCommandBufferBeginInfo begin_info = {};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuf, &begin_info));
-
-    ImGui_ImplVulkan_CreateFontsTexture(cmdBuf);
-
-    vkEndCommandBuffer(cmdBuf);
-
-    vk_utils::executeCommandBufferNow(cmdBuf, m_queue, m_device);
-
-    ImGui_ImplVulkan_DestroyFontUploadObjects();
-  }
+  ImGui_ImplVulkan_CreateFontsTexture();
 }
 
 VkCommandBuffer ImGuiRender::BuildGUIRenderCommand(uint32_t a_swapchainFrameIdx, void* a_userData)
@@ -118,6 +101,7 @@ void ImGuiRender::OnSwapchainChanged(const VulkanSwapChain &a_swapchain)
 
 void ImGuiRender::CleanupImGui()
 {
+  ImGui_ImplVulkan_DestroyFontsTexture();
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplGlfw_Shutdown();
 
