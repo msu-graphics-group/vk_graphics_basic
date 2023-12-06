@@ -8,11 +8,11 @@ int main()
   std::shared_ptr<ICompute> app = std::make_unique<SimpleCompute>(LENGTH);
   if(app == nullptr)
   {
-    std::cout << "Can't create render of specified type" << std::endl;
+    std::cout << "Can't create compute of specified type" << std::endl;
     return 1;
   }
 
-  app->InitVulkan(nullptr, 0, /* useless, check etna::initialize for device override */ 0);
+  app->InitVulkan(nullptr, 0, 0);
 
   app->Execute();
 
