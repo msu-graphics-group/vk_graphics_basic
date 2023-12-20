@@ -72,8 +72,9 @@ void SimpleQuad2dRender::DeallocateResources()
   vkDestroyImageView(m_context->getDevice(), m_imageData.view, nullptr);
   vkDestroyImage(m_context->getDevice(), m_imageData.image, nullptr);
   vkFreeMemory(m_context->getDevice(), m_imageData.mem, nullptr);
-  m_swapchain.Cleanup();
+  vkDestroySampler(m_context->getDevice(), m_imageSampler, nullptr);
 
+  m_swapchain.Cleanup();
   vkDestroySurfaceKHR(GetVkInstance(), m_surface, nullptr);  
 }
 
@@ -102,6 +103,7 @@ void SimpleQuad2dRender::PreparePipelines()
 void SimpleQuad2dRender::SetupSimplePipeline()
 {
   std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
+      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             1},
       {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,     1}
   };
 

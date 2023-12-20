@@ -1,7 +1,6 @@
 #ifndef SIMPLE_QUAD2D_RENDER_H
 #define SIMPLE_QUAD2D_RENDER_H
 
-#include "../../render/scene_mgr.h"
 #include "../../render/render_common.h"
 #include "../../../resources/shaders/common.h"
 #include "etna/GraphicsPipeline.hpp"
@@ -10,7 +9,7 @@
 #include <vk_fbuf_attachment.h>
 #include <vk_images.h>
 #include <vk_swapchain.h>
-#include <vk_quad.h>
+#include <vk_quad.h> 
 
 #include <string>
 #include <iostream>
@@ -59,15 +58,6 @@ private:
   std::vector<VkFence> m_frameFences;
   std::vector<VkCommandBuffer> m_cmdBuffersDrawMain;
 
-  struct
-  {
-    float4x4 projView;
-    float4x4 model;
-  } pushConst2M;
-
-  float4x4 m_worldViewProj;
-  float4x4 m_lightMatrix;    
-
   etna::GraphicsPipeline m_basicForwardPipeline {};
   etna::GraphicsPipeline m_shadowPipeline {};
 
@@ -93,29 +83,6 @@ private:
 
   vk_utils::VulkanImageMem m_imageData;
   VkSampler m_imageSampler;
-  /**
-  \brief basic parameters that you usually need for shadow mapping
-  */
-  struct ShadowMapCam
-  {
-    ShadowMapCam() 
-    {  
-      cam.pos    = float3(4.0f, 4.0f, 4.0f);
-      cam.lookAt = float3(0, 0, 0);
-      cam.up     = float3(0, 1, 0);
-  
-      radius          = 5.0f;
-      lightTargetDist = 20.0f;
-      usePerspectiveM = true;
-    }
-
-    float  radius;           ///!< ignored when usePerspectiveM == true 
-    float  lightTargetDist;  ///!< identify depth range
-    Camera cam;              ///!< user control for light to later get light worldViewProj matrix
-    bool   usePerspectiveM;  ///!< use perspective matrix if true and ortographics otherwise
-  
-  } m_light;
-
  
   void DrawFrameSimple();
 
