@@ -6,19 +6,25 @@ else()
     include_directories(${GLFW_INCLUDE_DIRS})
 endif()
 
-set(RENDER_SOURCE
-        #../../render/scene_mgr.cpp
-        ../../render/render_imgui.cpp
-        quad2d_render.cpp)
 
-add_executable(quad_renderer main.cpp ../../utils/glfw_window.cpp ${VK_UTILS_SRC} ${SCENE_LOADER_SRC} ${RENDER_SOURCE} ${IMGUI_SRC})
+set(RENDER_SOURCE
+        ../../render/scene_mgr.cpp
+        ../../render/render_imgui.cpp
+        quad2d_render.cpp
+        render_init.cpp
+        update.cpp
+        draw.cpp
+        present.cpp
+)
+
+add_executable(quad2d_renderer main.cpp ../../utils/glfw_window.cpp ${VK_UTILS_SRC} ${SCENE_LOADER_SRC} ${RENDER_SOURCE} ${IMGUI_SRC})
 
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
-    set_target_properties(quad_renderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+    set_target_properties(quad2d_renderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
-    target_link_libraries(quad_renderer PRIVATE project_options
-                          volk glfw3 project_warnings)
+    target_link_libraries(quad2d_renderer PRIVATE project_options
+                          glfw3 project_warnings etna ${CMAKE_DL_LIBS})
 else()
-    target_link_libraries(quad_renderer PRIVATE project_options
-                          volk glfw project_warnings) #
+    target_link_libraries(quad2d_renderer PRIVATE project_options
+                          glfw project_warnings etna ${CMAKE_DL_LIBS}) #
 endif()
