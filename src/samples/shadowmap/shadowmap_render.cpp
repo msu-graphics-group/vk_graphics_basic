@@ -79,18 +79,10 @@ void SimpleShadowmapRender::PreparePipelines()
 {
   // create full screen quad for debug purposes
   // 
-  m_pFSQuad = std::make_shared<vk_utils::QuadRenderer>(0,0, 512, 512);
-  m_pFSQuad->Create(m_context->getDevice(),
-    VK_GRAPHICS_BASIC_ROOT "/resources/shaders/quad3_vert.vert.spv",
-    VK_GRAPHICS_BASIC_ROOT "/resources/shaders/quad.frag.spv",
-    vk_utils::RenderTargetInfo2D{
-      .size          = VkExtent2D{ m_width, m_height },// this is debug full screen quad
-      .format        = m_swapchain.GetFormat(),
-      .loadOp        = VK_ATTACHMENT_LOAD_OP_LOAD,// seems we need LOAD_OP_LOAD if we want to draw quad to part of screen
-      .initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-      .finalLayout   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL 
-    }
-  );
+  m_pQuad = std::make_unique<QuadRenderer>(QuadRenderer::CreateInfo{ 
+      .format = static_cast<vk::Format>(m_swapchain.GetFormat()),
+      .rect = { 0, 0, 512, 512 }, 
+    });
   SetupSimplePipeline();
 }
 
@@ -103,17 +95,6 @@ void SimpleShadowmapRender::loadShaders()
 
 void SimpleShadowmapRender::SetupSimplePipeline()
 {
-  std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
-      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             1},
-      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,     2}
-  };
-
-  m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_context->getDevice(), dtypes, 2);
-  
-  m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
-  m_pBindings->BindImage(0, shadowMap.getView({}), defaultSampler.get(), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-  m_pBindings->BindEnd(&m_quadDS, &m_quadDSLayout);
-
   etna::VertexShaderInputDescription sceneVertexInputDesc
     {
       .bindings = {etna::VertexShaderInputDescription::Binding
@@ -141,12 +122,6 @@ void SimpleShadowmapRender::SetupSimplePipeline()
         }
     });
 }
-
-void SimpleShadowmapRender::DestroyPipelines()
-{
-  m_pFSQuad     = nullptr; // smartptr delete it's resources
-}
-
 
 
 /// COMMAND BUFFER FILLING
@@ -217,11 +192,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
   }
 
   if(m_input.drawFSQuad)
-  {
-    float scaleAndOffset[4] = {0.5f, 0.5f, -0.5f, +0.5f};
-    m_pFSQuad->SetRenderTarget(a_targetImageView);
-    m_pFSQuad->DrawCmd(a_cmdBuff, m_quadDS, scaleAndOffset);
-  }
+    m_pQuad->RecordCommands(a_cmdBuff, a_targetImage, a_targetImageView, shadowMap, defaultSampler);
 
   etna::set_state(a_cmdBuff, a_targetImage, vk::PipelineStageFlagBits2::eBottomOfPipe,
     vk::AccessFlags2(), vk::ImageLayout::ePresentSrcKHR,

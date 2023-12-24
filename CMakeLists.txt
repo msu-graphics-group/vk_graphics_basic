@@ -33,7 +33,6 @@ set(VK_UTILS_SRC
         ${CMAKE_SOURCE_DIR}/external/vkutils/vk_pipeline.cpp
         ${CMAKE_SOURCE_DIR}/external/vkutils/geom/vk_mesh.cpp
         ${CMAKE_SOURCE_DIR}/external/vkutils/geom/cmesh.cpp
-        ${CMAKE_SOURCE_DIR}/external/vkutils/vk_quad.cpp
         ${CMAKE_SOURCE_DIR}/external/vkutils/vk_fbuf_attachment.cpp)
 
 set(SCENE_LOADER_SRC
