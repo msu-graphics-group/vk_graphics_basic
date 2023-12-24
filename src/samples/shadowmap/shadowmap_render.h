@@ -5,12 +5,12 @@
 #include "../../render/render_common.h"
 #include "../../../resources/shaders/common.h"
 #include "etna/GraphicsPipeline.hpp"
+#include "etna/Quad.hpp"
 #include <geom/vk_mesh.h>
 #include <vk_descriptor_sets.h>
 #include <vk_fbuf_attachment.h>
 #include <vk_images.h>
 #include <vk_swapchain.h>
-#include <vk_quad.h>
 
 #include <string>
 #include <iostream>
@@ -77,8 +77,6 @@ private:
 
   etna::GraphicsPipeline m_basicForwardPipeline {};
   etna::GraphicsPipeline m_shadowPipeline {};
-
-  std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
   
   VkSurfaceKHR m_surface = VK_NULL_HANDLE;
   VulkanSwapChain m_swapchain;
@@ -93,12 +91,10 @@ private:
   std::vector<const char*> m_deviceExtensions;
   std::vector<const char*> m_instanceExtensions;
 
-  std::shared_ptr<SceneManager>     m_pScnMgr;
+  std::shared_ptr<SceneManager> m_pScnMgr;
   std::shared_ptr<IRenderGUI> m_pGUIRender;
   
-  std::shared_ptr<vk_utils::IQuad>               m_pFSQuad;
-  VkDescriptorSet       m_quadDS; 
-  VkDescriptorSetLayout m_quadDSLayout = nullptr;
+  std::shared_ptr<etna::QuadRenderer> m_pQuad;
 
   struct InputControlMouseEtc
   {
