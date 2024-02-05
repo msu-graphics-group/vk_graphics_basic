@@ -3,6 +3,7 @@
 
 #include "../../render/scene_mgr.h"
 #include "../../render/render_common.h"
+#include "../../render/quad_renderer.h"
 #include "../../../resources/shaders/common.h"
 #include "etna/GraphicsPipeline.hpp"
 #include <geom/vk_mesh.h>
@@ -10,7 +11,6 @@
 #include <vk_fbuf_attachment.h>
 #include <vk_images.h>
 #include <vk_swapchain.h>
-#include <vk_quad.h>
 
 #include <string>
 #include <iostream>
@@ -77,8 +77,6 @@ private:
 
   etna::GraphicsPipeline m_basicForwardPipeline {};
   etna::GraphicsPipeline m_shadowPipeline {};
-
-  std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
   
   VkSurfaceKHR m_surface = VK_NULL_HANDLE;
   VulkanSwapChain m_swapchain;
@@ -93,12 +91,10 @@ private:
   std::vector<const char*> m_deviceExtensions;
   std::vector<const char*> m_instanceExtensions;
 
-  std::shared_ptr<SceneManager>     m_pScnMgr;
+  std::shared_ptr<SceneManager> m_pScnMgr;
   std::shared_ptr<IRenderGUI> m_pGUIRender;
   
-  std::shared_ptr<vk_utils::IQuad>               m_pFSQuad;
-  VkDescriptorSet       m_quadDS; 
-  VkDescriptorSetLayout m_quadDSLayout = nullptr;
+  std::unique_ptr<QuadRenderer> m_pQuad;
 
   struct InputControlMouseEtc
   {
@@ -130,9 +126,6 @@ private:
  
   void DrawFrameSimple(bool draw_gui);
 
-  void CreateInstance();
-  void CreateDevice(uint32_t a_deviceId);
-
   void BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkImage a_targetImage, VkImageView a_targetImageView);
 
   void DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4x4& a_wvp, VkPipelineLayout a_pipelineLayout = VK_NULL_HANDLE);
@@ -150,7 +143,6 @@ private:
   void AllocateResources();
   void PreparePipelines();
 
-  void DestroyPipelines();
   void DeallocateResources();
 
   void InitPresentStuff();

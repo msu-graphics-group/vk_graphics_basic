@@ -53,7 +53,6 @@ void SimpleShadowmapRender::RecreateSwapChain()
 
   DeallocateResources();
 
-  DestroyPipelines();
   ResetPresentStuff();
 
   auto oldImgNum = m_swapchain.GetImageCount();
@@ -71,6 +70,5 @@ void SimpleShadowmapRender::RecreateSwapChain()
 SimpleShadowmapRender::~SimpleShadowmapRender()
 {
   DeallocateResources();
-  DestroyPipelines();
   ResetPresentStuff();
 }
