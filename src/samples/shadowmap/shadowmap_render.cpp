@@ -83,6 +83,14 @@ void SimpleShadowmapRender::PreparePipelines()
       .format = static_cast<vk::Format>(m_swapchain.GetFormat()),
       .rect = { 0, 0, 512, 512 }, 
     });
+  m_pBbox = std::make_unique<BboxRenderer>(BboxRenderer::CreateInfo{
+      .drawInstanced = true,
+      .extent        = {m_width, m_height},
+      .colorFormat   = (vk::Format)m_swapchain.GetFormat(),
+      .depthFormat   = vk::Format::eD32Sfloat
+    });
+
+  m_pBbox->SetBoxes(*m_pScnMgr->GetInstanceBboxes());
   SetupSimplePipeline();
 }
 
@@ -193,6 +201,8 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
 
   if(m_input.drawFSQuad)
     m_pQuad->RecordCommands(a_cmdBuff, a_targetImage, a_targetImageView, shadowMap, defaultSampler);
+  if (m_input.drawBboxes)
+    m_pBbox->RecordCommands(a_cmdBuff, a_targetImage, a_targetImageView, mainViewDepth, m_worldViewProj);
 
   etna::set_state(a_cmdBuff, a_targetImage, vk::PipelineStageFlagBits2::eBottomOfPipe,
     vk::AccessFlags2(), vk::ImageLayout::ePresentSrcKHR,

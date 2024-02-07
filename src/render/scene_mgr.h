@@ -57,6 +57,7 @@ struct SceneManager
   LiteMath::Box4f GetInstanceBbox(uint32_t instId) const {assert(instId < m_instanceBboxes.size()); return m_instanceBboxes[instId];}
   LiteMath::float4x4 GetInstanceMatrix(uint32_t instId) const {assert(instId < m_instanceMatrices.size()); return m_instanceMatrices[instId];}
   LiteMath::Box4f GetSceneBbox() const {return sceneBbox;}
+  const std::vector<LiteMath::Box4f> *GetInstanceBboxes() const {return &m_instanceBboxes;}
 
 private:
   void LoadGeoDataOnGPU();
