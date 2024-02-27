@@ -19,6 +19,10 @@ void SimpleShadowmapRender::SetupGUIElements()
     ImGui::NewLine();
 
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f),"Press 'B' to recompile and reload shaders");
+
+    ImGui::SliderFloat("Inside aria size", &inside, 0.f, outside);
+    ImGui::SliderFloat("Outside aria size", &outside, inside, 60.f);
+
     ImGui::End();
   }
 

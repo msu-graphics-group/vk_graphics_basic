@@ -79,9 +79,10 @@ void ImGuiRender::InitImGui()
 
   g_instance = m_instance;
 
-  ImGui_ImplVulkan_LoadFunctions(vulkanLoaderFunction);
-  ImGui_ImplVulkan_Init(&init_info, m_renderpass);
+  init_info.RenderPass = m_renderpass;
 
+  ImGui_ImplVulkan_LoadFunctions(vulkanLoaderFunction);
+  ImGui_ImplVulkan_Init(&init_info);
   // Upload GUI fonts texture
   ImGui_ImplVulkan_CreateFontsTexture();
 }
