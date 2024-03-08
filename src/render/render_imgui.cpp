@@ -50,20 +50,6 @@ void ImGuiRender::CreateDescriptorPool()
 
 void ImGuiRender::InitImGui()
 {
-  ImGui_ImplVulkan_InitInfo init_info {};
-
-  init_info.Instance       = m_instance;
-  init_info.PhysicalDevice = m_physDevice;
-  init_info.Device         = m_device;
-  init_info.QueueFamily    = m_queue_FID;
-  init_info.Queue          = m_queue;
-  init_info.PipelineCache  = VK_NULL_HANDLE;
-  init_info.DescriptorPool = m_descriptorPool;
-  init_info.Allocator      = VK_NULL_HANDLE;
-  init_info.MinImageCount  = m_swapchain->GetMinImageCount() > 1 ? m_swapchain->GetMinImageCount() : m_swapchain->GetMinImageCount() + 1;
-  init_info.ImageCount     = m_swapchain->GetImageCount();
-  init_info.CheckVkResultFn = nullptr;
-
   vk_utils::RenderTargetInfo2D rtInfo = {};
   rtInfo.format = m_swapchain->GetFormat();
   rtInfo.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
@@ -79,8 +65,23 @@ void ImGuiRender::InitImGui()
 
   g_instance = m_instance;
 
+  ImGui_ImplVulkan_InitInfo init_info {};
+
+  init_info.Instance        = m_instance;
+  init_info.PhysicalDevice  = m_physDevice;
+  init_info.Device          = m_device;
+  init_info.QueueFamily     = m_queue_FID;
+  init_info.Queue           = m_queue;
+  init_info.PipelineCache   = VK_NULL_HANDLE;
+  init_info.DescriptorPool  = m_descriptorPool;
+  init_info.Allocator       = VK_NULL_HANDLE;
+  init_info.MinImageCount   = m_swapchain->GetMinImageCount() > 1 ? m_swapchain->GetMinImageCount() : m_swapchain->GetMinImageCount() + 1;
+  init_info.ImageCount      = m_swapchain->GetImageCount();
+  init_info.CheckVkResultFn = nullptr;
+  init_info.RenderPass      = m_renderpass;
+
   ImGui_ImplVulkan_LoadFunctions(vulkanLoaderFunction);
-  ImGui_ImplVulkan_Init(&init_info, m_renderpass);
+  ImGui_ImplVulkan_Init(&init_info);
 
   // Upload GUI fonts texture
   ImGui_ImplVulkan_CreateFontsTexture();
