@@ -182,8 +182,9 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
 
     VkDescriptorSet vkSet = set.getVkSet();
 
-    etna::RenderTargetState::AttachmentParams depthAttachment = { .image = mainViewDepth.get(), .view = mainViewDepth.getView({}), };
-    etna::RenderTargetState renderTargets(a_cmdBuff, {0, 0, m_width, m_height}, {{.image = a_targetImage, .view = a_targetImageView}}, depthAttachment);
+    etna::RenderTargetState renderTargets(a_cmdBuff, {0, 0, m_width, m_height},
+      {{.image = a_targetImage, .view = a_targetImageView}},
+      {.image = mainViewDepth.get(), .view = mainViewDepth.getView({})});
 
     vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.getVkPipeline());
     vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS,
