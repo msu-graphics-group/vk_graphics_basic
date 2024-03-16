@@ -4,6 +4,7 @@
 #include "../../render/scene_mgr.h"
 #include "../../render/render_common.h"
 #include "../../render/quad_renderer.h"
+#include "../../render/bbox_renderer.h"
 #include "../../../resources/shaders/common.h"
 #include "etna/GraphicsPipeline.hpp"
 #include <geom/vk_mesh.h>
@@ -95,10 +96,12 @@ private:
   std::shared_ptr<IRenderGUI> m_pGUIRender;
   
   std::unique_ptr<QuadRenderer> m_pQuad;
+  std::unique_ptr<BboxRenderer> m_pBbox;
 
   struct InputControlMouseEtc
   {
     bool drawFSQuad = false;
+    bool drawBboxes = false;
   } m_input;
 
   /**
