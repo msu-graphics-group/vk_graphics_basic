@@ -38,6 +38,7 @@ void ImGuiRender::InitImGui()
   init_info.Queue          = m_queue;
   init_info.PipelineCache  = VK_NULL_HANDLE;
   init_info.DescriptorPool = m_descriptorPool;
+  init_info.RenderPass     = m_renderpass;
   init_info.Allocator      = VK_NULL_HANDLE;
   init_info.MinImageCount  = m_swapchain->GetMinImageCount() > 1 ? m_swapchain->GetMinImageCount() : m_swapchain->GetMinImageCount() + 1;
   init_info.ImageCount     = m_swapchain->GetImageCount();
@@ -59,7 +60,7 @@ void ImGuiRender::InitImGui()
   g_instance = m_instance;
 
   ImGui_ImplVulkan_LoadFunctions(vulkanLoaderFunction);
-  ImGui_ImplVulkan_Init(&init_info, m_renderpass);
+  ImGui_ImplVulkan_Init(&init_info);
   ImGui_ImplVulkan_CreateFontsTexture();
 }
 
