@@ -10,6 +10,8 @@ void SimpleShadowmapRender::DrawFrameSimple(bool draw_gui)
   vkWaitForFences(m_context->getDevice(), 1, &m_frameFences[m_presentationResources.currentFrame], VK_TRUE, UINT64_MAX);
   vkResetFences(m_context->getDevice(), 1, &m_frameFences[m_presentationResources.currentFrame]);
 
+  etna::begin_frame();
+
   uint32_t imageIdx;
   m_swapchain.AcquireNextImage(m_presentationResources.imageAvailable, &imageIdx);
 
@@ -59,8 +61,8 @@ void SimpleShadowmapRender::DrawFrameSimple(bool draw_gui)
   m_presentationResources.currentFrame = (m_presentationResources.currentFrame + 1) % m_framesInFlight;
 
   vkQueueWaitIdle(m_presentationResources.queue);
-  
-  etna::submit();
+
+  etna::end_frame();
 }
 
 void SimpleShadowmapRender::DrawFrame(float a_time, DrawMode a_mode)

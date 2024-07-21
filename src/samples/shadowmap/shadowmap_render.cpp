@@ -8,6 +8,7 @@
 #include <etna/GlobalContext.hpp>
 #include <etna/Etna.hpp>
 #include <etna/RenderTargetStates.hpp>
+#include <etna/PipelineManager.hpp>
 #include <vulkan/vulkan_core.h>
 
 
@@ -64,7 +65,7 @@ void SimpleShadowmapRender::DeallocateResources()
   mainViewDepth.reset(); // TODO: Make an etna method to reset all the resources
   shadowMap.reset();
   m_swapchain.Cleanup();
-  vkDestroySurfaceKHR(GetVkInstance(), m_surface, nullptr);  
+  vkDestroySurfaceKHR(GetVkInstance(), m_surface, nullptr);
 
   constants = etna::Buffer();
 }
@@ -78,10 +79,10 @@ void SimpleShadowmapRender::DeallocateResources()
 void SimpleShadowmapRender::PreparePipelines()
 {
   // create full screen quad for debug purposes
-  // 
-  m_pQuad = std::make_unique<QuadRenderer>(QuadRenderer::CreateInfo{ 
+  //
+  m_pQuad = std::make_unique<QuadRenderer>(QuadRenderer::CreateInfo{
       .format = static_cast<vk::Format>(m_swapchain.GetFormat()),
-      .rect = { 0, 0, 512, 512 }, 
+      .rect = { {0, 0}, {512, 512} },
     });
   SetupSimplePipeline();
 }
@@ -133,7 +134,7 @@ void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4
   VkDeviceSize zero_offset = 0u;
   VkBuffer vertexBuf = m_pScnMgr->GetVertexBuffer();
   VkBuffer indexBuf  = m_pScnMgr->GetIndexBuffer();
-  
+
   vkCmdBindVertexBuffers(a_cmdBuff, 0, 1, &vertexBuf, &zero_offset);
   vkCmdBindIndexBuffer(a_cmdBuff, indexBuf, 0, VK_INDEX_TYPE_UINT32);
 
@@ -163,7 +164,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
   //// draw scene to shadowmap
   //
   {
-    etna::RenderTargetState renderTargets(a_cmdBuff, {0, 0, 2048, 2048}, {}, {.image = shadowMap.get(), .view = shadowMap.getView({})});
+    etna::RenderTargetState renderTargets(a_cmdBuff, {{0, 0}, {2048, 2048}}, {}, {.image = shadowMap.get(), .view = shadowMap.getView({})});
 
     vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_shadowPipeline.getVkPipeline());
     DrawSceneCmd(a_cmdBuff, m_lightMatrix, m_shadowPipeline.getVkPipelineLayout());
@@ -182,7 +183,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
 
     VkDescriptorSet vkSet = set.getVkSet();
 
-    etna::RenderTargetState renderTargets(a_cmdBuff, {0, 0, m_width, m_height},
+    etna::RenderTargetState renderTargets(a_cmdBuff, {{0, 0}, {m_width, m_height}},
       {{.image = a_targetImage, .view = a_targetImageView}},
       {.image = mainViewDepth.get(), .view = mainViewDepth.getView({})});
 

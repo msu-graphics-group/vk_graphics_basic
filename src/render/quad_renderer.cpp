@@ -3,10 +3,11 @@
 #include "etna/GlobalContext.hpp"
 #include "etna/Etna.hpp"
 #include "etna/RenderTargetStates.hpp"
+#include "etna/PipelineManager.hpp"
 #include "etna/DescriptorSet.hpp"
 
 
-QuadRenderer::QuadRenderer(CreateInfo info) 
+QuadRenderer::QuadRenderer(CreateInfo info)
 {
   m_rect      = info.rect;
   m_programId = etna::create_program("quad_renderer", {
@@ -17,7 +18,7 @@ QuadRenderer::QuadRenderer(CreateInfo info)
   auto &pipelineManager = etna::get_context().getPipelineManager();
   m_pipeline = pipelineManager.createGraphicsPipeline("quad_renderer",
     {
-      .fragmentShaderOutput = 
+      .fragmentShaderOutput =
       {
         .colorAttachmentFormats = {info.format}
       }
