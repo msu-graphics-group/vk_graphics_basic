@@ -8,7 +8,7 @@ void SimpleShadowmapRender::UpdateCamera(const Camera* cams, uint32_t a_camsNumb
   m_cam = cams[0];
   if(a_camsNumber >= 2)
     m_light.cam = cams[1];
-  UpdateView(); 
+  UpdateView();
 }
 
 void SimpleShadowmapRender::UpdateView()
@@ -20,9 +20,9 @@ void SimpleShadowmapRender::UpdateView()
   auto mProj = projectionMatrix(m_cam.fov, aspect, 0.1f, 1000.0f);
   auto mLookAt = LiteMath::lookAt(m_cam.pos, m_cam.lookAt, m_cam.up);
   auto mWorldViewProj = mProjFix * mProj * mLookAt;
-  
+
   m_worldViewProj = mWorldViewProj;
-  
+
   ///// calc light matrix
   //
   if(m_light.usePerspectiveM)
@@ -30,11 +30,11 @@ void SimpleShadowmapRender::UpdateView()
   else
     mProj = ortoMatrix(-m_light.radius, +m_light.radius, -m_light.radius, +m_light.radius, 0.0f, m_light.lightTargetDist);
 
-  if(m_light.usePerspectiveM)  // don't understang why fix is not needed for perspective case for shadowmap ... it works for common rendering  
+  if(m_light.usePerspectiveM)  // don't understang why fix is not needed for perspective case for shadowmap ... it works for common rendering
     mProjFix = LiteMath::float4x4();
   else
-    mProjFix = OpenglToVulkanProjectionMatrixFix(); 
-  
+    mProjFix = OpenglToVulkanProjectionMatrixFix();
+
   mLookAt       = LiteMath::lookAt(m_light.cam.pos, m_light.cam.pos + m_light.cam.forward()*10.0f, m_light.cam.up);
   m_lightMatrix = mProjFix*mProj*mLookAt;
 }
@@ -69,10 +69,5 @@ void SimpleShadowmapRender::ProcessInput(const AppInput &input)
 #endif
 
     etna::reload_shaders();
-
-    for (uint32_t i = 0; i < m_framesInFlight; ++i)
-    {
-      BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_swapchain.GetAttachment(i).image, m_swapchain.GetAttachment(i).view);
-    }
   }
 }

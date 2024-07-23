@@ -3,20 +3,11 @@
 #ifdef WIN32
 #pragma comment(lib,"glfw3.lib")
 #endif
-#include <iostream>
-#include <stdexcept>
-#include <vector>
-#include <memory>
-#include <cstdint>
-#include <sstream>
+
+#include <imgui/imgui.h>
+#include <backends/imgui_impl_glfw.h>
 
 #include "Camera.h"
-
-#ifdef NDEBUG
-constexpr bool g_enableValidationLayers = false;
-#else
-constexpr bool g_enableValidationLayers = true;
-#endif
 
 
 struct input_sample
@@ -182,36 +173,35 @@ void setupImGuiContext(GLFWwindow* a_window)
   ImGui_ImplGlfw_InitForVulkan(a_window, true);
 }
 
-
-void mainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window, bool displayGUI)
+void mainLoop(IRender &app, GLFWwindow* window, bool displayGUI)
 {
   constexpr int NAverage = 60;
   double avgTime = 0.0;
   int avgCounter = 0;
   int currCam    = 0;
 
-  g_appInput.cams[0] = app->GetCurrentCamera();
+  g_appInput.cams[0] = app.GetCurrentCamera();
   double lastTime = glfwGetTime();
   while (!glfwWindowShouldClose(window))
   {
     double thisTime = glfwGetTime();
     double diffTime = thisTime - lastTime;
     lastTime        = thisTime;
-    
+
     g_appInput.clearKeys();
     glfwPollEvents();
-    
+
     if(g_appInput.keyReleased[GLFW_KEY_L])
       currCam = 1 - currCam;
 
     UpdateCamera(window, g_appInput.cams[currCam], static_cast<float>(diffTime));
-    
-    app->ProcessInput(g_appInput);
-    app->UpdateCamera(g_appInput.cams, 2);
+
+    app.ProcessInput(g_appInput);
+    app.UpdateCamera(g_appInput.cams, 2);
     if(displayGUI)
-      app->DrawFrame(static_cast<float>(thisTime), DrawMode::WITH_GUI);
+      app.DrawFrame(static_cast<float>(thisTime), DrawMode::WITH_GUI);
     else
-      app->DrawFrame(static_cast<float>(thisTime), DrawMode::NO_GUI);
+      app.DrawFrame(static_cast<float>(thisTime), DrawMode::NO_GUI);
 
     // count and print FPS
     //
@@ -219,7 +209,7 @@ void mainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window, bool displayGUI
     avgCounter++;
     if(avgCounter >= NAverage)
     {
-      auto title = "test";//app->GetWindowTitle();
+      auto title = "test";
       std::stringstream strout;
       strout << "FPS = " << int( 1.0/(avgTime/double(NAverage)) ) << " " << title;
 

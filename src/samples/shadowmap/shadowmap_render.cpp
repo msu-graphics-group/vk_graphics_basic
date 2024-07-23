@@ -3,13 +3,14 @@
 #include <geom/vk_mesh.h>
 #include <vk_pipeline.h>
 #include <vk_buffers.h>
-#include <iostream>
 
 #include <etna/GlobalContext.hpp>
 #include <etna/Etna.hpp>
 #include <etna/RenderTargetStates.hpp>
 #include <etna/PipelineManager.hpp>
 #include <vulkan/vulkan_core.h>
+
+#include <vk_utils.h>
 
 
 /// RESOURCE ALLOCATION
@@ -64,8 +65,6 @@ void SimpleShadowmapRender::DeallocateResources()
 {
   mainViewDepth.reset(); // TODO: Make an etna method to reset all the resources
   shadowMap.reset();
-  m_swapchain.Cleanup();
-  vkDestroySurfaceKHR(GetVkInstance(), m_surface, nullptr);
 
   constants = etna::Buffer();
 }
@@ -81,7 +80,7 @@ void SimpleShadowmapRender::PreparePipelines()
   // create full screen quad for debug purposes
   //
   m_pQuad = std::make_unique<QuadRenderer>(QuadRenderer::CreateInfo{
-      .format = static_cast<vk::Format>(m_swapchain.GetFormat()),
+      .format = m_frameCtrl->window->getCurrentFormat(),
       .rect = { {0, 0}, {512, 512} },
     });
   SetupSimplePipeline();
@@ -110,7 +109,7 @@ void SimpleShadowmapRender::SetupSimplePipeline()
       .vertexShaderInput = sceneVertexInputDesc,
       .fragmentShaderOutput =
         {
-          .colorAttachmentFormats = {static_cast<vk::Format>(m_swapchain.GetFormat())},
+          .colorAttachmentFormats = {m_frameCtrl->window->getCurrentFormat()},
           .depthAttachmentFormat = vk::Format::eD32Sfloat
         }
     });
@@ -153,14 +152,6 @@ void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4
 
 void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkImage a_targetImage, VkImageView a_targetImageView)
 {
-  vkResetCommandBuffer(a_cmdBuff, 0);
-
-  VkCommandBufferBeginInfo beginInfo = {};
-  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-
-  VK_CHECK_RESULT(vkBeginCommandBuffer(a_cmdBuff, &beginInfo));
-
   //// draw scene to shadowmap
   //
   {
@@ -196,12 +187,4 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
 
   if(m_input.drawFSQuad)
     m_pQuad->RecordCommands(a_cmdBuff, a_targetImage, a_targetImageView, shadowMap, defaultSampler);
-
-  etna::set_state(a_cmdBuff, a_targetImage, vk::PipelineStageFlagBits2::eBottomOfPipe,
-    vk::AccessFlags2(), vk::ImageLayout::ePresentSrcKHR,
-    vk::ImageAspectFlagBits::eColor);
-
-  etna::finish_frame(a_cmdBuff);
-
-  VK_CHECK_RESULT(vkEndCommandBuffer(a_cmdBuff));
 }

@@ -1,12 +1,8 @@
 #ifndef CBVH_STF_GLFW_WINDOW_H
 #define CBVH_STF_GLFW_WINDOW_H
 
-#include "../render/render_common.h"
-#include "../render/render_gui.h"
-
 #include "GLFW/glfw3.h"
-#include <memory>
-#include <unordered_map>
+#include "../render/render_common.h"
 
 
 void onKeyboardPressedBasic(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -20,10 +16,8 @@ GLFWwindow * initWindow(int width, int height,
                         GLFWmousebuttonfun mouseBtn = onMouseButtonClickedBasic,
                         GLFWscrollfun mouseScroll = onMouseScrollBasic);
 
-void mainLoop(std::shared_ptr<IRender> &app, GLFWwindow* window, bool displayGUI = false);
+void mainLoop(IRender &app, GLFWwindow* window, bool displayGUI = false);
 
 void setupImGuiContext(GLFWwindow* a_window);
-
-std::unordered_map<std::string, std::string> readCommandLineParams(int argc, const char** argv);
 
 #endif //CBVH_STF_GLFW_WINDOW_H

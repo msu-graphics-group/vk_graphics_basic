@@ -2,67 +2,70 @@
 #include <etna/Etna.hpp>
 
 #include <imgui/imgui.h>
+#include "../../render/ImGuiRender.h"
 
-#include "../../render/render_gui.h"
 
 void SimpleShadowmapRender::DrawFrameSimple(bool draw_gui)
 {
-  vkWaitForFences(m_context->getDevice(), 1, &m_frameFences[m_presentationResources.currentFrame], VK_TRUE, UINT64_MAX);
-  vkResetFences(m_context->getDevice(), 1, &m_frameFences[m_presentationResources.currentFrame]);
+  // We explicitly synchronize with previous usage of our
+  // multiple-buffered resources by the GPU.
+  std::array waitForInflightFrames{m_frameCtrl->frameDone->get().get()};
+  ETNA_CHECK_VK_RESULT(m_context->getDevice().waitForFences(waitForInflightFrames, vk::True, UINT64_MAX));
+  m_context->getDevice().resetFences(waitForInflightFrames);
 
   etna::begin_frame();
 
-  uint32_t imageIdx;
-  m_swapchain.AcquireNextImage(m_presentationResources.imageAvailable, &imageIdx);
+  auto nextSwapchainImage = m_frameCtrl->window->acquireNext();
 
-  auto currentCmdBuf = m_cmdBuffersDrawMain[m_presentationResources.currentFrame];
-
-  VkSemaphore waitSemaphores[] = {m_presentationResources.imageAvailable};
-  VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-
-  BuildCommandBufferSimple(currentCmdBuf, m_swapchain.GetAttachment(imageIdx).image, m_swapchain.GetAttachment(imageIdx).view);
-
-  std::vector<VkCommandBuffer> submitCmdBufs = { currentCmdBuf };
-
-  if (draw_gui)
+  if (nextSwapchainImage)
   {
-    ImDrawData* pDrawData = ImGui::GetDrawData();
-    auto currentGUICmdBuf = m_pGUIRender->BuildGUIRenderCommand(imageIdx, pDrawData);
-    submitCmdBufs.push_back(currentGUICmdBuf);
+    auto[image, view, availableSem] = *nextSwapchainImage;
+    auto currentCmdBuf = m_commandCtrl->cmdBuffersDrawMain->get().get();
+
+    currentCmdBuf.reset({});
+
+    ETNA_CHECK_VK_RESULT(currentCmdBuf.begin({ .flags = vk::CommandBufferUsageFlagBits::eSimultaneousUse }));
+    BuildCommandBufferSimple(currentCmdBuf, image, view);
+
+    if (draw_gui)
+    {
+      ImDrawData* pDrawData = ImGui::GetDrawData();
+      m_pGUIRender->Draw(currentCmdBuf, {{0, 0}, {m_width, m_height}}, image, view, pDrawData);
+    }
+
+    etna::set_state(currentCmdBuf, image, vk::PipelineStageFlagBits2::eBottomOfPipe, {},
+      vk::ImageLayout::ePresentSrcKHR, vk::ImageAspectFlagBits::eColor);
+
+    etna::flush_barriers(currentCmdBuf);
+
+    ETNA_CHECK_VK_RESULT(currentCmdBuf.end());
+
+    std::array submitCmdBufs{currentCmdBuf};
+    std::array waitSemos{availableSem};
+    std::array waitStages{vk::PipelineStageFlags{vk::PipelineStageFlagBits::eColorAttachmentOutput}};
+    std::array signalSemos{m_frameCtrl->renderingFinished.get()};
+
+    vk::SubmitInfo submitInfo{
+      .waitSemaphoreCount = waitSemos.size(),
+      .pWaitSemaphores = waitSemos.data(),
+      .pWaitDstStageMask = waitStages.data(),
+      .commandBufferCount = submitCmdBufs.size(),
+      .pCommandBuffers = submitCmdBufs.data(),
+      .signalSemaphoreCount = signalSemos.size(),
+      .pSignalSemaphores = signalSemos.data(),
+    };
+
+    ETNA_CHECK_VK_RESULT(m_context->getQueue().submit({submitInfo}, m_frameCtrl->frameDone->get().get()));
+
+    const bool presented = m_frameCtrl->window->present(m_frameCtrl->renderingFinished.get(), view);
+    if (!presented)
+      nextSwapchainImage = std::nullopt;
   }
-
-  VkSubmitInfo submitInfo = {};
-  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submitInfo.waitSemaphoreCount = 1;
-  submitInfo.pWaitSemaphores = waitSemaphores;
-  submitInfo.pWaitDstStageMask = waitStages;
-  submitInfo.commandBufferCount = submitCmdBufs.size();
-  submitInfo.pCommandBuffers = submitCmdBufs.data();
-
-  VkSemaphore signalSemaphores[] = {m_presentationResources.renderingFinished};
-  submitInfo.signalSemaphoreCount = 1;
-  submitInfo.pSignalSemaphores = signalSemaphores;
-
-  VK_CHECK_RESULT(vkQueueSubmit(m_context->getQueue(),
-    1, &submitInfo, m_frameFences[m_presentationResources.currentFrame]));
-
-  VkResult presentRes = m_swapchain.QueuePresent(m_presentationResources.queue, imageIdx,
-                                                 m_presentationResources.renderingFinished);
-
-  if (presentRes == VK_ERROR_OUT_OF_DATE_KHR || presentRes == VK_SUBOPTIMAL_KHR)
-  {
-    RecreateSwapChain();
-  }
-  else if (presentRes != VK_SUCCESS)
-  {
-    RUN_TIME_ERROR("Failed to present swapchain image");
-  }
-
-  m_presentationResources.currentFrame = (m_presentationResources.currentFrame + 1) % m_framesInFlight;
-
-  vkQueueWaitIdle(m_presentationResources.queue);
 
   etna::end_frame();
+
+  if (!nextSwapchainImage)
+    RecreateSwapChain();
 }
 
 void SimpleShadowmapRender::DrawFrame(float a_time, DrawMode a_mode)
@@ -71,7 +74,7 @@ void SimpleShadowmapRender::DrawFrame(float a_time, DrawMode a_mode)
   switch (a_mode)
   {
     case DrawMode::WITH_GUI:
-      SetupGUIElements();
+      DrawGui();
       DrawFrameSimple(true);
       break;
     case DrawMode::NO_GUI:
@@ -80,5 +83,4 @@ void SimpleShadowmapRender::DrawFrame(float a_time, DrawMode a_mode)
     default:
       DrawFrameSimple(false);
   }
-
 }

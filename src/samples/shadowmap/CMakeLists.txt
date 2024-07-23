@@ -9,7 +9,7 @@ endif()
 
 set(RENDER_SOURCE
         ../../render/scene_mgr.cpp
-        ../../render/render_imgui.cpp
+        ../../render/ImGuiRender.cpp
         ../../render/quad_renderer.cpp
         shadowmap_render.cpp
         render_init.cpp

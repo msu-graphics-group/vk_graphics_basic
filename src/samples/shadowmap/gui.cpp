@@ -1,14 +1,14 @@
 #include "shadowmap_render.h"
 
-#include "../../render/render_gui.h"
+#include "../../render/ImGuiRender.h"
+#include <imgui.h>
 
-void SimpleShadowmapRender::SetupGUIElements()
+
+void SimpleShadowmapRender::DrawGui()
 {
-  ImGui_ImplVulkan_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
+  m_pGUIRender->NextFrame();
   ImGui::NewFrame();
   {
-//    ImGui::ShowDemoWindow();
     ImGui::Begin("Simple render settings");
 
     ImGui::ColorEdit3("Meshes base color", m_uniforms.baseColor.M, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoInputs);
@@ -22,6 +22,5 @@ void SimpleShadowmapRender::SetupGUIElements()
     ImGui::End();
   }
 
-  // Rendering
   ImGui::Render();
 }

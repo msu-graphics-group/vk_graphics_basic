@@ -10,16 +10,12 @@
 #include <vk_descriptor_sets.h>
 #include <vk_fbuf_attachment.h>
 #include <vk_images.h>
-#include <vk_swapchain.h>
-
-#include <string>
-#include <iostream>
 
 #include <etna/GlobalContext.hpp>
 #include <etna/Sampler.hpp>
 
 
-class IRenderGUI;
+class ImGuiRender;
 
 class SimpleShadowmapRender : public IRender
 {
@@ -29,19 +25,21 @@ public:
 
   uint32_t     GetWidth()      const override { return m_width; }
   uint32_t     GetHeight()     const override { return m_height; }
-  VkInstance   GetVkInstance() const override { return m_context->getInstance(); }
+  VkInstance   GetVkInstance() const { return m_context->getInstance(); }
 
-  void InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId) override;
+  void InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount);
 
-  void InitPresentation(VkSurfaceKHR &a_surface, bool initGUI) override;
+  void InitPresentation(vk::UniqueSurfaceKHR a_surface, etna::ResolutionProvider a_res_provider);
 
   void ProcessInput(const AppInput& input) override;
   void UpdateCamera(const Camera* cams, uint32_t a_camsNumber) override;
-  Camera GetCurrentCamera() override {return m_cam;}
+  Camera GetCurrentCamera() override {return m_cam; }
+  void DrawFrame(float a_time, DrawMode a_mode) override;
+
+
   void UpdateView();
 
-  void LoadScene(const char *path, bool transpose_inst_matrices) override;
-  void DrawFrame(float a_time, DrawMode a_mode) override;
+  void LoadScene(const char *path, bool transpose_inst_matrices);
 
 private:
   etna::GlobalContext* m_context;
@@ -50,18 +48,23 @@ private:
   etna::Sampler defaultSampler;
   etna::Buffer constants;
 
-  VkCommandPool    m_commandPool    = VK_NULL_HANDLE;
 
-  struct
+  struct CommandControl
   {
-    uint32_t    currentFrame      = 0u;
-    VkQueue     queue             = VK_NULL_HANDLE;
-    VkSemaphore imageAvailable    = VK_NULL_HANDLE;
-    VkSemaphore renderingFinished = VK_NULL_HANDLE;
-  } m_presentationResources;
+    vk::UniqueCommandPool commandPool;
+    std::optional<etna::GpuSharedResource<vk::UniqueCommandBuffer>> cmdBuffersDrawMain;
+  };
 
-  std::vector<VkFence> m_frameFences;
-  std::vector<VkCommandBuffer> m_cmdBuffersDrawMain;
+  std::optional<CommandControl> m_commandCtrl;
+
+  struct FrameControl
+  {
+    vk::UniqueSemaphore renderingFinished;
+    std::optional<etna::GpuSharedResource<vk::UniqueFence>> frameDone;
+    std::unique_ptr<etna::Window> window;
+  };
+
+  std::optional<FrameControl> m_frameCtrl;
 
   struct
   {
@@ -70,30 +73,24 @@ private:
   } pushConst2M;
 
   float4x4 m_worldViewProj;
-  float4x4 m_lightMatrix;    
+  float4x4 m_lightMatrix;
 
   UniformParams m_uniforms {};
   void* m_uboMappedMem = nullptr;
 
   etna::GraphicsPipeline m_basicForwardPipeline {};
   etna::GraphicsPipeline m_shadowPipeline {};
-  
-  VkSurfaceKHR m_surface = VK_NULL_HANDLE;
-  VulkanSwapChain m_swapchain;
+
 
   Camera   m_cam;
   uint32_t m_width  = 1024u;
   uint32_t m_height = 1024u;
-  uint32_t m_framesInFlight = 2u;
-  bool m_vsync = false;
 
   vk::PhysicalDeviceFeatures m_enabledDeviceFeatures = {};
-  std::vector<const char*> m_deviceExtensions;
-  std::vector<const char*> m_instanceExtensions;
 
   std::shared_ptr<SceneManager> m_pScnMgr;
-  std::shared_ptr<IRenderGUI> m_pGUIRender;
-  
+  std::unique_ptr<ImGuiRender> m_pGUIRender;
+
   std::unique_ptr<QuadRenderer> m_pQuad;
 
   struct InputControlMouseEtc
@@ -106,24 +103,24 @@ private:
   */
   struct ShadowMapCam
   {
-    ShadowMapCam() 
-    {  
+    ShadowMapCam()
+    {
       cam.pos    = float3(4.0f, 4.0f, 4.0f);
       cam.lookAt = float3(0, 0, 0);
       cam.up     = float3(0, 1, 0);
-  
+
       radius          = 5.0f;
       lightTargetDist = 20.0f;
       usePerspectiveM = true;
     }
 
-    float  radius;           ///!< ignored when usePerspectiveM == true 
+    float  radius;           ///!< ignored when usePerspectiveM == true
     float  lightTargetDist;  ///!< identify depth range
     Camera cam;              ///!< user control for light to later get light worldViewProj matrix
     bool   usePerspectiveM;  ///!< use perspective matrix if true and ortographics otherwise
-  
+
   } m_light;
- 
+
   void DrawFrameSimple(bool draw_gui);
 
   void BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkImage a_targetImage, VkImageView a_targetImageView);
@@ -137,9 +134,6 @@ private:
 
   void UpdateUniformBuffer(float a_time);
 
-
-  void SetupDeviceExtensions();
-
   void AllocateResources();
   void PreparePipelines();
 
@@ -147,7 +141,7 @@ private:
 
   void InitPresentStuff();
   void ResetPresentStuff();
-  void SetupGUIElements();
+  void DrawGui();
 };
 
 

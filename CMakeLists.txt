@@ -59,7 +59,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 
 add_compile_definitions(USE_ETNA VK_GRAPHICS_BASIC_ROOT="${PROJECT_SOURCE_DIR}")
 
-add_subdirectory(external/etna)
+add_subdirectory(../etna etna)
 #add_subdirectory(external/volk)
 #add_subdirectory(src/samples/quad2d)
 add_subdirectory(src/samples/shadowmap)

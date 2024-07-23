@@ -1,8 +1,11 @@
 #include "shadowmap_render.h"
-#include "utils/glfw_window.h"
+#include <utils/glfw_window.h>
 #include <etna/Etna.hpp>
+#include <backends/imgui_impl_glfw.h>
+#include <GLFW/glfw3.h>
 
-void initVulkanGLFW(std::shared_ptr<IRender> &app, GLFWwindow* window)
+
+void initVulkanGLFW(SimpleShadowmapRender &app, GLFWwindow* window)
 {
   uint32_t glfwExtensionCount = 0;
   const char** glfwExtensions;
@@ -10,18 +13,22 @@ void initVulkanGLFW(std::shared_ptr<IRender> &app, GLFWwindow* window)
 
   if(glfwExtensions == nullptr)
   {
-    std::cout << "WARNING. Can't connect Vulkan to GLFW window (glfwGetRequiredInstanceExtensions returns NULL)" << std::endl;
+    ETNA_PANIC("Can't connect Vulkan to GLFW window (glfwGetRequiredInstanceExtensions returned null)");
   }
 
-  app->InitVulkan(glfwExtensions, glfwExtensionCount, /* useless param */ 0);
+  app.InitVulkan(glfwExtensions, glfwExtensionCount);
 
-  if(glfwExtensions != nullptr)
-  {
-    VkSurfaceKHR surface;
-    VK_CHECK_RESULT(glfwCreateWindowSurface(app->GetVkInstance(), window, nullptr, &surface));
-    setupImGuiContext(window);
-    app->InitPresentation(surface, false);
-  }
+  VkSurfaceKHR surface;
+  auto instance = etna::get_context().getInstance();
+  auto cres = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+  ETNA_CHECK_VK_RESULT(static_cast<vk::Result>(cres));
+  setupImGuiContext(window);
+  app.InitPresentation(vk::UniqueSurfaceKHR{std::move(surface)}, [window]() -> vk::Extent2D {
+      int w, h;
+      glfwGetWindowSize(window, &w, &h);
+      ETNA_ASSERT(w > 0 && h > 0);
+      return {static_cast<uint32_t>(w), static_cast<uint32_t>(h)};
+  });
 }
 
 int main()
@@ -29,22 +36,18 @@ int main()
   constexpr int WIDTH = 1024;
   constexpr int HEIGHT = 1024;
 
-  std::shared_ptr<IRender> app = std::make_unique<SimpleShadowmapRender>(WIDTH, HEIGHT);
-  if(app == nullptr)
   {
-    std::cout << "Can't create render of specified type" << std::endl;
-    return 1;
+    SimpleShadowmapRender renderer(WIDTH, HEIGHT);
+
+    auto* window = initWindow(WIDTH, HEIGHT);
+
+    initVulkanGLFW(renderer, window);
+
+    renderer.LoadScene(VK_GRAPHICS_BASIC_ROOT "/resources/scenes/043_cornell_normals/statex_00001.xml", false);
+
+    mainLoop(renderer, window, true);
   }
 
-  auto* window = initWindow(WIDTH, HEIGHT);
-
-  initVulkanGLFW(app, window);
-
-  app->LoadScene(VK_GRAPHICS_BASIC_ROOT "/resources/scenes/043_cornell_normals/statex_00001.xml", false);
-
-  mainLoop(app, window, true);
-
-  app = {};
   if (etna::is_initilized())
     etna::shutdown();
 
