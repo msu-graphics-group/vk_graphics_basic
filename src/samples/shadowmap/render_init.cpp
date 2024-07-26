@@ -53,20 +53,18 @@ void SimpleShadowmapRender::RecreateSwapChain()
   // TODO: this doesn't work 100%
   ETNA_CHECK_VK_RESULT(m_context->getDevice().waitIdle());
 
-  DeallocateResources();
-
-  ResetPresentStuff();
-
-  InitPresentStuff(); // TODO: stuff was removed here
+  auto[w, h] = m_frameCtrl->window->recreateSwapchain();
+  m_width = w;
+  m_height = h;
 
   AllocateResources();
 
-  PreparePipelines();
+  // NOTE: if swapchain changes format (that can happen on android), we will die here.
+  // not that we actually care about android or anything.
 }
 
 SimpleShadowmapRender::~SimpleShadowmapRender()
 {
   ETNA_CHECK_VK_RESULT(m_context->getDevice().waitIdle());
-  DeallocateResources();
-  ResetPresentStuff();
+
 }

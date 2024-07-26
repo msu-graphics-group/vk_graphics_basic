@@ -142,7 +142,7 @@ GLFWwindow* initWindow(int width, int height, GLFWkeyfun keyboard, GLFWcursorpos
   glfwInit();
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
   GLFWwindow *window = glfwCreateWindow(width, height, "GLFW window", nullptr, nullptr);
 

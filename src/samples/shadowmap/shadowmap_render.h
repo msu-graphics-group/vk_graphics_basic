@@ -137,10 +137,6 @@ private:
   void AllocateResources();
   void PreparePipelines();
 
-  void DeallocateResources();
-
-  void InitPresentStuff();
-  void ResetPresentStuff();
   void DrawGui();
 };
 

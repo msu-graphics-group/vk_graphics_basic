@@ -61,17 +61,6 @@ void SimpleShadowmapRender::LoadScene(const char* path, bool transpose_inst_matr
   m_cam.tdist  = loadedCam.farPlane;
 }
 
-void SimpleShadowmapRender::DeallocateResources()
-{
-  mainViewDepth.reset(); // TODO: Make an etna method to reset all the resources
-  shadowMap.reset();
-
-  constants = etna::Buffer();
-}
-
-
-
-
 
 /// PIPELINES CREATION
 

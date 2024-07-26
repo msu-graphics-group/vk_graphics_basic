@@ -23,7 +23,13 @@ void initVulkanGLFW(SimpleShadowmapRender &app, GLFWwindow* window)
   auto cres = glfwCreateWindowSurface(instance, window, nullptr, &surface);
   ETNA_CHECK_VK_RESULT(static_cast<vk::Result>(cres));
   setupImGuiContext(window);
-  app.InitPresentation(vk::UniqueSurfaceKHR{std::move(surface)}, [window]() -> vk::Extent2D {
+
+  auto uniqueSurface = vk::UniqueSurfaceKHR{
+    surface,
+    vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE>{instance}
+  };
+
+  app.InitPresentation(std::move(uniqueSurface), [window]() -> vk::Extent2D {
       int w, h;
       glfwGetWindowSize(window, &w, &h);
       ETNA_ASSERT(w > 0 && h > 0);
