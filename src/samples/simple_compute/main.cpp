@@ -5,18 +5,13 @@ int main()
 {
   constexpr int LENGTH = 10;
 
-  std::shared_ptr<ICompute> app = std::make_unique<SimpleCompute>(LENGTH);
-  if(app == nullptr)
   {
-    std::cout << "Can't create compute of specified type" << std::endl;
-    return 1;
+    SimpleCompute app(LENGTH);
+
+    app.Init();
+    app.Execute();
   }
 
-  app->InitVulkan(nullptr, 0, 0);
-
-  app->Execute();
-
-  app = {};
   if (etna::is_initilized())
     etna::shutdown();
 

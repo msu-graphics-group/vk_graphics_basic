@@ -1,38 +1,30 @@
 #include "simple_compute.h"
 
 #include <etna/Etna.hpp>
+#include <fmt/ranges.h> // NOTE: vector and co are only printable with this included
 
 
 void SimpleCompute::Execute()
 {
-  loadShaders();
-  SetupSimplePipeline();
+  Setup();
 
-  BuildCommandBufferSimple(m_cmdBufferCompute, nullptr);
+  auto cmdBuf = m_cmdBufferCompute.get();
 
-  VkSubmitInfo submitInfo = {};
-  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &m_cmdBufferCompute;
+  BuildCommandBuffer(cmdBuf);
 
-  VkFenceCreateInfo fenceCreateInfo = {};
-  fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-  fenceCreateInfo.flags = 0;
-  VK_CHECK_RESULT(vkCreateFence(m_context->getDevice(), &fenceCreateInfo, NULL, &m_fence));
+  vk::SubmitInfo submitInfo{
+    .commandBufferCount = 1,
+    .pCommandBuffers = &cmdBuf,
+  };
 
   // Submit the command buffer for execution
-  VK_CHECK_RESULT(vkQueueSubmit(m_context->getQueue(), 1, &submitInfo, m_fence));
+  ETNA_CHECK_VK_RESULT(m_context->getQueue().submit({submitInfo}, m_fence.get()));
 
   // And wait for the execution to be completed
-  VK_CHECK_RESULT(vkWaitForFences(m_context->getDevice(), 1, &m_fence, VK_TRUE, UINT64_MAX));
+  ETNA_CHECK_VK_RESULT(m_context->getDevice().waitForFences({m_fence.get()}, vk::True, 100000000));
 
   std::vector<float> values(m_length);
   m_pCopyHelper->ReadBuffer(m_sum.get(), 0, values.data(), sizeof(float) * values.size());
 
-  std::cout << std::endl;
-  for (auto v: values) 
-  {
-    std::cout << v << ' ';
-  }
-  std::cout << std::endl << std::endl;
+  spdlog::info("Result on cpu:\n{}", values);
 }

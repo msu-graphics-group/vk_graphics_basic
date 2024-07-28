@@ -5,41 +5,47 @@
 
 SimpleCompute::SimpleCompute(uint32_t a_length) : m_length(a_length) {}
 
-void SimpleCompute::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId)
+void SimpleCompute::Init()
 {
-  for (uint32_t i = 0; i < a_instanceExtensionsCount; ++i) {
-    m_instanceExtensions.push_back(a_instanceExtensions[i]);
-  }
+  std::vector<const char*> instanceExtensions = {};
 
   #ifndef NDEBUG
-    m_instanceExtensions.push_back("VK_EXT_debug_report");
+    instanceExtensions.push_back("VK_EXT_debug_report");
   #endif
-  
+
   etna::initialize(etna::InitParams
     {
       .applicationName = "ComputeSample",
       .applicationVersion = VK_MAKE_VERSION(0, 1, 0),
-      .instanceExtensions = m_instanceExtensions,
-      .deviceExtensions = m_deviceExtensions,
+      .instanceExtensions = instanceExtensions,
+      .deviceExtensions = {},
+      // Uncomment if etna selects the incorrect GPU for you
       // .physicalDeviceIndexOverride = 0,
     }
   );
 
   m_context = &etna::get_context();
-  m_commandPool = vk_utils::createCommandPool(m_context->getDevice(), m_context->getQueueFamilyIdx(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-  
-  m_cmdBufferCompute = vk_utils::createCommandBuffers(m_context->getDevice(), m_commandPool, 1)[0];
-  
-  m_pCopyHelper = std::make_shared<vk_utils::SimpleCopyHelper>(m_context->getPhysicalDevice(), 
-    m_context->getDevice(), m_context->getQueue(), m_context->getQueueFamilyIdx(), 8 * 1024 * 1024);
-}
 
-void SimpleCompute::Cleanup()
-{
-  CleanupPipeline();
 
-  if (m_commandPool != VK_NULL_HANDLE)
   {
-    vkDestroyCommandPool(m_context->getDevice(), m_commandPool, nullptr);
+    vk::CommandPoolCreateInfo info{
+      .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+      .queueFamilyIndex = m_context->getQueueFamilyIdx(),
+    };
+    m_commandPool = etna::unwrap_vk_result(m_context->getDevice().createCommandPoolUnique(info));
   }
+
+  {
+    vk::CommandBufferAllocateInfo info{
+      .commandPool = m_commandPool.get(),
+      .level = vk::CommandBufferLevel::ePrimary,
+      .commandBufferCount = 1,
+    };
+    m_cmdBufferCompute = std::move(etna::unwrap_vk_result(m_context->getDevice().allocateCommandBuffersUnique(info))[0]);
+  }
+
+  m_pCopyHelper = std::make_unique<vk_utils::SimpleCopyHelper>(m_context->getPhysicalDevice(),
+    m_context->getDevice(), m_context->getQueue(), m_context->getQueueFamilyIdx(), 8 * 1024 * 1024);
+
+  m_fence = etna::unwrap_vk_result(m_context->getDevice().createFenceUnique(vk::FenceCreateInfo{}));
 }

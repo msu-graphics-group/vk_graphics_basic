@@ -1,22 +1,15 @@
 #include "simple_compute.h"
 
-#include <vk_pipeline.h>
-#include <vk_buffers.h>
-#include <vk_utils.h>
-
 #include <etna/Etna.hpp>
-#include <vulkan/vulkan_core.h>
+#include <etna/PipelineManager.hpp>
 
 
-void SimpleCompute::loadShaders()
+void SimpleCompute::Setup()
 {
   etna::create_program("simple_compute", {VK_GRAPHICS_BASIC_ROOT"/resources/shaders/simple.comp.spv"});
-}
 
-void SimpleCompute::SetupSimplePipeline()
-{
   //// Buffer creation
-  //
+
   m_A = m_context->createBuffer(etna::Buffer::CreateInfo
     {
       .size = sizeof(float) * m_length,
@@ -40,9 +33,9 @@ void SimpleCompute::SetupSimplePipeline()
       .name = "m_sum"
     }
   );
-  
+
   //// Filling the buffers
-  // 
+
   std::vector<float> values(m_length);
   for (uint32_t i = 0; i < values.size(); ++i) {
     values[i] = (float)i;
@@ -59,29 +52,11 @@ void SimpleCompute::SetupSimplePipeline()
   m_pipeline = pipelineManager.createComputePipeline("simple_compute", {});
 }
 
-void SimpleCompute::CleanupPipeline()
-{ 
-  if (m_cmdBufferCompute)
-  {
-    vkFreeCommandBuffers(m_context->getDevice(), m_commandPool, 1, &m_cmdBufferCompute);
-  }
-
-  m_A.reset();
-  m_B.reset();
-  m_sum.reset();
-  vkDestroyFence(m_context->getDevice(), m_fence, nullptr);
-}
-
-void SimpleCompute::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkPipeline)
+void SimpleCompute::BuildCommandBuffer(vk::CommandBuffer a_cmdBuff)
 {
-  vkResetCommandBuffer(a_cmdBuff, 0);
+  a_cmdBuff.reset({});
 
-  VkCommandBufferBeginInfo beginInfo = {};
-  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-
-  // Filling the command buffer
-  VK_CHECK_RESULT(vkBeginCommandBuffer(a_cmdBuff, &beginInfo));
+  ETNA_CHECK_VK_RESULT(a_cmdBuff.begin(vk::CommandBufferBeginInfo{}));
 
   auto simpleComputeInfo = etna::get_shader_program("simple_compute");
 
@@ -93,16 +68,16 @@ void SimpleCompute::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkPipeli
     }
   );
 
-  VkDescriptorSet vkSet = set.getVkSet();
+  vk::DescriptorSet vkSet = set.getVkSet();
 
-  vkCmdBindPipeline      (a_cmdBuff, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline.getVkPipeline());
-  vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline.getVkPipelineLayout(), 0, 1, &vkSet, 0, NULL);
+  a_cmdBuff.bindPipeline(vk::PipelineBindPoint::eCompute, m_pipeline.getVkPipeline());
+  a_cmdBuff.bindDescriptorSets(vk::PipelineBindPoint::eCompute, m_pipeline.getVkPipelineLayout(), 0, 1, &vkSet, 0, NULL);
 
-  vkCmdPushConstants(a_cmdBuff, m_pipeline.getVkPipelineLayout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(m_length), &m_length);
+  a_cmdBuff.pushConstants(m_pipeline.getVkPipelineLayout(), vk::ShaderStageFlagBits::eCompute, 0, sizeof(m_length), &m_length);
 
   etna::flush_barriers(a_cmdBuff);
 
-  vkCmdDispatch(a_cmdBuff, 1, 1, 1);
+  a_cmdBuff.dispatch(1, 1, 1);
 
-  VK_CHECK_RESULT(vkEndCommandBuffer(a_cmdBuff));
+  ETNA_CHECK_VK_RESULT(a_cmdBuff.end());
 }
