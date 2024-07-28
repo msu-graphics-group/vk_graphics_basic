@@ -48,23 +48,8 @@ private:
   etna::Sampler defaultSampler;
   etna::Buffer constants;
 
-
-  struct CommandControl
-  {
-    vk::UniqueCommandPool commandPool;
-    std::optional<etna::GpuSharedResource<vk::UniqueCommandBuffer>> cmdBuffersDrawMain;
-  };
-
-  std::optional<CommandControl> m_commandCtrl;
-
-  struct FrameControl
-  {
-    vk::UniqueSemaphore renderingFinished;
-    std::optional<etna::GpuSharedResource<vk::UniqueFence>> frameDone;
-    std::unique_ptr<etna::Window> window;
-  };
-
-  std::optional<FrameControl> m_frameCtrl;
+  std::unique_ptr<etna::Window> window;
+  std::unique_ptr<etna::CommandManager> commandManager;
 
   struct
   {

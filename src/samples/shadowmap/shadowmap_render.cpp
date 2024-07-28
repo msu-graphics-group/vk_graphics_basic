@@ -10,8 +10,6 @@
 #include <etna/PipelineManager.hpp>
 #include <vulkan/vulkan_core.h>
 
-#include <vk_utils.h>
-
 
 /// RESOURCE ALLOCATION
 
@@ -69,7 +67,7 @@ void SimpleShadowmapRender::PreparePipelines()
   // create full screen quad for debug purposes
   //
   m_pQuad = std::make_unique<QuadRenderer>(QuadRenderer::CreateInfo{
-      .format = m_frameCtrl->window->getCurrentFormat(),
+      .format = window->getCurrentFormat(),
       .rect = { {0, 0}, {512, 512} },
     });
   SetupSimplePipeline();
@@ -98,7 +96,7 @@ void SimpleShadowmapRender::SetupSimplePipeline()
       .vertexShaderInput = sceneVertexInputDesc,
       .fragmentShaderOutput =
         {
-          .colorAttachmentFormats = {m_frameCtrl->window->getCurrentFormat()},
+          .colorAttachmentFormats = {window->getCurrentFormat()},
           .depthAttachmentFormat = vk::Format::eD32Sfloat
         }
     });

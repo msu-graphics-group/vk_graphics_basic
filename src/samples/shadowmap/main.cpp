@@ -32,7 +32,7 @@ void initVulkanGLFW(SimpleShadowmapRender &app, GLFWwindow* window)
   app.InitPresentation(std::move(uniqueSurface), [window]() -> vk::Extent2D {
       int w, h;
       glfwGetWindowSize(window, &w, &h);
-      ETNA_ASSERT(w > 0 && h > 0);
+      ETNA_ASSERTF(w > 0 && h > 0, "Got a 0 in window resolution! Is the window minimized?");
       return {static_cast<uint32_t>(w), static_cast<uint32_t>(h)};
   });
 }

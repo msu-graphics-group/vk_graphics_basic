@@ -50,13 +50,13 @@ void SimpleShadowmapRender::InitVulkan(const char** a_instanceExtensions, uint32
 
 void SimpleShadowmapRender::RecreateSwapChain()
 {
-  // TODO: this doesn't work 100%
   ETNA_CHECK_VK_RESULT(m_context->getDevice().waitIdle());
 
-  auto[w, h] = m_frameCtrl->window->recreateSwapchain();
+  auto[w, h] = window->recreateSwapchain();
   m_width = w;
   m_height = h;
 
+  // Most resources depend on the current resolution, so we recreate them.
   AllocateResources();
 
   // NOTE: if swapchain changes format (that can happen on android), we will die here.

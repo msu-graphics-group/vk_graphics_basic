@@ -7,22 +7,21 @@
 
 void SimpleShadowmapRender::DrawFrameSimple(bool draw_gui)
 {
-  // We explicitly synchronize with previous usage of our
-  // multiple-buffered resources by the GPU.
-  std::array waitForInflightFrames{m_frameCtrl->frameDone->get().get()};
-  ETNA_CHECK_VK_RESULT(m_context->getDevice().waitForFences(waitForInflightFrames, vk::True, UINT64_MAX));
-  m_context->getDevice().resetFences(waitForInflightFrames);
+  auto currentCmdBuf = commandManager->acquireNext();
 
+  // TODO: this makes literally 0 sense here, rename/refactor,
+  // it doesn't actually begin anything, just resets descriptor pools
   etna::begin_frame();
 
-  auto nextSwapchainImage = m_frameCtrl->window->acquireNext();
 
+  auto nextSwapchainImage = window->acquireNext();
+
+  // NOTE: here, we skip frames when the window is in the process of being
+  // re-sized. This is not mandatory, it is possible to submit frames to a
+  // "sub-optimal" swap chain and still get something drawn while resizing.
   if (nextSwapchainImage)
   {
     auto[image, view, availableSem] = *nextSwapchainImage;
-    auto currentCmdBuf = m_commandCtrl->cmdBuffersDrawMain->get().get();
-
-    currentCmdBuf.reset({});
 
     ETNA_CHECK_VK_RESULT(currentCmdBuf.begin({ .flags = vk::CommandBufferUsageFlagBits::eSimultaneousUse }));
     BuildCommandBufferSimple(currentCmdBuf, image, view);
@@ -40,24 +39,10 @@ void SimpleShadowmapRender::DrawFrameSimple(bool draw_gui)
 
     ETNA_CHECK_VK_RESULT(currentCmdBuf.end());
 
-    std::array submitCmdBufs{currentCmdBuf};
-    std::array waitSemos{availableSem};
-    std::array waitStages{vk::PipelineStageFlags{vk::PipelineStageFlagBits::eColorAttachmentOutput}};
-    std::array signalSemos{m_frameCtrl->renderingFinished.get()};
+    auto renderingDone = commandManager->submit(currentCmdBuf, availableSem);
 
-    vk::SubmitInfo submitInfo{
-      .waitSemaphoreCount = waitSemos.size(),
-      .pWaitSemaphores = waitSemos.data(),
-      .pWaitDstStageMask = waitStages.data(),
-      .commandBufferCount = submitCmdBufs.size(),
-      .pCommandBuffers = submitCmdBufs.data(),
-      .signalSemaphoreCount = signalSemos.size(),
-      .pSignalSemaphores = signalSemos.data(),
-    };
+    const bool presented = window->present(renderingDone, view);
 
-    ETNA_CHECK_VK_RESULT(m_context->getQueue().submit({submitInfo}, m_frameCtrl->frameDone->get().get()));
-
-    const bool presented = m_frameCtrl->window->present(m_frameCtrl->renderingFinished.get(), view);
     if (!presented)
       nextSwapchainImage = std::nullopt;
   }

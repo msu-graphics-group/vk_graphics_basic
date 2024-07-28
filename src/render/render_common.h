@@ -20,12 +20,6 @@ struct AppInput
   void clearKeys() { memset(keyPressed, 0, MAXKEYS*sizeof(bool)); memset(keyReleased, 0, MAXKEYS*sizeof(bool)); }
 };
 
-struct pipeline_data_t
-{
-  VkPipelineLayout layout;
-  VkPipeline pipeline;
-};
-
 enum class DrawMode
 {
   WITH_GUI,
