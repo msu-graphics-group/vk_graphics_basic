@@ -1,5 +1,3 @@
-#include <map>
-#include <array>
 #include "scene_mgr.h"
 #include "vk_utils.h"
 #include "vk_buffers.h"
@@ -159,9 +157,9 @@ uint32_t SceneManager::AddMeshFromData(cmesh::SimpleMesh &meshData)
   m_totalIndices  += (uint32_t)meshData.IndicesNum();
 
   m_meshInfos.push_back(info);
-  Box4f meshBox;
+  LiteMath::Box4f meshBox;
   for (uint32_t i = 0; i < meshData.VerticesNum(); ++i) {
-    meshBox.include(reinterpret_cast<float4*>(meshData.vPos4f.data())[i]);
+    meshBox.include(reinterpret_cast<LiteMath::float4*>(meshData.vPos4f.data())[i]);
   }
   m_meshBboxes.push_back(meshBox);
 
@@ -183,9 +181,9 @@ uint32_t SceneManager::InstanceMesh(const uint32_t meshId, const LiteMath::float
 
   m_instanceInfos.push_back(info);
 
-  Box4f instBox;
+  LiteMath::Box4f instBox;
   for (uint32_t i = 0; i < 8; ++i) {
-    float4 corner = float4(
+    LiteMath::float4 corner = LiteMath::float4(
       (i & 1) == 0 ? m_meshBboxes[meshId].boxMin.x : m_meshBboxes[meshId].boxMax.x,
       (i & 2) == 0 ? m_meshBboxes[meshId].boxMin.y : m_meshBboxes[meshId].boxMax.y,
       (i & 4) == 0 ? m_meshBboxes[meshId].boxMin.z : m_meshBboxes[meshId].boxMax.z,
@@ -235,11 +233,6 @@ void SceneManager::LoadGeoDataOnGPU()
   m_pCopyHelper->UpdateBuffer(m_geoIdxBuf,  0, m_pMeshData->IndexData(), indexBufSize);
   if(!mesh_info_tmp.empty())
     m_pCopyHelper->UpdateBuffer(m_meshInfoBuf,  0, mesh_info_tmp.data(), mesh_info_tmp.size() * sizeof(mesh_info_tmp[0]));
-}
-
-void SceneManager::DrawMarkedInstances()
-{
-
 }
 
 void SceneManager::DestroyScene()

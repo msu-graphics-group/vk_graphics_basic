@@ -53,10 +53,12 @@ void SimpleShadowmapRender::LoadScene(const char* path, bool transpose_inst_matr
 
   auto loadedCam = m_pScnMgr->GetCamera(0);
   m_cam.fov = loadedCam.fov;
-  m_cam.pos = float3(loadedCam.pos);
-  m_cam.up  = float3(loadedCam.up);
-  m_cam.lookAt = float3(loadedCam.lookAt);
-  m_cam.tdist  = loadedCam.farPlane;
+  m_cam.lookAt({loadedCam.pos[0], loadedCam.pos[1], loadedCam.pos[2]},
+    {loadedCam.lookAt[0], loadedCam.lookAt[1], loadedCam.lookAt[2]},
+    {loadedCam.up[0], loadedCam.up[1], loadedCam.up[2]});
+  // NOTE: zn zf are broken in our scenes
+  // m_cam.zNear  = loadedCam.nearPlane;
+  // m_cam.zFar  = loadedCam.farPlane;
 }
 
 
@@ -113,7 +115,7 @@ void SimpleShadowmapRender::SetupSimplePipeline()
 
 /// COMMAND BUFFER FILLING
 
-void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4x4& a_wvp, VkPipelineLayout a_pipelineLayout)
+void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const glm::mat4x4& a_wvp, VkPipelineLayout a_pipelineLayout)
 {
   VkShaderStageFlags stageFlags = (VK_SHADER_STAGE_VERTEX_BIT);
 
@@ -128,7 +130,13 @@ void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4
   for (uint32_t i = 0; i < m_pScnMgr->InstancesNum(); ++i)
   {
     auto inst         = m_pScnMgr->GetInstanceInfo(i);
-    pushConst2M.model = m_pScnMgr->GetInstanceMatrix(i);
+    auto mat = m_pScnMgr->GetInstanceMatrix(i);
+    pushConst2M.model = glm::mat4x4{
+      mat[0][0], mat[1][0], mat[2][0], mat[3][0],
+      mat[0][1], mat[1][1], mat[2][1], mat[3][1],
+      mat[0][2], mat[1][2], mat[2][2], mat[3][2],
+      mat[0][3], mat[1][3], mat[2][3], mat[3][3],
+    };
     vkCmdPushConstants(a_cmdBuff, a_pipelineLayout,
       stageFlags, 0, sizeof(pushConst2M), &pushConst2M);
 

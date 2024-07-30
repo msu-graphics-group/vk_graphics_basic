@@ -228,7 +228,7 @@ namespace hydra_xml
 
   LiteMath::float3 readval3f(pugi::xml_node a_node)
   {
-    float3 color;
+    LiteMath::float3 color;
     if(a_node.attribute(L"val") != nullptr)
       color = hydra_xml::read3f(a_node.attribute(L"val"));
     else

@@ -7,12 +7,6 @@
 
 struct AppInput
 {
-  AppInput(){
-    cams[1].pos    = LiteMath::float3(4.0f, 4.0f, 4.0f);
-    cams[1].lookAt = LiteMath::float3(0, 0, 0);
-    cams[1].up     = LiteMath::float3(0, 1, 0);
-  }
-
   enum {MAXKEYS = 384};
   Camera cams[2];
   bool   keyPressed[MAXKEYS]{};
@@ -34,7 +28,8 @@ public:
 
   virtual void ProcessInput(const AppInput& input) = 0;
   virtual void UpdateCamera(const Camera* cams, uint32_t a_camsCount) = 0;
-  virtual Camera GetCurrentCamera() { return { }; }
+  virtual Camera GetCurrentCamera() = 0;
+  virtual Camera GetLightCamera() = 0;
   virtual void DrawFrame(float a_time, DrawMode a_mode) = 0;
 
 protected:

@@ -97,19 +97,19 @@ void UpdateCamera(GLFWwindow* a_window, Camera& a_cam, float secondsElapsed)
 {
   //move position of camera based on WASD keys, and FR keys for up and down
   if (glfwGetKey(a_window, 'S'))
-    a_cam.offsetPosition(secondsElapsed * g_inputDesktop.camMoveSpeed * -1.0f * a_cam.forward());
+    a_cam.move(secondsElapsed * g_inputDesktop.camMoveSpeed * -1.0f * a_cam.forward());
   else if (glfwGetKey(a_window, 'W'))
-    a_cam.offsetPosition(secondsElapsed * g_inputDesktop.camMoveSpeed * a_cam.forward());
+    a_cam.move(secondsElapsed * g_inputDesktop.camMoveSpeed * a_cam.forward());
 
   if (glfwGetKey(a_window, 'A'))
-    a_cam.offsetPosition(secondsElapsed * g_inputDesktop.camMoveSpeed * -1.0f * a_cam.right());
+    a_cam.move(secondsElapsed * g_inputDesktop.camMoveSpeed * -1.0f * a_cam.right());
   else if (glfwGetKey(a_window, 'D'))
-    a_cam.offsetPosition(secondsElapsed * g_inputDesktop.camMoveSpeed * a_cam.right());
+    a_cam.move(secondsElapsed * g_inputDesktop.camMoveSpeed * a_cam.right());
 
   if (glfwGetKey(a_window, 'F'))
-    a_cam.offsetPosition(secondsElapsed * g_inputDesktop.camMoveSpeed * -1.0f * a_cam.up);
+    a_cam.move(secondsElapsed * g_inputDesktop.camMoveSpeed * -1.0f * a_cam.up());
   else if (glfwGetKey(a_window, 'R'))
-    a_cam.offsetPosition(secondsElapsed * g_inputDesktop.camMoveSpeed * a_cam.up);
+    a_cam.move(secondsElapsed * g_inputDesktop.camMoveSpeed * a_cam.up());
 
   //rotate camera based on mouse movement
   //
@@ -120,7 +120,7 @@ void UpdateCamera(GLFWwindow* a_window, Camera& a_cam, float secondsElapsed)
 
     double mouseX, mouseY;
     glfwGetCursorPos(a_window, &mouseX, &mouseY);
-    a_cam.offsetOrientation(g_inputDesktop.mouseSensitivity * float(mouseY), g_inputDesktop.mouseSensitivity * float(mouseX));
+    a_cam.rotate(g_inputDesktop.mouseSensitivity * float(mouseY), g_inputDesktop.mouseSensitivity * float(mouseX));
     glfwSetCursorPos(a_window, 0, 0); //reset the mouse, so it doesn't go out of the window
     g_inputDesktop.capturedMouseJustNow = false;
   }
@@ -181,6 +181,7 @@ void mainLoop(IRender &app, GLFWwindow* window, bool displayGUI)
   int currCam    = 0;
 
   g_appInput.cams[0] = app.GetCurrentCamera();
+  g_appInput.cams[1] = app.GetLightCamera();
   double lastTime = glfwGetTime();
   while (!glfwWindowShouldClose(window))
   {

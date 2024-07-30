@@ -5,6 +5,8 @@ set(RENDER_SOURCE
 
 add_executable(simple_compute main.cpp ${VK_UTILS_SRC} ${RENDER_SOURCE})
 
+target_link_libraries(shadowmap_renderer PRIVATE glm::glm)
+
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
     set_target_properties(simple_compute PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 

@@ -5,26 +5,25 @@
 
 #ifdef __cplusplus
 
-#include <LiteMath.h>
+#include <glm/glm.hpp>
 
 // NOTE: This is technically completely wrong,
 // as GLSL words are guaranteed to be 32-bit,
 // while C++ unsigned int can be 16-bit.
-// Touching LiteMath is forbidden though, so yeah.
-using shader_uint  = LiteMath::uint;
-using shader_uvec2 = LiteMath::uint2;
-using shader_uvec3 = LiteMath::uint3;
+using shader_uint  = glm::uint;
+using shader_uvec2 = glm::uvec2;
+using shader_uvec3 = glm::uvec3;
 
 using shader_float = float;
-using shader_vec2  = LiteMath::float2;
-using shader_vec3  = LiteMath::float3;
-using shader_vec4  = LiteMath::float4;
-using shader_mat4  = LiteMath::float4x4;
+using shader_vec2  = glm::vec2;
+using shader_vec3  = glm::vec3;
+using shader_vec4  = glm::vec4;
+using shader_mat4  = glm::mat4x4;
 
 // The funny thing is, on a GPU, you might as well consider
 // a single byte to be 32 bits, because nothing can be smaller
 // than 32 bits, so a bool has to be 32 bits as well.
-using shader_bool  = LiteMath::uint;
+using shader_bool  = glm::uint;
 
 #else
 

@@ -34,6 +34,7 @@ public:
   void ProcessInput(const AppInput& input) override;
   void UpdateCamera(const Camera* cams, uint32_t a_camsNumber) override;
   Camera GetCurrentCamera() override {return m_cam; }
+  Camera GetLightCamera() override { return m_light.cam; }
   void DrawFrame(float a_time, DrawMode a_mode) override;
 
 
@@ -53,12 +54,12 @@ private:
 
   struct
   {
-    float4x4 projView;
-    float4x4 model;
+    glm::mat4x4 projView;
+    glm::mat4x4 model;
   } pushConst2M;
 
-  float4x4 m_worldViewProj;
-  float4x4 m_lightMatrix;
+  glm::mat4x4 m_worldViewProj;
+  glm::mat4x4 m_lightMatrix;
 
   UniformParams m_uniforms {};
   void* m_uboMappedMem = nullptr;
@@ -90,9 +91,7 @@ private:
   {
     ShadowMapCam()
     {
-      cam.pos    = float3(4.0f, 4.0f, 4.0f);
-      cam.lookAt = float3(0, 0, 0);
-      cam.up     = float3(0, 1, 0);
+      cam.lookAt({4, 4, 4}, {0, 0, 0}, {0, 1, 0});
 
       radius          = 5.0f;
       lightTargetDist = 20.0f;
@@ -110,7 +109,7 @@ private:
 
   void BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkImage a_targetImage, VkImageView a_targetImageView);
 
-  void DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4x4& a_wvp, VkPipelineLayout a_pipelineLayout = VK_NULL_HANDLE);
+  void DrawSceneCmd(VkCommandBuffer a_cmdBuff, const glm::mat4x4& a_wvp, VkPipelineLayout a_pipelineLayout = VK_NULL_HANDLE);
 
   void loadShaders();
 

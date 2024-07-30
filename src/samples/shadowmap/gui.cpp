@@ -11,8 +11,13 @@ void SimpleShadowmapRender::DrawGui()
   {
     ImGui::Begin("Simple render settings");
 
-    ImGui::ColorEdit3("Meshes base color", m_uniforms.baseColor.M, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoInputs);
-    ImGui::SliderFloat3("Light source position", m_uniforms.lightPos.M, -10.f, 10.f);
+    float color[3] {m_uniforms.baseColor.r, m_uniforms.baseColor.g, m_uniforms.baseColor.b};
+    ImGui::ColorEdit3("Meshes base color", color, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoInputs);
+    m_uniforms.baseColor = {color[0], color[1], color[2]};
+
+    float pos[3] {m_uniforms.lightPos.x, m_uniforms.lightPos.y, m_uniforms.lightPos.z};
+    ImGui::SliderFloat3("Light source position", pos, -10.f, 10.f);
+    m_uniforms.lightPos = {pos[0], pos[1], pos[2]};
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 

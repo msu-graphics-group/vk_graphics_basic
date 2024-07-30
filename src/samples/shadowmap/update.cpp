@@ -2,6 +2,8 @@
 
 #include "etna/Etna.hpp"
 #include "shadowmap_render.h"
+#include <glm/ext.hpp>
+
 
 void SimpleShadowmapRender::UpdateCamera(const Camera* cams, uint32_t a_camsNumber)
 {
@@ -14,35 +16,36 @@ void SimpleShadowmapRender::UpdateCamera(const Camera* cams, uint32_t a_camsNumb
 void SimpleShadowmapRender::UpdateView()
 {
   ///// calc camera matrix
-  //
-  const float aspect = float(m_width) / float(m_height);
-  auto mProjFix = OpenglToVulkanProjectionMatrixFix();
-  auto mProj = projectionMatrix(m_cam.fov, aspect, 0.1f, 1000.0f);
-  auto mLookAt = LiteMath::lookAt(m_cam.pos, m_cam.lookAt, m_cam.up);
-  auto mWorldViewProj = mProjFix * mProj * mLookAt;
 
-  m_worldViewProj = mWorldViewProj;
+  // TODO: coordinate systems are all over the place in the sample, investigate and fix properly
+  glm::mat4x4 mFlipY = glm::identity<glm::mat4x4>();
+  mFlipY[1][1] = -1;
+
+  glm::mat4x4 mFlipX = glm::identity<glm::mat4x4>();
+  mFlipX[0][0] = -1;
+
+  {
+    const float aspect = float(m_width) / float(m_height);
+    const auto mProj = glm::perspectiveLH_ZO(m_cam.fov, aspect, m_cam.zNear, m_cam.zFar);
+    m_worldViewProj = mFlipY * mFlipX * mProj * m_cam.viewTm();
+  }
 
   ///// calc light matrix
-  //
-  if(m_light.usePerspectiveM)
-    mProj = perspectiveMatrix(m_light.cam.fov, 1.0f, 1.0f, m_light.lightTargetDist*2.0f);
-  else
-    mProj = ortoMatrix(-m_light.radius, +m_light.radius, -m_light.radius, +m_light.radius, 0.0f, m_light.lightTargetDist);
 
-  if(m_light.usePerspectiveM)  // don't understang why fix is not needed for perspective case for shadowmap ... it works for common rendering
-    mProjFix = LiteMath::float4x4();
-  else
-    mProjFix = OpenglToVulkanProjectionMatrixFix();
+  {
+    const auto mProj =
+      m_light.usePerspectiveM ?
+        glm::perspectiveLH_ZO(m_light.cam.fov, 1.0f, 1.0f, m_light.lightTargetDist*2.0f) :
+        glm::orthoLH_ZO(-m_light.radius, +m_light.radius, -m_light.radius, +m_light.radius, 0.0f, m_light.lightTargetDist);
 
-  mLookAt       = LiteMath::lookAt(m_light.cam.pos, m_light.cam.pos + m_light.cam.forward()*10.0f, m_light.cam.up);
-  m_lightMatrix = mProjFix*mProj*mLookAt;
+    m_lightMatrix = mFlipX * mProj * m_light.cam.viewTm();
+  }
 }
 
 void SimpleShadowmapRender::UpdateUniformBuffer(float a_time)
 {
   m_uniforms.lightMatrix = m_lightMatrix;
-  m_uniforms.lightPos    = m_light.cam.pos; //LiteMath::float3(sinf(a_time), 1.0f, cosf(a_time));
+  m_uniforms.lightPos    = m_light.cam.position;
   m_uniforms.time        = a_time;
 
   memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));

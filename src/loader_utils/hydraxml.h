@@ -3,12 +3,10 @@
 
 #include "pugixml.hpp"
 #include "LiteMath.h"
-using namespace LiteMath;
 
 #include <vector>
 #include <set>
 #include <unordered_map>
-//#include <iostream>
 
 #if defined(__ANDROID__)
 #include <android/asset_manager.h>

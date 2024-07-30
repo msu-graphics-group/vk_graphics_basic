@@ -9,7 +9,7 @@
 #include <etna/VertexInput.hpp>
 
 #include "../loader_utils/hydraxml.h"
-#include "../resources/shaders/common.h"
+
 
 struct InstanceInfo
 {
@@ -35,8 +35,6 @@ struct SceneManager
 
   void MarkInstance(uint32_t instId);
   void UnmarkInstance(uint32_t instId);
-
-  void DrawMarkedInstances();
 
   void DestroyScene();
 
