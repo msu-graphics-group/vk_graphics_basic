@@ -18,7 +18,8 @@ void SimpleShadowmapRender::DrawFrameSimple(bool draw_gui)
 
   // NOTE: here, we skip frames when the window is in the process of being
   // re-sized. This is not mandatory, it is possible to submit frames to a
-  // "sub-optimal" swap chain and still get something drawn while resizing.
+  // "sub-optimal" swap chain and still get something drawn while resizing,
+  // but only on some platforms (not windows+nvidia, sadly).
   if (nextSwapchainImage)
   {
     auto[image, view, availableSem] = *nextSwapchainImage;

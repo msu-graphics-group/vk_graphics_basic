@@ -64,7 +64,7 @@ void ImGuiRender::InitImGui(vk::Format a_target_format)
     // This is basically unused
     .MinImageCount               = 2,
     // This is mis-named
-    .ImageCount                  = static_cast<uint32_t>(ctx.getMainWorkCount().multiBufferingCount()),
+    .ImageCount                  = std::max(static_cast<uint32_t>(ctx.getMainWorkCount().multiBufferingCount()), uint32_t{2}),
     .UseDynamicRendering         = true,
     .PipelineRenderingCreateInfo = VkPipelineRenderingCreateInfoKHR{
       .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
