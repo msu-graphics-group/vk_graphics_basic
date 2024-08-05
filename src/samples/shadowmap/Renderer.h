@@ -14,11 +14,11 @@
 
 class ImGuiRender;
 
-class SimpleShadowmapRender
+class Renderer
 {
 public:
-  SimpleShadowmapRender(glm::uvec2 resolution);
-  ~SimpleShadowmapRender();
+  Renderer(glm::uvec2 resolution);
+  ~Renderer();
 
   void initVulkan(std::span<const char*> instance_extensions);
   void initPresentation(vk::UniqueSurfaceKHR surface, etna::ResolutionProvider res_provider);
@@ -75,21 +75,21 @@ private:
     bool   usePerspectiveM = true;  ///!< use perspective matrix if true and ortographics otherwise
   } m_light;
 
-  void DrawFrameSimple(bool draw_gui);
+  void drawFrame(bool draw_gui);
 
-  void BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkImage a_targetImage, VkImageView a_targetImageView);
+  void renderWorld(VkCommandBuffer a_cmdBuff, VkImage a_targetImage, VkImageView a_targetImageView);
 
-  void DrawSceneCmd(VkCommandBuffer a_cmdBuff, const glm::mat4x4& a_wvp, VkPipelineLayout a_pipelineLayout = VK_NULL_HANDLE);
+  void renderScene(VkCommandBuffer a_cmdBuff, const glm::mat4x4& a_wvp, VkPipelineLayout a_pipelineLayout = VK_NULL_HANDLE);
 
   void loadShaders();
 
-  void SetupSimplePipeline();
-  void RecreateSwapChain();
+  void setupPipelines();
+  void recreateSwapchain();
 
-  void UpdateUniformBuffer(float a_time);
+  void updateUniformBuffer(float a_time);
 
-  void AllocateResources();
-  void PreparePipelines();
+  void allocateResources();
+  void preparePipelines();
 
   void DrawGui();
 };

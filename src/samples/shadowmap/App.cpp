@@ -8,7 +8,7 @@ App::App()
   glm::uvec2 initialRes = {1280, 720};
   mainWindow = windowing.createWindow(initialRes);
 
-  renderer.reset(new SimpleShadowmapRender(initialRes));
+  renderer.reset(new Renderer(initialRes));
 
   auto instExts = windowing.getRequiredVulkanInstanceExtensions();
   renderer->initVulkan(instExts);

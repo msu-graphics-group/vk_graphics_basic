@@ -1,16 +1,16 @@
-#include "shadowmap_render.h"
+#include "Renderer.h"
 
 #include <etna/Etna.hpp>
 
 #include "render/ImGuiRender.h"
 
 
-SimpleShadowmapRender::SimpleShadowmapRender(glm::uvec2 res) : resolution{res}
+Renderer::Renderer(glm::uvec2 res) : resolution{res}
 {
   m_uniforms.baseColor = {0.9f, 0.92f, 1.0f};
 }
 
-void SimpleShadowmapRender::initVulkan(std::span<const char*> instance_extensions)
+void Renderer::initVulkan(std::span<const char*> instance_extensions)
 {
   std::vector<const char*> m_instanceExtensions;
 
@@ -48,7 +48,24 @@ void SimpleShadowmapRender::initVulkan(std::span<const char*> instance_extension
     m_context->getQueueFamilyIdx(), m_context->getQueueFamilyIdx(), false);
 }
 
-void SimpleShadowmapRender::RecreateSwapChain()
+void Renderer::initPresentation(vk::UniqueSurfaceKHR a_surface, etna::ResolutionProvider a_res_provider)
+{
+  commandManager = m_context->createCommandManager();
+
+  window = m_context->createWindow(etna::Window::CreateInfo{
+    .surface            = std::move(a_surface),
+    .resolutionProvider = std::move(a_res_provider),
+  });
+
+  auto [w, h] = window->recreateSwapchain();
+  resolution = {w, h};
+
+  m_pGUIRender = std::make_unique<ImGuiRender>(window->getCurrentFormat());
+
+  allocateResources();
+}
+
+void Renderer::recreateSwapchain()
 {
   ETNA_CHECK_VK_RESULT(m_context->getDevice().waitIdle());
 
@@ -56,13 +73,13 @@ void SimpleShadowmapRender::RecreateSwapChain()
   resolution = {w, h};
 
   // Most resources depend on the current resolution, so we recreate them.
-  AllocateResources();
+  allocateResources();
 
   // NOTE: if swapchain changes format (that can happen on android), we will die here.
   // not that we actually care about android or anything.
 }
 
-SimpleShadowmapRender::~SimpleShadowmapRender()
+Renderer::~Renderer()
 {
   ETNA_CHECK_VK_RESULT(m_context->getDevice().waitIdle());
 }

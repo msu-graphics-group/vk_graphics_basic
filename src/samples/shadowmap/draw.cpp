@@ -1,11 +1,11 @@
-#include "shadowmap_render.h"
+#include "Renderer.h"
 #include <etna/Etna.hpp>
 
 #include <imgui.h>
 #include "../../render/ImGuiRender.h"
 
 
-void SimpleShadowmapRender::DrawFrameSimple(bool draw_gui)
+void Renderer::drawFrame(bool draw_gui)
 {
   auto currentCmdBuf = commandManager->acquireNext();
 
@@ -25,7 +25,7 @@ void SimpleShadowmapRender::DrawFrameSimple(bool draw_gui)
     auto[image, view, availableSem] = *nextSwapchainImage;
 
     ETNA_CHECK_VK_RESULT(currentCmdBuf.begin({ .flags = vk::CommandBufferUsageFlagBits::eSimultaneousUse }));
-    BuildCommandBufferSimple(currentCmdBuf, image, view);
+    renderWorld(currentCmdBuf, image, view);
 
     if (draw_gui)
     {
@@ -51,12 +51,12 @@ void SimpleShadowmapRender::DrawFrameSimple(bool draw_gui)
   etna::end_frame();
 
   if (!nextSwapchainImage)
-    RecreateSwapChain();
+    recreateSwapchain();
 }
 
-void SimpleShadowmapRender::drawFrame(float a_time)
+void Renderer::drawFrame(float a_time)
 {
-  UpdateUniformBuffer(a_time);
+  updateUniformBuffer(a_time);
   DrawGui();
-  DrawFrameSimple(true);
+  drawFrame(true);
 }

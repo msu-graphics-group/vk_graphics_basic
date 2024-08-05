@@ -1,10 +1,10 @@
-#include "shadowmap_render.h"
+#include "Renderer.h"
 
 #include "../../render/ImGuiRender.h"
 #include <imgui.h>
 
 
-void SimpleShadowmapRender::DrawGui()
+void Renderer::DrawGui()
 {
   m_pGUIRender->NextFrame();
   ImGui::NewFrame();

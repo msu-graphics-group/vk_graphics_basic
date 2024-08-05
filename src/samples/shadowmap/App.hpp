@@ -2,7 +2,7 @@
 
 #include "wsi/OsWindowingManager.hpp"
 #include "utils/Camera.h"
-#include "shadowmap_render.h"
+#include "Renderer.h"
 
 class App
 {
@@ -29,5 +29,5 @@ private:
 
   bool controlShadowCam = false;
 
-  std::unique_ptr<SimpleShadowmapRender> renderer;
+  std::unique_ptr<Renderer> renderer;
 };

@@ -1,10 +1,10 @@
-#include "shadowmap_render.h"
+#include "Renderer.h"
 
 #include <etna/Etna.hpp>
 #include <glm/ext.hpp>
 
 
-void SimpleShadowmapRender::updateView(const Camera &main, const Camera &shadow)
+void Renderer::updateView(const Camera &main, const Camera &shadow)
 {
   ///// calc camera matrix
 
@@ -35,7 +35,7 @@ void SimpleShadowmapRender::updateView(const Camera &main, const Camera &shadow)
   }
 }
 
-void SimpleShadowmapRender::UpdateUniformBuffer(float a_time)
+void Renderer::updateUniformBuffer(float a_time)
 {
   m_uniforms.lightMatrix = m_lightMatrix;
   m_uniforms.lightPos    = lightPos;
@@ -44,7 +44,7 @@ void SimpleShadowmapRender::UpdateUniformBuffer(float a_time)
   memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));
 }
 
-void SimpleShadowmapRender::debugInput(const Keyboard &kb)
+void Renderer::debugInput(const Keyboard &kb)
 {
   // add keyboard controls here
   // camera movement is processed separately
