@@ -5,19 +5,17 @@
 #include "render/ImGuiRender.h"
 
 
-SimpleShadowmapRender::SimpleShadowmapRender(uint32_t a_width, uint32_t a_height) : m_width(a_width), m_height(a_height)
+SimpleShadowmapRender::SimpleShadowmapRender(glm::uvec2 res) : resolution{res}
 {
   m_uniforms.baseColor = {0.9f, 0.92f, 1.0f};
 }
 
-void SimpleShadowmapRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount)
+void SimpleShadowmapRender::initVulkan(std::span<const char*> instance_extensions)
 {
   std::vector<const char*> m_instanceExtensions;
 
-  for(size_t i = 0; i < a_instanceExtensionsCount; ++i)
-  {
-    m_instanceExtensions.push_back(a_instanceExtensions[i]);
-  }
+  for (auto ext : instance_extensions)
+    m_instanceExtensions.push_back(ext);
 
   #ifndef NDEBUG
     m_instanceExtensions.push_back("VK_EXT_debug_report");
@@ -55,8 +53,7 @@ void SimpleShadowmapRender::RecreateSwapChain()
   ETNA_CHECK_VK_RESULT(m_context->getDevice().waitIdle());
 
   auto[w, h] = window->recreateSwapchain();
-  m_width = w;
-  m_height = h;
+  resolution = {w, h};
 
   // Most resources depend on the current resolution, so we recreate them.
   AllocateResources();
@@ -68,5 +65,4 @@ void SimpleShadowmapRender::RecreateSwapChain()
 SimpleShadowmapRender::~SimpleShadowmapRender()
 {
   ETNA_CHECK_VK_RESULT(m_context->getDevice().waitIdle());
-
 }

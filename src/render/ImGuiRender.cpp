@@ -6,13 +6,21 @@
 #include <etna/RenderTargetStates.hpp>
 
 
+void ImGuiRender::enableImGuiForWindow(GLFWwindow* window)
+{
+  ImGui_ImplGlfw_InitForVulkan(window, true);
+}
+
 ImGuiRender::ImGuiRender(vk::Format a_target_format)
 {
   CreateDescriptorPool();
+
+  context = ImGui::CreateContext();
+  ImGui::SetCurrentContext(context);
+
   InitImGui(a_target_format);
 
   IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
 }
 
 PFN_vkVoidFunction vulkanLoaderFunction(const char *function_name, void *)

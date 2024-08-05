@@ -3,7 +3,7 @@
 #include "../../render/ImGuiRender.h"
 
 
-void SimpleShadowmapRender::InitPresentation(vk::UniqueSurfaceKHR a_surface, etna::ResolutionProvider a_res_provider)
+void SimpleShadowmapRender::initPresentation(vk::UniqueSurfaceKHR a_surface, etna::ResolutionProvider a_res_provider)
 {
   commandManager = m_context->createCommandManager();
 
@@ -13,8 +13,7 @@ void SimpleShadowmapRender::InitPresentation(vk::UniqueSurfaceKHR a_surface, etn
   });
 
   auto [w, h] = window->recreateSwapchain();
-  m_width     = w;
-  m_height    = h;
+  resolution = {w, h};
 
   m_pGUIRender = std::make_unique<ImGuiRender>(window->getCurrentFormat());
 

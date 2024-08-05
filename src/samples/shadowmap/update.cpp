@@ -1,19 +1,10 @@
-#include "../../utils/input_definitions.h"
-
-#include "etna/Etna.hpp"
 #include "shadowmap_render.h"
+
+#include <etna/Etna.hpp>
 #include <glm/ext.hpp>
 
 
-void SimpleShadowmapRender::UpdateCamera(const Camera* cams, uint32_t a_camsNumber)
-{
-  m_cam = cams[0];
-  if(a_camsNumber >= 2)
-    m_light.cam = cams[1];
-  UpdateView();
-}
-
-void SimpleShadowmapRender::UpdateView()
+void SimpleShadowmapRender::updateView(const Camera &main, const Camera &shadow)
 {
   ///// calc camera matrix
 
@@ -25,9 +16,9 @@ void SimpleShadowmapRender::UpdateView()
   mFlipX[0][0] = -1;
 
   {
-    const float aspect = float(m_width) / float(m_height);
-    const auto mProj = glm::perspectiveLH_ZO(m_cam.fov, aspect, m_cam.zNear, m_cam.zFar);
-    m_worldViewProj = mFlipY * mFlipX * mProj * m_cam.viewTm();
+    const float aspect = float(resolution.x) / float(resolution.y);
+    const auto mProj = glm::perspectiveLH_ZO(main.fov, aspect, main.zNear, main.zFar);
+    m_worldViewProj = mFlipY * mFlipX * mProj * main.viewTm();
   }
 
   ///// calc light matrix
@@ -35,35 +26,37 @@ void SimpleShadowmapRender::UpdateView()
   {
     const auto mProj =
       m_light.usePerspectiveM ?
-        glm::perspectiveLH_ZO(m_light.cam.fov, 1.0f, 1.0f, m_light.lightTargetDist*2.0f) :
+        glm::perspectiveLH_ZO(shadow.fov, 1.0f, 1.0f, m_light.lightTargetDist*2.0f) :
         glm::orthoLH_ZO(-m_light.radius, +m_light.radius, -m_light.radius, +m_light.radius, 0.0f, m_light.lightTargetDist);
 
-    m_lightMatrix = mFlipX * mProj * m_light.cam.viewTm();
+    m_lightMatrix = mFlipX * mProj * shadow.viewTm();
+
+    lightPos = shadow.position;
   }
 }
 
 void SimpleShadowmapRender::UpdateUniformBuffer(float a_time)
 {
   m_uniforms.lightMatrix = m_lightMatrix;
-  m_uniforms.lightPos    = m_light.cam.position;
+  m_uniforms.lightPos    = lightPos;
   m_uniforms.time        = a_time;
 
   memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));
 }
 
-void SimpleShadowmapRender::ProcessInput(const AppInput &input)
+void SimpleShadowmapRender::debugInput(const Keyboard &kb)
 {
   // add keyboard controls here
   // camera movement is processed separately
   //
-  if(input.keyReleased[GLFW_KEY_Q])
-    m_input.drawFSQuad = !m_input.drawFSQuad;
+  if(kb[KeyboardKey::kQ] == ButtonState::Falling)
+    drawDebugFSQuad = !drawDebugFSQuad;
 
-  if(input.keyReleased[GLFW_KEY_P])
+  if(kb[KeyboardKey::kP] == ButtonState::Falling)
     m_light.usePerspectiveM = !m_light.usePerspectiveM;
 
   // recreate pipeline to reload shaders
-  if(input.keyPressed[GLFW_KEY_B])
+  if(kb[KeyboardKey::kB] == ButtonState::Falling)
   {
 #ifdef WIN32
     std::system("cd ../resources/shaders && python compile_shadowmap_shaders.py");

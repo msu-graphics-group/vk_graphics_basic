@@ -1,7 +1,7 @@
 #include "shadowmap_render.h"
 #include <etna/Etna.hpp>
 
-#include <imgui/imgui.h>
+#include <imgui.h>
 #include "../../render/ImGuiRender.h"
 
 
@@ -30,7 +30,7 @@ void SimpleShadowmapRender::DrawFrameSimple(bool draw_gui)
     if (draw_gui)
     {
       ImDrawData* pDrawData = ImGui::GetDrawData();
-      m_pGUIRender->Draw(currentCmdBuf, {{0, 0}, {m_width, m_height}}, image, view, pDrawData);
+      m_pGUIRender->Draw(currentCmdBuf, {{0, 0}, {resolution.x, resolution.y}}, image, view, pDrawData);
     }
 
     etna::set_state(currentCmdBuf, image, vk::PipelineStageFlagBits2::eBottomOfPipe, {},
@@ -54,19 +54,9 @@ void SimpleShadowmapRender::DrawFrameSimple(bool draw_gui)
     RecreateSwapChain();
 }
 
-void SimpleShadowmapRender::DrawFrame(float a_time, DrawMode a_mode)
+void SimpleShadowmapRender::drawFrame(float a_time)
 {
   UpdateUniformBuffer(a_time);
-  switch (a_mode)
-  {
-    case DrawMode::WITH_GUI:
-      DrawGui();
-      DrawFrameSimple(true);
-      break;
-    case DrawMode::NO_GUI:
-      DrawFrameSimple(false);
-      break;
-    default:
-      DrawFrameSimple(false);
-  }
+  DrawGui();
+  DrawFrameSimple(true);
 }

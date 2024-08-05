@@ -17,7 +17,7 @@ void SimpleShadowmapRender::AllocateResources()
 {
   mainViewDepth = m_context->createImage(etna::Image::CreateInfo
   {
-    .extent = vk::Extent3D{m_width, m_height, 1},
+    .extent = vk::Extent3D{resolution.x, resolution.y, 1},
     .name = "main_view_depth",
     .format = vk::Format::eD32Sfloat,
     .imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment
@@ -43,22 +43,13 @@ void SimpleShadowmapRender::AllocateResources()
   m_uboMappedMem = constants.map();
 }
 
-void SimpleShadowmapRender::LoadScene(const char* path, bool transpose_inst_matrices)
+void SimpleShadowmapRender::loadScene(const char* path, bool transpose_inst_matrices)
 {
   m_pScnMgr->LoadSceneXML(path, transpose_inst_matrices);
 
   // TODO: Make a separate stage
   loadShaders();
   PreparePipelines();
-
-  auto loadedCam = m_pScnMgr->GetCamera(0);
-  m_cam.fov = loadedCam.fov;
-  m_cam.lookAt({loadedCam.pos[0], loadedCam.pos[1], loadedCam.pos[2]},
-    {loadedCam.lookAt[0], loadedCam.lookAt[1], loadedCam.lookAt[2]},
-    {loadedCam.up[0], loadedCam.up[1], loadedCam.up[2]});
-  // NOTE: zn zf are broken in our scenes
-  // m_cam.zNear  = loadedCam.nearPlane;
-  // m_cam.zFar  = loadedCam.farPlane;
 }
 
 
@@ -169,7 +160,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
 
     VkDescriptorSet vkSet = set.getVkSet();
 
-    etna::RenderTargetState renderTargets(a_cmdBuff, {{0, 0}, {m_width, m_height}},
+    etna::RenderTargetState renderTargets(a_cmdBuff, {{0, 0}, {resolution.x, resolution.y}},
       {{.image = a_targetImage, .view = a_targetImageView}},
       {.image = mainViewDepth.get(), .view = mainViewDepth.getView({})});
 
@@ -180,6 +171,6 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
     DrawSceneCmd(a_cmdBuff, m_worldViewProj, m_basicForwardPipeline.getVkPipelineLayout());
   }
 
-  if(m_input.drawFSQuad)
+  if(drawDebugFSQuad)
     m_pQuad->RecordCommands(a_cmdBuff, a_targetImage, a_targetImageView, shadowMap, defaultSampler);
 }

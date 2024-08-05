@@ -5,10 +5,16 @@
 
 
 struct ImDrawData;
+struct ImGuiContext;
+struct GLFWwindow;
 
+
+// NOTE: this is sort of a singleton class.
 class ImGuiRender
 {
 public:
+  static void enableImGuiForWindow(GLFWwindow *window);
+
   ImGuiRender(vk::Format a_target_format);
 
   void NextFrame();
@@ -19,6 +25,7 @@ public:
 
 private:
   vk::UniqueDescriptorPool m_descriptorPool;
+  ImGuiContext* context;
 
   void InitImGui(vk::Format a_target_format);
   void CleanupImGui();

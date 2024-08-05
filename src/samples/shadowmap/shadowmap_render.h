@@ -1,46 +1,35 @@
-#ifndef SIMPLE_SHADOWMAP_RENDER_H
-#define SIMPLE_SHADOWMAP_RENDER_H
+#pragma once
 
 #include "../../render/scene_mgr.h"
-#include "../../render/render_common.h"
 #include "../../render/quad_renderer.h"
 #include "../../../resources/shaders/common.h"
-#include "etna/GraphicsPipeline.hpp"
 #include <geom/vk_mesh.h>
-#include <vk_descriptor_sets.h>
-#include <vk_fbuf_attachment.h>
-#include <vk_images.h>
+#include "utils/Camera.h"
+#include "wsi/Keyboard.hpp"
 
+#include <etna/GraphicsPipeline.hpp>
 #include <etna/GlobalContext.hpp>
 #include <etna/Sampler.hpp>
 
 
 class ImGuiRender;
 
-class SimpleShadowmapRender : public IRender
+class SimpleShadowmapRender
 {
 public:
-  SimpleShadowmapRender(uint32_t a_width, uint32_t a_height);
+  SimpleShadowmapRender(glm::uvec2 resolution);
   ~SimpleShadowmapRender();
 
-  uint32_t     GetWidth()      const override { return m_width; }
-  uint32_t     GetHeight()     const override { return m_height; }
-  VkInstance   GetVkInstance() const { return m_context->getInstance(); }
+  void initVulkan(std::span<const char*> instance_extensions);
+  void initPresentation(vk::UniqueSurfaceKHR surface, etna::ResolutionProvider res_provider);
 
-  void InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount);
+  void debugInput(const Keyboard& kb);
 
-  void InitPresentation(vk::UniqueSurfaceKHR a_surface, etna::ResolutionProvider a_res_provider);
+  void updateView(const Camera &main, const Camera &shadow);
 
-  void ProcessInput(const AppInput& input) override;
-  void UpdateCamera(const Camera* cams, uint32_t a_camsNumber) override;
-  Camera GetCurrentCamera() override {return m_cam; }
-  Camera GetLightCamera() override { return m_light.cam; }
-  void DrawFrame(float a_time, DrawMode a_mode) override;
+  void drawFrame(float dt);
 
-
-  void UpdateView();
-
-  void LoadScene(const char *path, bool transpose_inst_matrices);
+  void loadScene(const char *path, bool transpose_inst_matrices);
 
 private:
   etna::GlobalContext* m_context;
@@ -60,6 +49,7 @@ private:
 
   glm::mat4x4 m_worldViewProj;
   glm::mat4x4 m_lightMatrix;
+  glm::vec3 lightPos;
 
   UniformParams m_uniforms {};
   void* m_uboMappedMem = nullptr;
@@ -67,10 +57,7 @@ private:
   etna::GraphicsPipeline m_basicForwardPipeline {};
   etna::GraphicsPipeline m_shadowPipeline {};
 
-
-  Camera   m_cam;
-  uint32_t m_width  = 1024u;
-  uint32_t m_height = 1024u;
+  glm::uvec2 resolution;
 
   vk::PhysicalDeviceFeatures m_enabledDeviceFeatures = {};
 
@@ -79,30 +66,13 @@ private:
 
   std::unique_ptr<QuadRenderer> m_pQuad;
 
-  struct InputControlMouseEtc
-  {
-    bool drawFSQuad = false;
-  } m_input;
+  bool drawDebugFSQuad = false;
 
-  /**
-  \brief basic parameters that you usually need for shadow mapping
-  */
   struct ShadowMapCam
   {
-    ShadowMapCam()
-    {
-      cam.lookAt({4, 4, 4}, {0, 0, 0}, {0, 1, 0});
-
-      radius          = 5.0f;
-      lightTargetDist = 20.0f;
-      usePerspectiveM = true;
-    }
-
-    float  radius;           ///!< ignored when usePerspectiveM == true
-    float  lightTargetDist;  ///!< identify depth range
-    Camera cam;              ///!< user control for light to later get light worldViewProj matrix
-    bool   usePerspectiveM;  ///!< use perspective matrix if true and ortographics otherwise
-
+    float  radius = 5;              ///!< ignored when usePerspectiveM == true
+    float  lightTargetDist = 20;    ///!< identify depth range
+    bool   usePerspectiveM = true;  ///!< use perspective matrix if true and ortographics otherwise
   } m_light;
 
   void DrawFrameSimple(bool draw_gui);
@@ -123,6 +93,3 @@ private:
 
   void DrawGui();
 };
-
-
-#endif //CHIMERA_SIMPLE_RENDER_H
