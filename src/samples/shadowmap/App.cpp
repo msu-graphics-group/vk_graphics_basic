@@ -17,8 +17,7 @@ App::App()
 
   renderer->initPresentation(std::move(surface), [window = mainWindow.get()]() -> vk::Extent2D {
       auto res = window->getResolution();
-      ETNA_ASSERTF(res.x > 0 && res.y > 0, "Got a 0 in window resolution! Is the window minimized?");
-      return {static_cast<uint32_t>(res.x), static_cast<uint32_t>(res.y)};
+      return {res.x, res.y};
   });
 
   // TODO: this is bad design, this initialization is dependent on the current ImGui context, but we pass

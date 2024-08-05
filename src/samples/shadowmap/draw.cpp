@@ -13,7 +13,6 @@ void Renderer::drawFrame(bool draw_gui)
   // it doesn't actually begin anything, just resets descriptor pools
   etna::begin_frame();
 
-
   auto nextSwapchainImage = window->acquireNext();
 
   // NOTE: here, we skip frames when the window is in the process of being
@@ -40,9 +39,9 @@ void Renderer::drawFrame(bool draw_gui)
 
     ETNA_CHECK_VK_RESULT(currentCmdBuf.end());
 
-    auto renderingDone = commandManager->submit(currentCmdBuf, availableSem);
+    auto renderingDone = commandManager->submit(std::move(currentCmdBuf), std::move(availableSem));
 
-    const bool presented = window->present(renderingDone, view);
+    const bool presented = window->present(std::move(renderingDone), view);
 
     if (!presented)
       nextSwapchainImage = std::nullopt;

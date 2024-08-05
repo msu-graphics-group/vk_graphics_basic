@@ -32,7 +32,7 @@ public:
   bool isBeingClosed();
 
   // Returns current resolution. Might be 0,0 if minimized
-  glm::ivec2 getResolution();
+  glm::uvec2 getResolution();
 
   vk::UniqueSurfaceKHR createVkSurface(vk::Instance instance);
 

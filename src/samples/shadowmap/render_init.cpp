@@ -57,8 +57,11 @@ void Renderer::initPresentation(vk::UniqueSurfaceKHR a_surface, etna::Resolution
     .resolutionProvider = std::move(a_res_provider),
   });
 
-  auto [w, h] = window->recreateSwapchain();
-  resolution = {w, h};
+  if (auto maybeResolution = window->recreateSwapchain())
+  {
+    auto [w, h] = *maybeResolution;
+    resolution = {w, h};
+  }
 
   m_pGUIRender = std::make_unique<ImGuiRender>(window->getCurrentFormat());
 
@@ -69,8 +72,12 @@ void Renderer::recreateSwapchain()
 {
   ETNA_CHECK_VK_RESULT(m_context->getDevice().waitIdle());
 
-  auto[w, h] = window->recreateSwapchain();
-  resolution = {w, h};
+  // If we are minimized, we will simply spin and wait for un-minimization
+  if (auto maybeRes = window->recreateSwapchain())
+  {
+    auto[w, h] = *maybeRes;
+    resolution = {w, h};
+  }
 
   // Most resources depend on the current resolution, so we recreate them.
   allocateResources();

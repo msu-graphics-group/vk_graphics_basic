@@ -1,6 +1,7 @@
 #include "OsWindow.hpp"
 
 #include <GLFW/glfw3.h>
+#include <etna/Assert.hpp>
 
 #include "OsWindowingManager.hpp"
 
@@ -20,11 +21,12 @@ bool OsWindow::isBeingClosed()
   return glfwWindowShouldClose(impl);
 }
 
-glm::ivec2 OsWindow::getResolution()
+glm::uvec2 OsWindow::getResolution()
 {
   glm::ivec2 result;
   glfwGetWindowSize(impl, &result.x, &result.y);
-  return result;
+  ETNA_ASSERT(result.x >= 0 && result.y >= 0);
+  return glm::uvec2(result);
 }
 
 vk::UniqueSurfaceKHR OsWindow::createVkSurface(vk::Instance instance)
