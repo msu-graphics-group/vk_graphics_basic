@@ -69,17 +69,27 @@ void ImGuiRender::InitImGui(vk::Format a_target_format)
     .QueueFamily                 = ctx.getQueueFamilyIdx(),
     .Queue                       = ctx.getQueue(),
     .DescriptorPool              = m_descriptorPool.get(),
+    .RenderPass                  = VK_NULL_HANDLE,
     // This is basically unused
     .MinImageCount               = 2,
     // This is mis-named
     .ImageCount                  = std::max(static_cast<uint32_t>(ctx.getMainWorkCount().multiBufferingCount()), uint32_t{2}),
+    .MSAASamples                 = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
+    .PipelineCache               = VK_NULL_HANDLE,
+    .Subpass                     = 0,
     .UseDynamicRendering         = true,
     .PipelineRenderingCreateInfo = VkPipelineRenderingCreateInfoKHR{
       .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+      .pNext                   = nullptr,
+      .viewMask                = 0,
       .colorAttachmentCount    = targetFormats.size(),
       .pColorAttachmentFormats = targetFormats.data(),
+      .depthAttachmentFormat   = {},
+      .stencilAttachmentFormat = {},
     },
-    .CheckVkResultFn = nullptr
+    .Allocator         = nullptr,
+    .CheckVkResultFn   = nullptr,
+    .MinAllocationSize = 0,
   };
 
   ImGui_ImplVulkan_LoadFunctions(vulkanLoaderFunction);

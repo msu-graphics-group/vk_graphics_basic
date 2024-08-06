@@ -50,12 +50,12 @@ void Renderer::drawFrame(bool draw_gui)
   etna::end_frame();
 
   if (!nextSwapchainImage)
-    recreateSwapchain();
+    recreateSwapchain(resolutionProvider());
 }
 
-void Renderer::drawFrame(float a_time)
+void Renderer::drawFrame(float time)
 {
-  updateUniformBuffer(a_time);
+  updateUniformBuffer(time);
   DrawGui();
   drawFrame(true);
 }

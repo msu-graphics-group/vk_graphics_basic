@@ -46,42 +46,43 @@ void Renderer::initVulkan(std::span<const char*> instance_extensions)
   m_pScnMgr = std::make_shared<SceneManager>();
 }
 
-void Renderer::initPresentation(vk::UniqueSurfaceKHR a_surface, etna::ResolutionProvider a_res_provider)
+void Renderer::initPresentation(vk::UniqueSurfaceKHR a_surface, ResolutionProvider res_provider)
 {
+  resolutionProvider = std::move(res_provider);
   commandManager = m_context->createPerFrameCmdMgr();
 
   window = m_context->createWindow(etna::Window::CreateInfo{
-    .surface            = std::move(a_surface),
-    .resolutionProvider = std::move(a_res_provider),
+    .surface = std::move(a_surface),
   });
 
-  if (auto maybeResolution = window->recreateSwapchain())
-  {
-    auto [w, h] = *maybeResolution;
-    resolution = {w, h};
-  }
+  auto [w, h] = window->recreateSwapchain(etna::Window::DesiredProperties{
+    .resolution = {resolution.x, resolution.y},
+    .vsync = true,
+  });
+  resolution = {w, h};
 
   m_pGUIRender = std::make_unique<ImGuiRender>(window->getCurrentFormat());
 
   allocateResources();
 }
 
-void Renderer::recreateSwapchain()
+void Renderer::recreateSwapchain(glm::uvec2 res)
 {
   ETNA_CHECK_VK_RESULT(m_context->getDevice().waitIdle());
 
-  // If we are minimized, we will simply spin and wait for un-minimization
-  if (auto maybeRes = window->recreateSwapchain())
-  {
-    auto[w, h] = *maybeRes;
-    resolution = {w, h};
-  }
+  auto[w, h] = window->recreateSwapchain(etna::Window::DesiredProperties{
+      .resolution = {res.x, res.y},
+      .vsync = true,
+    });
+  resolution = {w, h};
 
   // Most resources depend on the current resolution, so we recreate them.
   allocateResources();
 
-  // NOTE: if swapchain changes format (that can happen on android), we will die here.
-  // not that we actually care about android or anything.
+  // NOTE: if swapchain changes format (that can happen on android),
+  // we will probably die, as we render to swapchain in a bunch of places
+  // but don't recreate pipelines which use it's format.
+  // Can be fixed, but we don't care about android for now.
 }
 
 Renderer::~Renderer()

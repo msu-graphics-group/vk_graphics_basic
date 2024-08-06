@@ -6,7 +6,15 @@
 App::App()
 {
   glm::uvec2 initialRes = {1280, 720};
-  mainWindow = windowing.createWindow(initialRes);
+  mainWindow = windowing.createWindow(initialRes,
+    [this](){
+      // NOTE: this is only called when the window is being resized.
+      renderer->updateView(mainCam, shadowCam);
+      renderer->drawFrame(static_cast<float>(windowing.getTime()));
+    },
+    [this](glm::uvec2 res){
+      renderer->recreateSwapchain(res);
+    });
 
   renderer.reset(new Renderer(initialRes));
 
@@ -15,9 +23,8 @@ App::App()
 
   auto surface = mainWindow->createVkSurface(etna::get_context().getInstance());
 
-  renderer->initPresentation(std::move(surface), [window = mainWindow.get()]() -> vk::Extent2D {
-      auto res = window->getResolution();
-      return {res.x, res.y};
+  renderer->initPresentation(std::move(surface), [window = mainWindow.get()]() {
+      return window->getResolution();
   });
 
   // TODO: this is bad design, this initialization is dependent on the current ImGui context, but we pass
@@ -35,18 +42,19 @@ void App::run()
   double lastTime = windowing.getTime();
   while (!mainWindow->isBeingClosed())
   {
-    const double thisTime = windowing.getTime();
-    const float diffTime = static_cast<float>(thisTime - lastTime);
-    lastTime = thisTime;
+    const double currTime = windowing.getTime();
+    const float diffTime = static_cast<float>(currTime - lastTime);
+    lastTime = currTime;
 
     windowing.poll();
 
     processInput(diffTime);
 
     renderer->debugInput(mainWindow->keyboard);
+
     renderer->updateView(mainCam, shadowCam);
 
-    renderer->drawFrame(diffTime);
+    renderer->drawFrame(static_cast<float>(currTime));
   }
 }
 

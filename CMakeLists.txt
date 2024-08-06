@@ -10,6 +10,9 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
     )
 endif()
 
+include("get_cpm.cmake")
+include("thirdparty.cmake")
+
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -19,10 +22,6 @@ if (MSVC)
 else()
   add_compile_options(-Wall -Wextra)
 endif()
-
-
-include("get_cpm.cmake")
-include("thirdparty.cmake")
 
 # TODO: remove!! Legacy!!
 set(VK_UTILS_SRC

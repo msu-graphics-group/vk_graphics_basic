@@ -35,11 +35,11 @@ void Renderer::updateView(const Camera &main, const Camera &shadow)
   }
 }
 
-void Renderer::updateUniformBuffer(float a_time)
+void Renderer::updateUniformBuffer(float time)
 {
   m_uniforms.lightMatrix = m_lightMatrix;
   m_uniforms.lightPos    = lightPos;
-  m_uniforms.time        = a_time;
+  m_uniforms.time        = time;
 
   memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));
 }

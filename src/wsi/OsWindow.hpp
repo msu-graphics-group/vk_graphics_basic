@@ -1,6 +1,7 @@
 #pragma once
 
 #include <etna/Vulkan.hpp>
+#include <function2/function2.hpp>
 
 #include "wsi/Keyboard.hpp"
 #include "wsi/Mouse.hpp"
@@ -9,11 +10,20 @@
 struct GLFWwindow;
 class OsWindowingManager;
 
+// On windows, polling blocks when a window is being resized,
+// so a refresh/redraw/repaint callback must be used to retain
+// interactivity.
+using OsWindowRefreshCb = fu2::unique_function<void()>;
+
+// OS-driven resize callbacks must be used on wayland to get
+// proper resizing of windows, vulkan-only tools do not suffice.
+using OsWindowResizeCb = fu2::unique_function<void(glm::uvec2)>;
+
 class OsWindow
 {
   friend class OsWindowingManager;
 
-  OsWindow(OsWindowingManager* mgr, GLFWwindow* window) : owner{mgr}, impl{window} {}
+  OsWindow() {}
 
 public:
   OsWindow(const OsWindow&) = delete;
@@ -43,7 +53,9 @@ public:
   Mouse mouse;
 
 private:
-  OsWindowingManager* owner;
-  GLFWwindow* impl;
+  OsWindowingManager* owner = nullptr;
+  GLFWwindow* impl = nullptr;
+  OsWindowResizeCb onResize;
+  OsWindowRefreshCb onRefresh;
   bool mouseWasCaptured = false;
 };

@@ -17,6 +17,26 @@ void OsWindowingManager::onMouseScrollCb(GLFWwindow* window, double xoffset, dou
     it->second->mouse.scrollDelta = {xoffset, yoffset};
 }
 
+void OsWindowingManager::onWindowClosedCb(GLFWwindow* window)
+{
+  instance->windows.erase(window);
+}
+
+void OsWindowingManager::onWindowRefreshCb(GLFWwindow* window)
+{
+  if (auto it = instance->windows.find(window); it != instance->windows.end())
+    if (it->second->onRefresh)
+      it->second->onRefresh();
+}
+
+void OsWindowingManager::onWindowSizeCb(GLFWwindow* window, int width, int height)
+{
+  if (auto it = instance->windows.find(window); it != instance->windows.end())
+    if (it->second->onResize)
+      it->second->onResize({static_cast<glm::uint>(width),
+        static_cast<glm::uint>(height)});
+}
+
 OsWindowingManager::OsWindowingManager()
 {
   ETNA_ASSERT(glfwInit() == GLFW_TRUE);
@@ -46,7 +66,8 @@ double OsWindowingManager::getTime()
   return glfwGetTime();
 }
 
-std::unique_ptr<OsWindow> OsWindowingManager::createWindow(glm::uvec2 resolution)
+std::unique_ptr<OsWindow> OsWindowingManager::createWindow(glm::uvec2 resolution,
+  OsWindowRefreshCb refreshCb, OsWindowResizeCb resizeCb)
 {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -54,8 +75,16 @@ std::unique_ptr<OsWindow> OsWindowingManager::createWindow(glm::uvec2 resolution
   auto glfwWindow = glfwCreateWindow(static_cast<int>(resolution.x), static_cast<int>(resolution.y), "Sample", nullptr, nullptr);
 
   glfwSetScrollCallback(glfwWindow, &onMouseScrollCb);
+  glfwSetWindowCloseCallback(glfwWindow, &onWindowClosedCb);
+  glfwSetWindowRefreshCallback(glfwWindow, &onWindowRefreshCb);
+  glfwSetWindowSizeCallback(glfwWindow, &onWindowSizeCb);
 
-  auto result = std::unique_ptr<OsWindow>{new OsWindow(this, glfwWindow)};
+  auto result = std::unique_ptr<OsWindow>{new OsWindow};
+  result->owner = this;
+  result->impl = glfwWindow;
+  result->onRefresh = std::move(refreshCb);
+  result->onResize = std::move(resizeCb);
+
   windows.emplace(glfwWindow, result.get());
   return result;
 }

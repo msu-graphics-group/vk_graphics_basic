@@ -10,9 +10,12 @@
 #include <etna/GraphicsPipeline.hpp>
 #include <etna/GlobalContext.hpp>
 #include <etna/Sampler.hpp>
+#include <glm/fwd.hpp>
 
 
 class ImGuiRender;
+
+using ResolutionProvider = fu2::unique_function<glm::uvec2() const>;
 
 class Renderer
 {
@@ -21,7 +24,7 @@ public:
   ~Renderer();
 
   void initVulkan(std::span<const char*> instance_extensions);
-  void initPresentation(vk::UniqueSurfaceKHR surface, etna::ResolutionProvider res_provider);
+  void initPresentation(vk::UniqueSurfaceKHR surface, ResolutionProvider res_provider);
 
   void debugInput(const Keyboard& kb);
 
@@ -31,6 +34,8 @@ public:
 
   void loadScene(const char *path, bool transpose_inst_matrices);
 
+  void recreateSwapchain(glm::uvec2 res);
+
 private:
   etna::GlobalContext* m_context;
   etna::Image mainViewDepth;
@@ -38,6 +43,7 @@ private:
   etna::Sampler defaultSampler;
   etna::Buffer constants;
 
+  ResolutionProvider resolutionProvider;
   std::unique_ptr<etna::Window> window;
   std::unique_ptr<etna::PerFrameCmdMgr> commandManager;
 
@@ -84,7 +90,6 @@ private:
   void loadShaders();
 
   void setupPipelines();
-  void recreateSwapchain();
 
   void updateUniformBuffer(float a_time);
 
