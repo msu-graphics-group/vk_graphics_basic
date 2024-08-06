@@ -5,8 +5,9 @@
 
 #include <geom/vk_mesh.h>
 #include "LiteMath.h"
-#include <vk_copy.h>
 #include <etna/VertexInput.hpp>
+#include <etna/OneShotCmdMgr.hpp>
+#include <etna/BlockingTransferHelper.hpp>
 
 #include "../loader_utils/hydraxml.h"
 
@@ -21,9 +22,7 @@ struct InstanceInfo
 
 struct SceneManager
 {
-  SceneManager(VkDevice a_device, VkPhysicalDevice a_physDevice, uint32_t a_transferQId, uint32_t a_graphicsQId,
-    bool debug = false);
-  ~SceneManager() { DestroyScene(); }
+  SceneManager();
 
   bool LoadSceneXML(const std::string &scenePath, bool transpose = true);
   void LoadSingleTriangle();
@@ -36,14 +35,11 @@ struct SceneManager
   void MarkInstance(uint32_t instId);
   void UnmarkInstance(uint32_t instId);
 
-  void DestroyScene();
-
   etna::VertexByteStreamFormatDescription GetVertexStreamDescription();
 
-  VkBuffer GetVertexBuffer() const { return m_geoVertBuf; }
-  VkBuffer GetIndexBuffer()  const { return m_geoIdxBuf; }
-  VkBuffer GetMeshInfoBuffer()  const { return m_meshInfoBuf; }
-  std::shared_ptr<vk_utils::ICopyEngine> GetCopyHelper() { return  m_pCopyHelper; }
+  vk::Buffer GetVertexBuffer() const { return geoVertBuf.get(); }
+  vk::Buffer GetIndexBuffer()  const { return geoIdxBuf.get(); }
+  vk::Buffer GetMeshInfoBuffer()  const { return meshInfoBuf.get(); }
 
   uint32_t MeshesNum() const {return (uint32_t)m_meshInfos.size();}
   uint32_t InstancesNum() const {return (uint32_t)m_instanceInfos.size();}
@@ -73,20 +69,14 @@ private:
   uint32_t m_totalVertices = 0u;
   uint32_t m_totalIndices  = 0u;
 
-  VkBuffer m_geoVertBuf = VK_NULL_HANDLE;
-  VkBuffer m_geoIdxBuf  = VK_NULL_HANDLE;
-  VkBuffer m_meshInfoBuf  = VK_NULL_HANDLE;
-  VkBuffer m_instanceMatricesBuffer = VK_NULL_HANDLE;
-  VkDeviceMemory m_geoMemAlloc = VK_NULL_HANDLE;
+  etna::Buffer geoVertBuf;
+  etna::Buffer geoIdxBuf;
+  etna::Buffer meshInfoBuf;
 
   VkDevice m_device = VK_NULL_HANDLE;
-  VkPhysicalDevice m_physDevice = VK_NULL_HANDLE;
-  uint32_t m_transferQId = UINT32_MAX;
-  VkQueue m_transferQ = VK_NULL_HANDLE;
 
-  uint32_t m_graphicsQId = UINT32_MAX;
-  VkQueue m_graphicsQ = VK_NULL_HANDLE;
-  std::shared_ptr<vk_utils::ICopyEngine> m_pCopyHelper;
+  std::unique_ptr<etna::OneShotCmdMgr> oneShotCommands;
+  std::unique_ptr<etna::BlockingTransferHelper> transferHelper;
 
   bool m_debug = false;
   // for debugging

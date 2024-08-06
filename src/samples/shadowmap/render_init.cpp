@@ -43,9 +43,7 @@ void Renderer::initVulkan(std::span<const char*> instance_extensions)
 
   m_context = &etna::get_context();
 
-  m_pScnMgr = std::make_shared<SceneManager>(
-    m_context->getDevice(), m_context->getPhysicalDevice(),
-    m_context->getQueueFamilyIdx(), m_context->getQueueFamilyIdx(), false);
+  m_pScnMgr = std::make_shared<SceneManager>();
 }
 
 void Renderer::initPresentation(vk::UniqueSurfaceKHR a_surface, etna::ResolutionProvider a_res_provider)

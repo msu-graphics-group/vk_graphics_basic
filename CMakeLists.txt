@@ -26,16 +26,8 @@ include("thirdparty.cmake")
 
 # TODO: remove!! Legacy!!
 set(VK_UTILS_SRC
-  ${CMAKE_SOURCE_DIR}/external/vkutils/vk_copy.cpp
-  ${CMAKE_SOURCE_DIR}/external/vkutils/vk_utils.cpp
-  ${CMAKE_SOURCE_DIR}/external/vkutils/vk_buffers.cpp
-  ${CMAKE_SOURCE_DIR}/external/vkutils/vk_descriptor_sets.cpp
-  ${CMAKE_SOURCE_DIR}/external/vkutils/vk_images.cpp
-  ${CMAKE_SOURCE_DIR}/external/vkutils/vk_swapchain.cpp
-  ${CMAKE_SOURCE_DIR}/external/vkutils/vk_pipeline.cpp
   ${CMAKE_SOURCE_DIR}/external/vkutils/geom/vk_mesh.cpp
-  ${CMAKE_SOURCE_DIR}/external/vkutils/geom/cmesh.cpp
-  ${CMAKE_SOURCE_DIR}/external/vkutils/vk_fbuf_attachment.cpp)
+  ${CMAKE_SOURCE_DIR}/external/vkutils/geom/cmesh.cpp)
 
 set(SCENE_LOADER_SRC
   ${CMAKE_SOURCE_DIR}/src/loader_utils/pugixml.cpp
