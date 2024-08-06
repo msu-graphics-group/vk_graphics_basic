@@ -13,3 +13,7 @@ set(RENDER_SOURCE
 add_executable(shadowmap main.cpp ${VK_UTILS_SRC} ${SCENE_LOADER_SRC} ${RENDER_SOURCE})
 
 target_link_libraries(shadowmap PRIVATE glfw etna glm::glm wsi DearImGui)
+
+if (MSVC)
+set_target_properties(shadowmap PROPERTIES LINK_FLAGS "/PROFILE")
+endif()

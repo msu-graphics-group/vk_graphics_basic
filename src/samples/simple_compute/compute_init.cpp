@@ -3,7 +3,10 @@
 #include <etna/Etna.hpp>
 
 
-SimpleCompute::SimpleCompute(uint32_t a_length) : m_length(a_length) {}
+SimpleCompute::SimpleCompute(std::uint32_t len)
+  : length(len)
+{
+}
 
 void SimpleCompute::Init()
 {
@@ -24,28 +27,12 @@ void SimpleCompute::Init()
     }
   );
 
-  m_context = &etna::get_context();
+  context = &etna::get_context();
 
+  cmdMgr = context->createOneShotCmdMgr();
 
-  {
-    vk::CommandPoolCreateInfo info{
-      .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-      .queueFamilyIndex = m_context->getQueueFamilyIdx(),
-    };
-    m_commandPool = etna::unwrap_vk_result(m_context->getDevice().createCommandPoolUnique(info));
-  }
-
-  {
-    vk::CommandBufferAllocateInfo info{
-      .commandPool = m_commandPool.get(),
-      .level = vk::CommandBufferLevel::ePrimary,
-      .commandBufferCount = 1,
-    };
-    m_cmdBufferCompute = std::move(etna::unwrap_vk_result(m_context->getDevice().allocateCommandBuffersUnique(info))[0]);
-  }
-
-  m_pCopyHelper = std::make_unique<vk_utils::SimpleCopyHelper>(m_context->getPhysicalDevice(),
-    m_context->getDevice(), m_context->getQueue(), m_context->getQueueFamilyIdx(), 8 * 1024 * 1024);
-
-  m_fence = etna::unwrap_vk_result(m_context->getDevice().createFenceUnique(vk::FenceCreateInfo{}));
+  transferHelper = std::make_unique<etna::BlockingTransferHelper>(
+      etna::BlockingTransferHelper::CreateInfo{
+        .stagingSize = static_cast<std::uint32_t>(length * sizeof(float)),
+      });
 }

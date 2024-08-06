@@ -50,7 +50,7 @@ void Renderer::initVulkan(std::span<const char*> instance_extensions)
 
 void Renderer::initPresentation(vk::UniqueSurfaceKHR a_surface, etna::ResolutionProvider a_res_provider)
 {
-  commandManager = m_context->createCommandManager();
+  commandManager = m_context->createPerFrameCmdMgr();
 
   window = m_context->createWindow(etna::Window::CreateInfo{
     .surface            = std::move(a_surface),

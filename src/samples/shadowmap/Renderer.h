@@ -39,7 +39,7 @@ private:
   etna::Buffer constants;
 
   std::unique_ptr<etna::Window> window;
-  std::unique_ptr<etna::CommandManager> commandManager;
+  std::unique_ptr<etna::PerFrameCmdMgr> commandManager;
 
   struct
   {

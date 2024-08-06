@@ -5,35 +5,36 @@
 
 #include <etna/GlobalContext.hpp>
 #include <etna/ComputePipeline.hpp>
-#include <vk_copy.h>
+#include <etna/OneShotCmdMgr.hpp>
+#include <etna/BlockingTransferHelper.hpp>
 
 
 class SimpleCompute
 {
 public:
-  SimpleCompute(uint32_t a_length);
+  SimpleCompute(std::uint32_t len);
 
   void Init();
   void Execute();
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 private:
-  etna::GlobalContext *m_context;
+  etna::GlobalContext *context;
 
-  vk::UniqueCommandPool m_commandPool;
-  vk::UniqueCommandBuffer m_cmdBufferCompute;
-  vk::UniqueFence m_fence;
+  std::unique_ptr<etna::OneShotCmdMgr> cmdMgr;
+  std::unique_ptr<etna::BlockingTransferHelper> transferHelper;
 
-  std::uint32_t m_length;
+  std::uint32_t length;
 
-  std::unique_ptr<vk_utils::ICopyEngine> m_pCopyHelper;
+  etna::ComputePipeline pipeline;
 
-  etna::ComputePipeline m_pipeline;
-
-  etna::Buffer m_A, m_B, m_sum;
+  etna::Buffer bufA;
+  etna::Buffer bufB;
+  etna::Buffer bufResult;
 
   void Setup();
-  void BuildCommandBuffer(vk::CommandBuffer a_cmdBuff);
+  void BuildCommandBuffer(vk::CommandBuffer cmd_buf);
+  void Readback();
 };
 
 

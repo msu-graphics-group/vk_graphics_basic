@@ -1,5 +1,7 @@
 #include "simple_compute.h"
 
+#include <fmt/ranges.h> // NOTE: vector and co are only printable with this included
+
 #include <etna/Etna.hpp>
 #include <etna/PipelineManager.hpp>
 
@@ -10,25 +12,25 @@ void SimpleCompute::Setup()
 
   //// Buffer creation
 
-  m_A = m_context->createBuffer(etna::Buffer::CreateInfo
+  bufA = context->createBuffer(etna::Buffer::CreateInfo
     {
-      .size = sizeof(float) * m_length,
+      .size = sizeof(float) * length,
       .bufferUsage = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
-      .name = "m_A"
+      .name = "A"
     }
   );
 
-  m_B = m_context->createBuffer(etna::Buffer::CreateInfo
+  bufB = context->createBuffer(etna::Buffer::CreateInfo
     {
-      .size = sizeof(float) * m_length,
+      .size = sizeof(float) * length,
       .bufferUsage = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
-      .name = "m_B"
+      .name = "B"
     }
   );
 
-  m_sum = m_context->createBuffer(etna::Buffer::CreateInfo
+  bufResult = context->createBuffer(etna::Buffer::CreateInfo
     {
-      .size = sizeof(float) * m_length,
+      .size = sizeof(float) * length,
       .bufferUsage = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferSrc,
       .name = "m_sum"
     }
@@ -36,48 +38,57 @@ void SimpleCompute::Setup()
 
   //// Filling the buffers
 
-  std::vector<float> values(m_length);
-  for (uint32_t i = 0; i < values.size(); ++i) {
-    values[i] = (float)i;
+  {
+    std::vector<float> values(length);
+    for (uint32_t i = 0; i < values.size(); ++i) {
+      values[i] = (float)i;
+    }
+    transferHelper->uploadBuffer<float>(*cmdMgr, bufA, 0, values);
   }
-  m_pCopyHelper->UpdateBuffer(m_A.get(), 0, values.data(), sizeof(float) * values.size());
 
-  for (uint32_t i = 0; i < values.size(); ++i) {
-    values[i] = (float)i * i;
+  {
+    std::vector<float> values(length);
+    for (uint32_t i = 0; i < values.size(); ++i) {
+      values[i] = (float)i * i;
+    }
+    transferHelper->uploadBuffer<float>(*cmdMgr, bufB, 0, values);
   }
-  m_pCopyHelper->UpdateBuffer(m_B.get(), 0, values.data(), sizeof(float) * values.size());
-
   //// Compute pipeline creation
-  auto &pipelineManager = etna::get_context().getPipelineManager();
-  m_pipeline = pipelineManager.createComputePipeline("simple_compute", {});
+  pipeline = context->getPipelineManager().createComputePipeline("simple_compute", {});
 }
 
-void SimpleCompute::BuildCommandBuffer(vk::CommandBuffer a_cmdBuff)
+void SimpleCompute::BuildCommandBuffer(vk::CommandBuffer cmd_buf)
 {
-  a_cmdBuff.reset({});
-
-  ETNA_CHECK_VK_RESULT(a_cmdBuff.begin(vk::CommandBufferBeginInfo{}));
+  ETNA_CHECK_VK_RESULT(cmd_buf.begin(vk::CommandBufferBeginInfo{}));
 
   auto simpleComputeInfo = etna::get_shader_program("simple_compute");
 
-  auto set = etna::create_descriptor_set(simpleComputeInfo.getDescriptorLayoutId(0), a_cmdBuff,
+  auto set = etna::create_descriptor_set(simpleComputeInfo.getDescriptorLayoutId(0), cmd_buf,
     {
-      etna::Binding {0, m_A.genBinding()},
-      etna::Binding {1, m_B.genBinding()},
-      etna::Binding {2, m_sum.genBinding()},
+      etna::Binding {0, bufA.genBinding()},
+      etna::Binding {1, bufB.genBinding()},
+      etna::Binding {2, bufResult.genBinding()},
     }
   );
 
   vk::DescriptorSet vkSet = set.getVkSet();
 
-  a_cmdBuff.bindPipeline(vk::PipelineBindPoint::eCompute, m_pipeline.getVkPipeline());
-  a_cmdBuff.bindDescriptorSets(vk::PipelineBindPoint::eCompute, m_pipeline.getVkPipelineLayout(), 0, 1, &vkSet, 0, NULL);
+  cmd_buf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline.getVkPipeline());
+  cmd_buf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipeline.getVkPipelineLayout(), 0, 1, &vkSet, 0, NULL);
 
-  a_cmdBuff.pushConstants(m_pipeline.getVkPipelineLayout(), vk::ShaderStageFlagBits::eCompute, 0, sizeof(m_length), &m_length);
+  cmd_buf.pushConstants(pipeline.getVkPipelineLayout(), vk::ShaderStageFlagBits::eCompute, 0, sizeof(length), &length);
 
-  etna::flush_barriers(a_cmdBuff);
+  etna::flush_barriers(cmd_buf);
 
-  a_cmdBuff.dispatch(1, 1, 1);
+  cmd_buf.dispatch(1, 1, 1);
 
-  ETNA_CHECK_VK_RESULT(a_cmdBuff.end());
+  ETNA_CHECK_VK_RESULT(cmd_buf.end());
+}
+
+void SimpleCompute::Readback()
+{
+  std::vector<float> values(length);
+  transferHelper->readbackBuffer<float>(*cmdMgr, values, bufResult, 0);
+
+  spdlog::info("Result on cpu:\n{}", values);
 }
