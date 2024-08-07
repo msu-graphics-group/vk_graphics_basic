@@ -50,7 +50,13 @@ void Renderer::drawFrame(bool draw_gui)
   etna::end_frame();
 
   if (!nextSwapchainImage)
-    recreateSwapchain(resolutionProvider());
+  {
+    auto res = resolutionProvider();
+    // On windows, we get 0,0 while the window is minimized and
+    // must skip frames until the window is un-minimized again
+    if (res.x != 0 && res.y != 0)
+      recreateSwapchain(res);
+  }
 }
 
 void Renderer::drawFrame(float time)

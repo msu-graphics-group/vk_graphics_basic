@@ -13,6 +13,9 @@ App::App()
       renderer->drawFrame(static_cast<float>(windowing.getTime()));
     },
     [this](glm::uvec2 res){
+      if (res.x == 0 || res.y == 0)
+        return;
+
       renderer->recreateSwapchain(res);
     });
 
