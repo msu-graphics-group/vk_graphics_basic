@@ -17,8 +17,7 @@ void Renderer::updateView(const Camera &main, const Camera &shadow)
 
   {
     const float aspect = float(resolution.x) / float(resolution.y);
-    const auto mProj = glm::perspectiveLH_ZO(main.fov, aspect, main.zNear, main.zFar);
-    m_worldViewProj = mFlipY * mFlipX * mProj * main.viewTm();
+    m_worldViewProj = mFlipY * mFlipX * main.projTm(aspect) * main.viewTm();
   }
 
   ///// calc light matrix
