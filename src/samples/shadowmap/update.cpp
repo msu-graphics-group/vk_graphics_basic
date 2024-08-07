@@ -45,16 +45,12 @@ void Renderer::updateUniformBuffer(float time)
 
 void Renderer::debugInput(const Keyboard &kb)
 {
-  // add keyboard controls here
-  // camera movement is processed separately
-  //
   if(kb[KeyboardKey::kQ] == ButtonState::Falling)
     drawDebugFSQuad = !drawDebugFSQuad;
 
   if(kb[KeyboardKey::kP] == ButtonState::Falling)
     m_light.usePerspectiveM = !m_light.usePerspectiveM;
 
-  // recreate pipeline to reload shaders
   if(kb[KeyboardKey::kB] == ButtonState::Falling)
   {
 #ifdef WIN32
