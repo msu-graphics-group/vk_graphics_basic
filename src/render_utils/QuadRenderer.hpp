@@ -1,14 +1,14 @@
-#ifndef QUAD_RENDERER_H
-#define QUAD_RENDERER_H
+#pragma once
 
-#include <vector>
-#include <string>
 #include <etna/Vulkan.hpp>
-#include "etna/GraphicsPipeline.hpp"
-#include "etna/Image.hpp"
-#include "etna/Sampler.hpp"
+#include <etna/GraphicsPipeline.hpp>
+#include <etna/Image.hpp>
+#include <etna/Sampler.hpp>
 
 
+/**
+ * Simple class for displaying a texture on the screen for debug purposes.
+ */
 class QuadRenderer
 {
 public:
@@ -21,7 +21,7 @@ public:
   QuadRenderer(CreateInfo info);
   ~QuadRenderer() {}
 
-  void RecordCommands(vk::CommandBuffer cmdBuff, vk::Image targetImage, vk::ImageView targetImageView,
+  void render(vk::CommandBuffer cmdBuff, vk::Image targetImage, vk::ImageView targetImageView,
                       const etna::Image &inTex, const etna::Sampler &sampler);
 
 private:
@@ -32,5 +32,3 @@ private:
   QuadRenderer(const QuadRenderer &) = delete;
   QuadRenderer& operator=(const QuadRenderer &) = delete;
 };
-
-#endif // QUAD_RENDERER_H

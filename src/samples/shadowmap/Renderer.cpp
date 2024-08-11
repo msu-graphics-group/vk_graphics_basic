@@ -180,5 +180,5 @@ void Renderer::renderWorld(vk::CommandBuffer cmd_buf, vk::Image target_image, vk
   }
 
   if(drawDebugFSQuad)
-    m_pQuad->RecordCommands(cmd_buf, target_image, target_image_view, shadowMap, defaultSampler);
+    m_pQuad->render(cmd_buf, target_image, target_image_view, shadowMap, defaultSampler);
 }

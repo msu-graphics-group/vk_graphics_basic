@@ -1,16 +1,16 @@
 #pragma once
 
-#include "../../render/quad_renderer.h"
-#include "../../../resources/shaders/common.h"
-#include "utils/Camera.h"
-#include "wsi/Keyboard.hpp"
-#include "scene/SceneManager.hpp"
-
 #include <etna/GraphicsPipeline.hpp>
 #include <etna/GlobalContext.hpp>
 #include <etna/PerFrameCmdMgr.hpp>
 #include <etna/Sampler.hpp>
 #include <glm/fwd.hpp>
+
+#include "wsi/Keyboard.hpp"
+#include "scene/SceneManager.hpp"
+#include "scene/Camera.h"
+#include "render_utils/QuadRenderer.hpp"
+#include "../../../resources/shaders/common.h"
 
 
 class ImGuiRenderer;

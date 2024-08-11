@@ -1,5 +1,6 @@
-set(RENDER_SOURCE
-  ../../render/quad_renderer.cpp
+
+add_executable(shadowmap
+  main.cpp
   Renderer.cpp
   render_init.cpp
   update.cpp
@@ -8,6 +9,5 @@ set(RENDER_SOURCE
   App.cpp
 )
 
-add_executable(shadowmap main.cpp ${VK_UTILS_SRC} ${SCENE_LOADER_SRC} ${RENDER_SOURCE})
-
-target_link_libraries(shadowmap PRIVATE glfw etna glm::glm wsi gui scene)
+target_link_libraries(shadowmap PRIVATE glfw etna glm::glm
+  wsi gui scene render_utils)

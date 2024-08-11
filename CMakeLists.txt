@@ -41,6 +41,7 @@ add_subdirectory(../etna etna)
 add_subdirectory(src/wsi)
 add_subdirectory(src/scene)
 add_subdirectory(src/gui)
+add_subdirectory(src/render_utils)
 
 add_subdirectory(src/samples/shadowmap)
 add_subdirectory(src/samples/simple_compute)
