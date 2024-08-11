@@ -3,12 +3,7 @@
 #include <etna/Etna.hpp>
 
 
-SimpleCompute::SimpleCompute(std::uint32_t len)
-  : length(len)
-{
-}
-
-void SimpleCompute::Init()
+void SimpleCompute::init()
 {
   std::vector<const char*> instanceExtensions = {};
 

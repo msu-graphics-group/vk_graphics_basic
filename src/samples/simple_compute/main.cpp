@@ -3,13 +3,11 @@
 
 int main()
 {
-  constexpr int LENGTH = 10;
-
   {
-    SimpleCompute app(LENGTH);
+    SimpleCompute app;
 
-    app.Init();
-    app.Execute();
+    app.init();
+    app.execute();
   }
 
   if (etna::is_initilized())

@@ -5,8 +5,12 @@
 #include <etna/Etna.hpp>
 #include <etna/PipelineManager.hpp>
 
+SimpleCompute::SimpleCompute()
+  : length{16}
+{
+}
 
-void SimpleCompute::Setup()
+void SimpleCompute::setup()
 {
   etna::create_program("simple_compute", {VK_GRAPHICS_BASIC_ROOT"/resources/shaders/simple.comp.spv"});
 
@@ -57,7 +61,7 @@ void SimpleCompute::Setup()
   pipeline = context->getPipelineManager().createComputePipeline("simple_compute", {});
 }
 
-void SimpleCompute::BuildCommandBuffer(vk::CommandBuffer cmd_buf)
+void SimpleCompute::buildCommandBuffer(vk::CommandBuffer cmd_buf)
 {
   ETNA_CHECK_VK_RESULT(cmd_buf.begin(vk::CommandBufferBeginInfo{}));
 
@@ -85,7 +89,7 @@ void SimpleCompute::BuildCommandBuffer(vk::CommandBuffer cmd_buf)
   ETNA_CHECK_VK_RESULT(cmd_buf.end());
 }
 
-void SimpleCompute::Readback()
+void SimpleCompute::readback()
 {
   std::vector<float> values(length);
   transferHelper->readbackBuffer<float>(*cmdMgr, values, bufResult, 0);

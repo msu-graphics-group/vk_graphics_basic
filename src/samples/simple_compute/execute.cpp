@@ -3,15 +3,15 @@
 #include <etna/Etna.hpp>
 
 
-void SimpleCompute::Execute()
+void SimpleCompute::execute()
 {
-  Setup();
+  setup();
 
   auto cmdBuf = cmdMgr->start();
 
-  BuildCommandBuffer(cmdBuf);
+  buildCommandBuffer(cmdBuf);
 
   cmdMgr->submitAndWait(std::move(cmdBuf));
 
-  Readback();
+  readback();
 }

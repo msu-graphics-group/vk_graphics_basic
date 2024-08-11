@@ -12,10 +12,10 @@
 class SimpleCompute
 {
 public:
-  SimpleCompute(std::uint32_t len);
+  SimpleCompute();
 
-  void Init();
-  void Execute();
+  void init();
+  void execute();
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 private:
@@ -32,9 +32,9 @@ private:
   etna::Buffer bufB;
   etna::Buffer bufResult;
 
-  void Setup();
-  void BuildCommandBuffer(vk::CommandBuffer cmd_buf);
-  void Readback();
+  void setup();
+  void buildCommandBuffer(vk::CommandBuffer cmd_buf);
+  void readback();
 };
 
 
