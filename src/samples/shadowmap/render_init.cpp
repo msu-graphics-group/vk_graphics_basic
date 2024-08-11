@@ -2,7 +2,7 @@
 
 #include <etna/Etna.hpp>
 
-#include "gui/ImGuiRenderer.h"
+#include "gui/ImGuiRenderer.hpp"
 
 
 Renderer::Renderer(glm::uvec2 res) : resolution{res}

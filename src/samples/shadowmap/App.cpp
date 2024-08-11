@@ -1,6 +1,6 @@
 #include "App.hpp"
 
-#include "gui/ImGuiRenderer.h"
+#include "gui/ImGuiRenderer.hpp"
 
 
 App::App()

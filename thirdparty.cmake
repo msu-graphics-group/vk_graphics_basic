@@ -32,7 +32,7 @@ if (ImGui_ADDED)
 
     target_link_libraries(DearImGui Vulkan::Vulkan)
     target_link_libraries(DearImGui glfw)
-    target_compile_definitions(DearImGui PUBLIC IMGUI_USER_CONFIG="${CMAKE_CURRENT_SOURCE_DIR}/src/render/my_imgui_config.h")
+    target_compile_definitions(DearImGui PUBLIC IMGUI_USER_CONFIG="${CMAKE_CURRENT_SOURCE_DIR}/src/gui/ImGuiConfig.hpp")
 endif ()
 
 

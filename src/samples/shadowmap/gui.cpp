@@ -2,7 +2,7 @@
 
 #include <imgui.h>
 
-#include "gui/ImGuiRenderer.h"
+#include "gui/ImGuiRenderer.hpp"
 
 
 void Renderer::DrawGui()

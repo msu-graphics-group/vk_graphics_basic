@@ -3,7 +3,7 @@
 #include <etna/Etna.hpp>
 #include <imgui.h>
 
-#include "gui/ImGuiRenderer.h"
+#include "gui/ImGuiRenderer.hpp"
 
 
 void Renderer::drawFrame(bool draw_gui)
