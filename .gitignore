@@ -3,3 +3,5 @@ build
 external
 .vs
 .cache
+.vscode
+CMakeSettings.json
