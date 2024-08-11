@@ -22,7 +22,7 @@ private:
   std::unique_ptr<OsWindow> mainWindow;
 
   float camMoveSpeed = 1;
-  float camRotateSpeed = 0.1;
+  float camRotateSpeed = 0.1f;
   float zoomSensitivity = 0.2f;
   Camera mainCam;
   Camera shadowCam;

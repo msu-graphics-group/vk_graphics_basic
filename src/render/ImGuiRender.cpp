@@ -82,7 +82,7 @@ void ImGuiRender::InitImGui(vk::Format a_target_format)
       .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
       .pNext                   = nullptr,
       .viewMask                = 0,
-      .colorAttachmentCount    = targetFormats.size(),
+      .colorAttachmentCount    = static_cast<std::uint32_t>(targetFormats.size()),
       .pColorAttachmentFormats = targetFormats.data(),
       .depthAttachmentFormat   = {},
       .stencilAttachmentFormat = {},

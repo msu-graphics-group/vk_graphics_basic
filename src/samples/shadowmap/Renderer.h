@@ -1,14 +1,14 @@
 #pragma once
 
-#include "../../render/scene_mgr.h"
 #include "../../render/quad_renderer.h"
 #include "../../../resources/shaders/common.h"
-#include <geom/vk_mesh.h>
 #include "utils/Camera.h"
 #include "wsi/Keyboard.hpp"
+#include "scene/SceneManager.hpp"
 
 #include <etna/GraphicsPipeline.hpp>
 #include <etna/GlobalContext.hpp>
+#include <etna/PerFrameCmdMgr.hpp>
 #include <etna/Sampler.hpp>
 #include <glm/fwd.hpp>
 
@@ -32,7 +32,7 @@ public:
 
   void drawFrame(float dt);
 
-  void loadScene(const char *path, bool transpose_inst_matrices);
+  void loadScene(std::filesystem::path path);
 
   void recreateSwapchain(glm::uvec2 res);
 
@@ -47,7 +47,7 @@ private:
   std::unique_ptr<etna::Window> window;
   std::unique_ptr<etna::PerFrameCmdMgr> commandManager;
 
-  struct
+  struct PushConstants
   {
     glm::mat4x4 projView;
     glm::mat4x4 model;
@@ -67,7 +67,7 @@ private:
 
   vk::PhysicalDeviceFeatures m_enabledDeviceFeatures = {};
 
-  std::shared_ptr<SceneManager> m_pScnMgr;
+  std::unique_ptr<SceneManager> sceneMgr;
   std::unique_ptr<ImGuiRender> m_pGUIRender;
 
   std::unique_ptr<QuadRenderer> m_pQuad;
@@ -76,16 +76,16 @@ private:
 
   struct ShadowMapCam
   {
-    float  radius = 5;              ///!< ignored when usePerspectiveM == true
-    float  lightTargetDist = 20;    ///!< identify depth range
-    bool   usePerspectiveM = true;  ///!< use perspective matrix if true and ortographics otherwise
+    float  radius = 10;
+    float  lightTargetDist = 24;
+    bool   usePerspectiveM = false;
   } m_light;
 
   void drawFrame(bool draw_gui);
 
-  void renderWorld(VkCommandBuffer a_cmdBuff, VkImage a_targetImage, VkImageView a_targetImageView);
+  void renderWorld(vk::CommandBuffer a_cmdBuff, vk::Image a_targetImage, vk::ImageView a_targetImageView);
 
-  void renderScene(VkCommandBuffer a_cmdBuff, const glm::mat4x4& a_wvp, VkPipelineLayout a_pipelineLayout = VK_NULL_HANDLE);
+  void renderScene(vk::CommandBuffer cmd_buf, const glm::mat4x4& glob_tm, vk::PipelineLayout pipeline_layout);
 
   void loadShaders();
 

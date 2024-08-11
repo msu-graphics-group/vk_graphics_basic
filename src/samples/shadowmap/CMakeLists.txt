@@ -1,5 +1,4 @@
 set(RENDER_SOURCE
-  ../../render/scene_mgr.cpp
   ../../render/ImGuiRender.cpp
   ../../render/quad_renderer.cpp
   Renderer.cpp
@@ -12,4 +11,4 @@ set(RENDER_SOURCE
 
 add_executable(shadowmap main.cpp ${VK_UTILS_SRC} ${SCENE_LOADER_SRC} ${RENDER_SOURCE})
 
-target_link_libraries(shadowmap PRIVATE glfw etna glm::glm wsi DearImGui)
+target_link_libraries(shadowmap PRIVATE glfw etna glm::glm wsi DearImGui scene)

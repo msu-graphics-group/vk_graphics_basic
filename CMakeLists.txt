@@ -11,11 +11,23 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
 endif()
 
 include("get_cpm.cmake")
-include("thirdparty.cmake")
-
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# NOTE: uncomment to run with ASAN (works even on windows!)
+# Also note that I couldn't figure out how to make ASAN work on windows with clang & ldd.
+if (false)
+  if (MSVC)
+    add_compile_options("/fsanitize=address")
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+  else()
+    add_compile_options("/fsanitize=address")
+  endif()
+endif()
+
+include("thirdparty.cmake")
+
 
 if (MSVC)
   add_compile_options(/W3)
@@ -23,24 +35,10 @@ else()
   add_compile_options(-Wall -Wextra)
 endif()
 
-# TODO: remove!! Legacy!!
-set(VK_UTILS_SRC
-  ${CMAKE_SOURCE_DIR}/external/vkutils/geom/vk_mesh.cpp
-  ${CMAKE_SOURCE_DIR}/external/vkutils/geom/cmesh.cpp)
-
-set(SCENE_LOADER_SRC
-  ${CMAKE_SOURCE_DIR}/src/loader_utils/pugixml.cpp
-  ${CMAKE_SOURCE_DIR}/src/loader_utils/hydraxml.cpp
-  ${CMAKE_SOURCE_DIR}/src/loader_utils/images.cpp)
-
-
-include_directories(${CMAKE_SOURCE_DIR}/external)
-include_directories(${CMAKE_SOURCE_DIR}/external/vkutils)
-
-
-add_compile_definitions(USE_ETNA VK_GRAPHICS_BASIC_ROOT="${PROJECT_SOURCE_DIR}")
+add_compile_definitions(VK_GRAPHICS_BASIC_ROOT="${PROJECT_SOURCE_DIR}")
 
 add_subdirectory(../etna etna)
 add_subdirectory(src/samples/shadowmap)
 add_subdirectory(src/samples/simple_compute)
 add_subdirectory(src/wsi)
+add_subdirectory(src/scene)

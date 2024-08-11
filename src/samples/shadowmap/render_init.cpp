@@ -43,7 +43,7 @@ void Renderer::initVulkan(std::span<const char*> instance_extensions)
 
   m_context = &etna::get_context();
 
-  m_pScnMgr = std::make_shared<SceneManager>();
+  sceneMgr = std::make_unique<SceneManager>();
 }
 
 void Renderer::initPresentation(vk::UniqueSurfaceKHR a_surface, ResolutionProvider res_provider)

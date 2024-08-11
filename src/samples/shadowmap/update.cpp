@@ -54,11 +54,11 @@ void Renderer::debugInput(const Keyboard &kb)
   if(kb[KeyboardKey::kB] == ButtonState::Falling)
   {
 #ifdef WIN32
-    std::system("cd ../resources/shaders && python compile_shadowmap_shaders.py");
+    std::system("cd " VK_GRAPHICS_BASIC_ROOT "/resources/shaders && python compile_shadowmap_shaders.py");
 #else
-    std::system("cd ../resources/shaders && python3 compile_shadowmap_shaders.py");
+    std::system("cd " VK_GRAPHICS_BASIC_ROOT "/resources/shaders && python3 compile_shadowmap_shaders.py");
 #endif
-
+    ETNA_CHECK_VK_RESULT(m_context->getDevice().waitIdle());
     etna::reload_shaders();
   }
 }

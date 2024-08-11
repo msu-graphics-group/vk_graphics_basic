@@ -41,3 +41,12 @@ CPMAddPackage(
     GITHUB_REPOSITORY g-truc/glm
     GIT_TAG master
 )
+
+CPMAddPackage(
+    NAME tinygltf
+    GITHUB_REPOSITORY syoyo/tinygltf
+    GIT_TAG v2.9.2
+    OPTIONS
+        "TINYGLTF_HEADER_ONLY OFF"
+        "TINYGLTF_INSTALL OFF"
+)

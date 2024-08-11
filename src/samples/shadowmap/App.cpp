@@ -34,10 +34,10 @@ App::App()
   // it implicitly here instead of explicitly. Beware if trying to do something tricky.
   ImGuiRender::enableImGuiForWindow(mainWindow->native());
 
-  shadowCam.lookAt({4, 4, 4}, {0, 0, 0}, {0, 1, 0});
-  mainCam.lookAt({0, 0, 4}, {0, 0, 0}, {0, 1, 0});
+  shadowCam.lookAt({-8, 10, 8}, {0, 0, 0}, {0, 1, 0});
+  mainCam.lookAt({0, 10, 10}, {0, 0, 0}, {0, 1, 0});
 
-  renderer->loadScene(VK_GRAPHICS_BASIC_ROOT "/resources/scenes/043_cornell_normals/statex_00001.xml", false);
+  renderer->loadScene(VK_GRAPHICS_BASIC_ROOT "/resources/scenes/low_poly_dark_town/scene.gltf");
 }
 
 void App::run()
