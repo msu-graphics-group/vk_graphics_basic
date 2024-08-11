@@ -7,7 +7,7 @@
 
 Renderer::Renderer(glm::uvec2 res) : resolution{res}
 {
-  m_uniforms.baseColor = {0.9f, 0.92f, 1.0f};
+  uniformParams.baseColor = {0.9f, 0.92f, 1.0f};
 }
 
 void Renderer::initVulkan(std::span<const char*> instance_extensions)
@@ -33,7 +33,7 @@ void Renderer::initVulkan(std::span<const char*> instance_extensions)
       .deviceExtensions = m_deviceExtensions,
       .features = vk::PhysicalDeviceFeatures2
         {
-          .features = m_enabledDeviceFeatures
+          .features = {}
         },
       // Replace with an index if etna detects your preferred GPU incorrectly
       .physicalDeviceIndexOverride = {},
@@ -41,7 +41,7 @@ void Renderer::initVulkan(std::span<const char*> instance_extensions)
       .numFramesInFlight = 2
     });
 
-  m_context = &etna::get_context();
+  context = &etna::get_context();
 
   sceneMgr = std::make_unique<SceneManager>();
 }
@@ -49,9 +49,9 @@ void Renderer::initVulkan(std::span<const char*> instance_extensions)
 void Renderer::initPresentation(vk::UniqueSurfaceKHR a_surface, ResolutionProvider res_provider)
 {
   resolutionProvider = std::move(res_provider);
-  commandManager = m_context->createPerFrameCmdMgr();
+  commandManager = context->createPerFrameCmdMgr();
 
-  window = m_context->createWindow(etna::Window::CreateInfo{
+  window = context->createWindow(etna::Window::CreateInfo{
     .surface = std::move(a_surface),
   });
 
@@ -61,14 +61,14 @@ void Renderer::initPresentation(vk::UniqueSurfaceKHR a_surface, ResolutionProvid
   });
   resolution = {w, h};
 
-  m_pGUIRender = std::make_unique<ImGuiRenderer>(window->getCurrentFormat());
+  guiRenderer = std::make_unique<ImGuiRenderer>(window->getCurrentFormat());
 
   allocateResources();
 }
 
 void Renderer::recreateSwapchain(glm::uvec2 res)
 {
-  ETNA_CHECK_VK_RESULT(m_context->getDevice().waitIdle());
+  ETNA_CHECK_VK_RESULT(context->getDevice().waitIdle());
 
   auto[w, h] = window->recreateSwapchain(etna::Window::DesiredProperties{
       .resolution = {res.x, res.y},
@@ -87,5 +87,5 @@ void Renderer::recreateSwapchain(glm::uvec2 res)
 
 Renderer::~Renderer()
 {
-  ETNA_CHECK_VK_RESULT(m_context->getDevice().waitIdle());
+  ETNA_CHECK_VK_RESULT(context->getDevice().waitIdle());
 }

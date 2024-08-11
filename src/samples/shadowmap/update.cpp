@@ -17,18 +17,18 @@ void Renderer::updateView(const Camera &main, const Camera &shadow)
 
   {
     const float aspect = float(resolution.x) / float(resolution.y);
-    m_worldViewProj = mFlipY * mFlipX * main.projTm(aspect) * main.viewTm();
+    worldViewProj = mFlipY * mFlipX * main.projTm(aspect) * main.viewTm();
   }
 
   ///// calc light matrix
 
   {
     const auto mProj =
-      m_light.usePerspectiveM ?
-        glm::perspectiveLH_ZO(shadow.fov, 1.0f, 1.0f, m_light.lightTargetDist*2.0f) :
-        glm::orthoLH_ZO(-m_light.radius, +m_light.radius, -m_light.radius, +m_light.radius, 0.0f, m_light.lightTargetDist);
+      lightProps.usePerspectiveM ?
+        glm::perspectiveLH_ZO(shadow.fov, 1.0f, 1.0f, lightProps.lightTargetDist*2.0f) :
+        glm::orthoLH_ZO(-lightProps.radius, +lightProps.radius, -lightProps.radius, +lightProps.radius, 0.0f, lightProps.lightTargetDist);
 
-    m_lightMatrix = mFlipX * mProj * shadow.viewTm();
+    lightMatrix = mFlipX * mProj * shadow.viewTm();
 
     lightPos = shadow.position;
   }
@@ -36,11 +36,11 @@ void Renderer::updateView(const Camera &main, const Camera &shadow)
 
 void Renderer::updateUniformBuffer(float time)
 {
-  m_uniforms.lightMatrix = m_lightMatrix;
-  m_uniforms.lightPos    = lightPos;
-  m_uniforms.time        = time;
+  uniformParams.lightMatrix = lightMatrix;
+  uniformParams.lightPos    = lightPos;
+  uniformParams.time        = time;
 
-  memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));
+  std::memcpy(constants.data(), &uniformParams, sizeof(uniformParams));
 }
 
 void Renderer::debugInput(const Keyboard &kb)
@@ -49,7 +49,7 @@ void Renderer::debugInput(const Keyboard &kb)
     drawDebugFSQuad = !drawDebugFSQuad;
 
   if(kb[KeyboardKey::kP] == ButtonState::Falling)
-    m_light.usePerspectiveM = !m_light.usePerspectiveM;
+    lightProps.usePerspectiveM = !lightProps.usePerspectiveM;
 
   if(kb[KeyboardKey::kB] == ButtonState::Falling)
   {
@@ -58,7 +58,7 @@ void Renderer::debugInput(const Keyboard &kb)
 #else
     std::system("cd " VK_GRAPHICS_BASIC_ROOT "/resources/shaders && python3 compile_shadowmap_shaders.py");
 #endif
-    ETNA_CHECK_VK_RESULT(m_context->getDevice().waitIdle());
+    ETNA_CHECK_VK_RESULT(context->getDevice().waitIdle());
     etna::reload_shaders();
   }
 }

@@ -37,7 +37,7 @@ public:
   void recreateSwapchain(glm::uvec2 res);
 
 private:
-  etna::GlobalContext* m_context;
+  etna::GlobalContext* context;
   etna::Image mainViewDepth;
   etna::Image shadowMap;
   etna::Sampler defaultSampler;
@@ -53,24 +53,21 @@ private:
     glm::mat4x4 model;
   } pushConst2M;
 
-  glm::mat4x4 m_worldViewProj;
-  glm::mat4x4 m_lightMatrix;
+  glm::mat4x4 worldViewProj;
+  glm::mat4x4 lightMatrix;
   glm::vec3 lightPos;
 
-  UniformParams m_uniforms {};
-  void* m_uboMappedMem = nullptr;
+  UniformParams uniformParams {};
 
-  etna::GraphicsPipeline m_basicForwardPipeline {};
-  etna::GraphicsPipeline m_shadowPipeline {};
+  etna::GraphicsPipeline basicForwardPipeline {};
+  etna::GraphicsPipeline shadowPipeline {};
 
   glm::uvec2 resolution;
 
-  vk::PhysicalDeviceFeatures m_enabledDeviceFeatures = {};
-
   std::unique_ptr<SceneManager> sceneMgr;
-  std::unique_ptr<ImGuiRenderer> m_pGUIRender;
+  std::unique_ptr<ImGuiRenderer> guiRenderer;
 
-  std::unique_ptr<QuadRenderer> m_pQuad;
+  std::unique_ptr<QuadRenderer> quadRenderer;
 
   bool drawDebugFSQuad = false;
 
@@ -79,11 +76,11 @@ private:
     float  radius = 10;
     float  lightTargetDist = 24;
     bool   usePerspectiveM = false;
-  } m_light;
+  } lightProps;
 
   void drawFrame(bool draw_gui);
 
-  void renderWorld(vk::CommandBuffer a_cmdBuff, vk::Image a_targetImage, vk::ImageView a_targetImageView);
+  void renderWorld(vk::CommandBuffer cmd_buf, vk::Image target_image, vk::ImageView target_image_view);
 
   void renderScene(vk::CommandBuffer cmd_buf, const glm::mat4x4& glob_tm, vk::PipelineLayout pipeline_layout);
 
@@ -91,7 +88,7 @@ private:
 
   void setupPipelines();
 
-  void updateUniformBuffer(float a_time);
+  void updateUniformBuffer(float time);
 
   void allocateResources();
   void preparePipelines();

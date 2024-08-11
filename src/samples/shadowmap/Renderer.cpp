@@ -11,7 +11,7 @@
 
 void Renderer::allocateResources()
 {
-  mainViewDepth = m_context->createImage(etna::Image::CreateInfo
+  mainViewDepth = context->createImage(etna::Image::CreateInfo
   {
     .extent = vk::Extent3D{resolution.x, resolution.y, 1},
     .name = "main_view_depth",
@@ -19,7 +19,7 @@ void Renderer::allocateResources()
     .imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment
   });
 
-  shadowMap = m_context->createImage(etna::Image::CreateInfo
+  shadowMap = context->createImage(etna::Image::CreateInfo
   {
     .extent = vk::Extent3D{2048, 2048, 1},
     .name = "shadow_map",
@@ -28,7 +28,7 @@ void Renderer::allocateResources()
   });
 
   defaultSampler = etna::Sampler(etna::Sampler::CreateInfo{.name = "default_sampler"});
-  constants = m_context->createBuffer(etna::Buffer::CreateInfo
+  constants = context->createBuffer(etna::Buffer::CreateInfo
   {
     .size = sizeof(UniformParams),
     .bufferUsage = vk::BufferUsageFlagBits::eUniformBuffer,
@@ -36,7 +36,7 @@ void Renderer::allocateResources()
     .name = "constants"
   });
 
-  m_uboMappedMem = constants.map();
+  constants.map();
 }
 
 void Renderer::loadScene(std::filesystem::path path)
@@ -55,7 +55,7 @@ void Renderer::preparePipelines()
 {
   // create full screen quad for debug purposes
   //
-  m_pQuad = std::make_unique<QuadRenderer>(QuadRenderer::CreateInfo{
+  quadRenderer = std::make_unique<QuadRenderer>(QuadRenderer::CreateInfo{
       .format = window->getCurrentFormat(),
       .rect = { {0, 0}, {512, 512} },
     });
@@ -80,7 +80,7 @@ void Renderer::setupPipelines()
     };
 
   auto& pipelineManager = etna::get_context().getPipelineManager();
-  m_basicForwardPipeline = pipelineManager.createGraphicsPipeline("simple_material",
+  basicForwardPipeline = pipelineManager.createGraphicsPipeline("simple_material",
     etna::GraphicsPipeline::CreateInfo{
       .vertexShaderInput = sceneVertexInputDesc,
       .rasterizationConfig = vk::PipelineRasterizationStateCreateInfo{
@@ -95,7 +95,7 @@ void Renderer::setupPipelines()
           .depthAttachmentFormat = vk::Format::eD32Sfloat,
         },
     });
-  m_shadowPipeline = pipelineManager.createGraphicsPipeline("simple_shadow",
+  shadowPipeline = pipelineManager.createGraphicsPipeline("simple_shadow",
     etna::GraphicsPipeline::CreateInfo{
       .vertexShaderInput = sceneVertexInputDesc,
       .rasterizationConfig = vk::PipelineRasterizationStateCreateInfo{
@@ -154,8 +154,8 @@ void Renderer::renderWorld(vk::CommandBuffer cmd_buf, vk::Image target_image, vk
   {
     etna::RenderTargetState renderTargets(cmd_buf, {{0, 0}, {2048, 2048}}, {}, {.image = shadowMap.get(), .view = shadowMap.getView({})});
 
-    cmd_buf.bindPipeline(vk::PipelineBindPoint::eGraphics, m_shadowPipeline.getVkPipeline());
-    renderScene(cmd_buf, m_lightMatrix, m_shadowPipeline.getVkPipelineLayout());
+    cmd_buf.bindPipeline(vk::PipelineBindPoint::eGraphics, shadowPipeline.getVkPipeline());
+    renderScene(cmd_buf, lightMatrix, shadowPipeline.getVkPipelineLayout());
   }
 
   // draw final scene to screen
@@ -173,12 +173,12 @@ void Renderer::renderWorld(vk::CommandBuffer cmd_buf, vk::Image target_image, vk
       {{.image = target_image, .view = target_image_view}},
       {.image = mainViewDepth.get(), .view = mainViewDepth.getView({})});
 
-    cmd_buf.bindPipeline(vk::PipelineBindPoint::eGraphics, m_basicForwardPipeline.getVkPipeline());
-    cmd_buf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_basicForwardPipeline.getVkPipelineLayout(), 0, {set.getVkSet()}, {});
+    cmd_buf.bindPipeline(vk::PipelineBindPoint::eGraphics, basicForwardPipeline.getVkPipeline());
+    cmd_buf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, basicForwardPipeline.getVkPipelineLayout(), 0, {set.getVkSet()}, {});
 
-    renderScene(cmd_buf, m_worldViewProj, m_basicForwardPipeline.getVkPipelineLayout());
+    renderScene(cmd_buf, worldViewProj, basicForwardPipeline.getVkPipelineLayout());
   }
 
   if(drawDebugFSQuad)
-    m_pQuad->render(cmd_buf, target_image, target_image_view, shadowMap, defaultSampler);
+    quadRenderer->render(cmd_buf, target_image, target_image_view, shadowMap, defaultSampler);
 }

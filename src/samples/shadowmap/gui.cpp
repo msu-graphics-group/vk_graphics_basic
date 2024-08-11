@@ -7,18 +7,18 @@
 
 void Renderer::DrawGui()
 {
-  m_pGUIRender->NextFrame();
+  guiRenderer->NextFrame();
   ImGui::NewFrame();
   {
     ImGui::Begin("Simple render settings");
 
-    float color[3] {m_uniforms.baseColor.r, m_uniforms.baseColor.g, m_uniforms.baseColor.b};
+    float color[3] {uniformParams.baseColor.r, uniformParams.baseColor.g, uniformParams.baseColor.b};
     ImGui::ColorEdit3("Meshes base color", color, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoInputs);
-    m_uniforms.baseColor = {color[0], color[1], color[2]};
+    uniformParams.baseColor = {color[0], color[1], color[2]};
 
-    float pos[3] {m_uniforms.lightPos.x, m_uniforms.lightPos.y, m_uniforms.lightPos.z};
+    float pos[3] {uniformParams.lightPos.x, uniformParams.lightPos.y, uniformParams.lightPos.z};
     ImGui::SliderFloat3("Light source position", pos, -10.f, 10.f);
-    m_uniforms.lightPos = {pos[0], pos[1], pos[2]};
+    uniformParams.lightPos = {pos[0], pos[1], pos[2]};
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
