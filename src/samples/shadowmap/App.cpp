@@ -1,6 +1,6 @@
 #include "App.hpp"
 
-#include "render/ImGuiRender.h"
+#include "gui/ImGuiRenderer.h"
 
 
 App::App()
@@ -32,7 +32,7 @@ App::App()
 
   // TODO: this is bad design, this initialization is dependent on the current ImGui context, but we pass
   // it implicitly here instead of explicitly. Beware if trying to do something tricky.
-  ImGuiRender::enableImGuiForWindow(mainWindow->native());
+  ImGuiRenderer::enableImGuiForWindow(mainWindow->native());
 
   shadowCam.lookAt({-8, 10, 8}, {0, 0, 0}, {0, 1, 0});
   mainCam.lookAt({0, 10, 10}, {0, 0, 0}, {0, 1, 0});

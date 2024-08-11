@@ -1,7 +1,8 @@
 #include "Renderer.h"
 
-#include "../../render/ImGuiRender.h"
 #include <imgui.h>
+
+#include "gui/ImGuiRenderer.h"
 
 
 void Renderer::DrawGui()

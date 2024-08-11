@@ -1,4 +1,4 @@
-#include "ImGuiRender.h"
+#include "ImGuiRenderer.h"
 
 #include <backends/imgui_impl_vulkan.h>
 #include <backends/imgui_impl_glfw.h>
@@ -6,12 +6,12 @@
 #include <etna/RenderTargetStates.hpp>
 
 
-void ImGuiRender::enableImGuiForWindow(GLFWwindow* window)
+void ImGuiRenderer::enableImGuiForWindow(GLFWwindow* window)
 {
   ImGui_ImplGlfw_InitForVulkan(window, true);
 }
 
-ImGuiRender::ImGuiRender(vk::Format a_target_format)
+ImGuiRenderer::ImGuiRenderer(vk::Format a_target_format)
 {
   CreateDescriptorPool();
 
@@ -28,7 +28,7 @@ PFN_vkVoidFunction vulkanLoaderFunction(const char *function_name, void *)
   return VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(etna::get_context().getInstance(), function_name);
 }
 
-void ImGuiRender::CreateDescriptorPool()
+void ImGuiRenderer::CreateDescriptorPool()
 {
   using Sz   = vk::DescriptorPoolSize;
   using Type = vk::DescriptorType;
@@ -57,7 +57,7 @@ void ImGuiRender::CreateDescriptorPool()
   m_descriptorPool = etna::unwrap_vk_result(etna::get_context().getDevice().createDescriptorPoolUnique(info));
 }
 
-void ImGuiRender::InitImGui(vk::Format a_target_format)
+void ImGuiRenderer::InitImGui(vk::Format a_target_format)
 {
   const auto &ctx = etna::get_context();
 
@@ -99,26 +99,26 @@ void ImGuiRender::InitImGui(vk::Format a_target_format)
   ImGui_ImplVulkan_CreateFontsTexture();
 }
 
-void ImGuiRender::NextFrame()
+void ImGuiRenderer::NextFrame()
 {
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplGlfw_NewFrame();
 }
 
-void ImGuiRender::Draw(vk::CommandBuffer a_cmdbuf, vk::Rect2D a_rect, vk::Image a_image, vk::ImageView a_view, ImDrawData *a_imgui_draw_data)
+void ImGuiRenderer::Draw(vk::CommandBuffer a_cmdbuf, vk::Rect2D a_rect, vk::Image a_image, vk::ImageView a_view, ImDrawData *a_imgui_draw_data)
 {
   etna::RenderTargetState renderTargets(a_cmdbuf, a_rect, { { .image = a_image, .view = a_view, .loadOp = vk::AttachmentLoadOp::eLoad } }, {});
 
   ImGui_ImplVulkan_RenderDrawData(a_imgui_draw_data, a_cmdbuf);
 }
 
-void ImGuiRender::CleanupImGui()
+void ImGuiRenderer::CleanupImGui()
 {
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplGlfw_Shutdown();
 }
 
-ImGuiRender::~ImGuiRender()
+ImGuiRenderer::~ImGuiRenderer()
 {
   CleanupImGui();
 }

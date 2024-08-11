@@ -10,18 +10,18 @@ struct GLFWwindow;
 
 
 // NOTE: this is sort of a singleton class.
-class ImGuiRender
+class ImGuiRenderer
 {
 public:
   static void enableImGuiForWindow(GLFWwindow *window);
 
-  ImGuiRender(vk::Format a_target_format);
+  ImGuiRenderer(vk::Format a_target_format);
 
   void NextFrame();
 
   void Draw(vk::CommandBuffer a_cmdbuf, vk::Rect2D a_rect, vk::Image a_image, vk::ImageView a_view, ImDrawData *a_imgui_draw_data);
 
-  ~ImGuiRender();
+  ~ImGuiRenderer();
 
 private:
   vk::UniqueDescriptorPool m_descriptorPool;

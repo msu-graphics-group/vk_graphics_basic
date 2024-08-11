@@ -13,7 +13,7 @@
 #include <glm/fwd.hpp>
 
 
-class ImGuiRender;
+class ImGuiRenderer;
 
 using ResolutionProvider = fu2::unique_function<glm::uvec2() const>;
 
@@ -68,7 +68,7 @@ private:
   vk::PhysicalDeviceFeatures m_enabledDeviceFeatures = {};
 
   std::unique_ptr<SceneManager> sceneMgr;
-  std::unique_ptr<ImGuiRender> m_pGUIRender;
+  std::unique_ptr<ImGuiRenderer> m_pGUIRender;
 
   std::unique_ptr<QuadRenderer> m_pQuad;
 

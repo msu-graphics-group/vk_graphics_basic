@@ -38,7 +38,9 @@ endif()
 add_compile_definitions(VK_GRAPHICS_BASIC_ROOT="${PROJECT_SOURCE_DIR}")
 
 add_subdirectory(../etna etna)
-add_subdirectory(src/samples/shadowmap)
-add_subdirectory(src/samples/simple_compute)
 add_subdirectory(src/wsi)
 add_subdirectory(src/scene)
+add_subdirectory(src/gui)
+
+add_subdirectory(src/samples/shadowmap)
+add_subdirectory(src/samples/simple_compute)

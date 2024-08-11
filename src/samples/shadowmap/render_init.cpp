@@ -2,7 +2,7 @@
 
 #include <etna/Etna.hpp>
 
-#include "render/ImGuiRender.h"
+#include "gui/ImGuiRenderer.h"
 
 
 Renderer::Renderer(glm::uvec2 res) : resolution{res}
@@ -61,7 +61,7 @@ void Renderer::initPresentation(vk::UniqueSurfaceKHR a_surface, ResolutionProvid
   });
   resolution = {w, h};
 
-  m_pGUIRender = std::make_unique<ImGuiRender>(window->getCurrentFormat());
+  m_pGUIRender = std::make_unique<ImGuiRenderer>(window->getCurrentFormat());
 
   allocateResources();
 }

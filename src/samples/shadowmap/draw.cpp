@@ -1,8 +1,9 @@
 #include "Renderer.h"
-#include <etna/Etna.hpp>
 
+#include <etna/Etna.hpp>
 #include <imgui.h>
-#include "../../render/ImGuiRender.h"
+
+#include "gui/ImGuiRenderer.h"
 
 
 void Renderer::drawFrame(bool draw_gui)
