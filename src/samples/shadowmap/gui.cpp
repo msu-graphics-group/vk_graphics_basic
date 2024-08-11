@@ -7,7 +7,7 @@
 
 void Renderer::DrawGui()
 {
-  guiRenderer->NextFrame();
+  guiRenderer->nextFrame();
   ImGui::NewFrame();
   {
     ImGui::Begin("Simple render settings");

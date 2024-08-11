@@ -11,14 +11,14 @@ void ImGuiRenderer::enableImGuiForWindow(GLFWwindow* window)
   ImGui_ImplGlfw_InitForVulkan(window, true);
 }
 
-ImGuiRenderer::ImGuiRenderer(vk::Format a_target_format)
+ImGuiRenderer::ImGuiRenderer(vk::Format target_format)
 {
-  CreateDescriptorPool();
+  createDescriptorPool();
 
   context = ImGui::CreateContext();
   ImGui::SetCurrentContext(context);
 
-  InitImGui(a_target_format);
+  initImGui(target_format);
 
   IMGUI_CHECKVERSION();
 }
@@ -28,7 +28,7 @@ PFN_vkVoidFunction vulkanLoaderFunction(const char *function_name, void *)
   return VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(etna::get_context().getInstance(), function_name);
 }
 
-void ImGuiRenderer::CreateDescriptorPool()
+void ImGuiRenderer::createDescriptorPool()
 {
   using Sz   = vk::DescriptorPoolSize;
   using Type = vk::DescriptorType;
@@ -54,10 +54,10 @@ void ImGuiRenderer::CreateDescriptorPool()
     .pPoolSizes    = descrTypes.data(),
   };
 
-  m_descriptorPool = etna::unwrap_vk_result(etna::get_context().getDevice().createDescriptorPoolUnique(info));
+  descriptorPool = etna::unwrap_vk_result(etna::get_context().getDevice().createDescriptorPoolUnique(info));
 }
 
-void ImGuiRenderer::InitImGui(vk::Format a_target_format)
+void ImGuiRenderer::initImGui(vk::Format a_target_format)
 {
   const auto &ctx = etna::get_context();
 
@@ -68,7 +68,7 @@ void ImGuiRenderer::InitImGui(vk::Format a_target_format)
     .Device                      = ctx.getDevice(),
     .QueueFamily                 = ctx.getQueueFamilyIdx(),
     .Queue                       = ctx.getQueue(),
-    .DescriptorPool              = m_descriptorPool.get(),
+    .DescriptorPool              = descriptorPool.get(),
     .RenderPass                  = VK_NULL_HANDLE,
     // This is basically unused
     .MinImageCount               = 2,
@@ -99,20 +99,20 @@ void ImGuiRenderer::InitImGui(vk::Format a_target_format)
   ImGui_ImplVulkan_CreateFontsTexture();
 }
 
-void ImGuiRenderer::NextFrame()
+void ImGuiRenderer::nextFrame()
 {
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplGlfw_NewFrame();
 }
 
-void ImGuiRenderer::Draw(vk::CommandBuffer a_cmdbuf, vk::Rect2D a_rect, vk::Image a_image, vk::ImageView a_view, ImDrawData *a_imgui_draw_data)
+void ImGuiRenderer::render(vk::CommandBuffer cmd_buf, vk::Rect2D rect, vk::Image image, vk::ImageView image_view, ImDrawData *im_draw_data)
 {
-  etna::RenderTargetState renderTargets(a_cmdbuf, a_rect, { { .image = a_image, .view = a_view, .loadOp = vk::AttachmentLoadOp::eLoad } }, {});
+  etna::RenderTargetState renderTargets(cmd_buf, rect, { { .image = image, .view = image_view, .loadOp = vk::AttachmentLoadOp::eLoad } }, {});
 
-  ImGui_ImplVulkan_RenderDrawData(a_imgui_draw_data, a_cmdbuf);
+  ImGui_ImplVulkan_RenderDrawData(im_draw_data, cmd_buf);
 }
 
-void ImGuiRenderer::CleanupImGui()
+void ImGuiRenderer::cleanupImGui()
 {
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplGlfw_Shutdown();
@@ -120,5 +120,5 @@ void ImGuiRenderer::CleanupImGui()
 
 ImGuiRenderer::~ImGuiRenderer()
 {
-  CleanupImGui();
+  cleanupImGui();
 }

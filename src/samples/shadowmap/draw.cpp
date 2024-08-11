@@ -30,7 +30,7 @@ void Renderer::drawFrame(bool draw_gui)
     if (draw_gui)
     {
       ImDrawData* pDrawData = ImGui::GetDrawData();
-      guiRenderer->Draw(currentCmdBuf, {{0, 0}, {resolution.x, resolution.y}}, image, view, pDrawData);
+      guiRenderer->render(currentCmdBuf, {{0, 0}, {resolution.x, resolution.y}}, image, view, pDrawData);
     }
 
     etna::set_state(currentCmdBuf, image, vk::PipelineStageFlagBits2::eBottomOfPipe, {},

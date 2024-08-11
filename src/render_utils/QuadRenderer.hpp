@@ -21,13 +21,13 @@ public:
   QuadRenderer(CreateInfo info);
   ~QuadRenderer() {}
 
-  void render(vk::CommandBuffer cmdBuff, vk::Image targetImage, vk::ImageView targetImageView,
-                      const etna::Image &inTex, const etna::Sampler &sampler);
+  void render(vk::CommandBuffer cmd_buff, vk::Image target_image, vk::ImageView target_image_view,
+                      const etna::Image &tex_to_draw, const etna::Sampler &sampler);
 
 private:
-  etna::GraphicsPipeline m_pipeline;
-  etna::ShaderProgramId m_programId;
-  vk::Rect2D m_rect {};
+  etna::GraphicsPipeline pipeline;
+  etna::ShaderProgramId programId;
+  vk::Rect2D rect {};
 
   QuadRenderer(const QuadRenderer &) = delete;
   QuadRenderer& operator=(const QuadRenderer &) = delete;

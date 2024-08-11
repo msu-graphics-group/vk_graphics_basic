@@ -17,19 +17,19 @@ public:
 
   ImGuiRenderer(vk::Format a_target_format);
 
-  void NextFrame();
+  void nextFrame();
 
-  void Draw(vk::CommandBuffer a_cmdbuf, vk::Rect2D a_rect, vk::Image a_image, vk::ImageView a_view, ImDrawData *a_imgui_draw_data);
+  void render(vk::CommandBuffer cmd_buf, vk::Rect2D rect, vk::Image image, vk::ImageView image_view, ImDrawData *im_draw_data);
 
   ~ImGuiRenderer();
 
 private:
-  vk::UniqueDescriptorPool m_descriptorPool;
+  vk::UniqueDescriptorPool descriptorPool;
   ImGuiContext* context;
 
-  void InitImGui(vk::Format a_target_format);
-  void CleanupImGui();
-  void CreateDescriptorPool();
+  void initImGui(vk::Format target_format);
+  void cleanupImGui();
+  void createDescriptorPool();
 };
 
 #endif// VK_GRAPHICS_BASIC_RENDER_GUI_H
